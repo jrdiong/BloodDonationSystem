@@ -44,7 +44,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     }
 
     // Insert new user (phoneNumber excluded)
-    $sql = "INSERT INTO users (name, email, password, role)
+    $sql = "INSERT INTO user (name, email, password, role)
             VALUES (?, ?, ?, ?)";
 
     $stmt = $pdo->prepare($sql);
