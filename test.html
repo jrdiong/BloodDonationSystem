@@ -2,26 +2,24 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Register Test</title>
+    <title>User Login Test</title>
 </head>
 <body>
 
-    <h2>User Registration Test</h2>
+    <h2>User Login Test</h2>
 
-    <form action="register.php" method="POST">
-    <label for="name">Name:</label><br>
-    <input type="text" id="name" name="name" required><br><br>
+    <form action="login.php" method="POST">
+        <!-- Username -->
+        <label for="name">Name:</label><br>
+        <input type="text" id="name" name="name" required><br><br>
 
-    <label for="email">Email:</label><br>
-    <input type="email" id="email" name="email" required><br><br>
+        <!-- Password -->
+        <label for="password">Password:</label><br>
+        <input type="password" id="password" name="password" required><br><br>
 
-    <label for="password">Password:</label><br>
-    <input type="password" id="password" name="password" required><br><br>
-
-    <!-- Add name="register" so PHP can detect -->
-    <button type="submit" name="register">Register</button>
-</form>
-
+        <!-- Submit button -->
+        <button type="submit" name="login">Login</button>
+    </form>
 
 </body>
 </html>
