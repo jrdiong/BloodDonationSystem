@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Forgot Password Test</title>
+</head>
+<body>
+
+    <h2>Forgot Password</h2>
+
+    <form action="forgot_password.php" method="POST">
+
+        <label for="username">Name:</label><br>
+        <input type="text" id="username" name="username" required>
+        <br><br>
+
+        <label for="email">Email:</label><br>
+        <input type="email" id="email" name="email" required>
+        <br><br>
+
+        <label for="new_password">New Password:</label><br>
+        <input type="password" id="new_password" name="new_password" required>
+        <br><br>
+
+        <label for="confirm_password">Confirm Password:</label><br>
+        <input type="password" id="confirm_password" name="confirm_password" required>
+        <br><br>
+
+        <!-- IMPORTANT: name="reset_password" -->
+        <button type="submit" name="reset_password">
+            Reset Password
+        </button>
+
+    </form>
+
+</body>
+</html>
