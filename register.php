@@ -26,7 +26,7 @@ try {
 // Execute only on POST request
 if ($_SERVER["REQUEST_METHOD"] === "POST") {
 
-    // Retrieve and sanitize form data
+    // Retrieve form data
     $name = trim($_POST['name']);
     $email = trim($_POST['email']);
     $plainPassword = $_POST['password'];
@@ -34,7 +34,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     // Default role
     $role = "Donor";
 
-    // Optional: check if fields are empty
+    // Check required fields
     if (empty($name) || empty($email) || empty($plainPassword)) {
         die("Please fill all required fields.");
     }
@@ -43,7 +43,6 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     $hashedPassword = password_hash($plainPassword, PASSWORD_DEFAULT);
 
     try {
-        // Check if email already exists
         $checkSql = "SELECT userID FROM user WHERE email = ?";
         $stmt = $pdo->prepare($checkSql);
         $stmt->execute([$email]);
@@ -56,7 +55,6 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
             exit;
         }
 
-        // Insert new user (phoneNumber left blank)
         $insertSql = "INSERT INTO user (name, email, password, role, phoneNumber)
                       VALUES (?, ?, ?, ?, ?)";
         $insertStmt = $pdo->prepare($insertSql);
@@ -68,14 +66,13 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
             "" // phoneNumber empty
         ]);
 
-        // Registration successful
         echo "<script>
                 alert('Registration successful!');
                 window.location.href='login.html';
               </script>";
 
     } catch (PDOException $e) {
-        // Catch all DB errors
+        // Catch DB errors
         echo "<script>
                 alert('Database error: " . $e->getMessage() . "');
                 window.history.back();
