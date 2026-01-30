@@ -23,8 +23,8 @@ body { font-family: Arial, sans-serif; margin: 20px; }
     margin-left: 5px;
     color: #007BFF;
 }
-input.edit-input { padding: 3px; width: 200px; }
-.save-btn {
+.edit-input { padding: 3px; width: 200px; }
+.save-btn, .cancel-btn {
     margin-left: 5px;
     padding: 2px 6px;
     font-size: 12px;
@@ -54,7 +54,7 @@ input.edit-input { padding: 3px; width: 200px; }
 
 <div class="profile-field">
     <span class="field-label">Phone:</span>
-    <span class="field-value" id="phoneValue"></span>
+    <span class="field-value" id="phoneNumberValue"></span>
     <span class="edit-icon" data-field="phoneNumber">&#9998;</span>
 </div>
 
@@ -97,7 +97,7 @@ function loadProfile() {
             const profile = data.profile;
             document.getElementById('nameValue').textContent = profile.name;
             document.getElementById('emailValue').textContent = profile.email;
-            document.getElementById('phoneValue').textContent = profile.phoneNumber;
+            document.getElementById('phoneNumberValue').textContent = profile.phoneNumber;
             if (profile.image_url) avatarImg.src = profile.image_url + '?t=' + new Date().getTime();
 
             if (profile.role === 'Hospital') {
@@ -107,55 +107,23 @@ function loadProfile() {
         });
 }
 
-// Handle pencil click → edit field
-document.querySelectorAll('.edit-icon').forEach(icon => {
-    icon.addEventListener('click', () => {
-        const field = icon.dataset.field;
-        const valueSpan = document.getElementById(field + 'Value');
-        const currentValue = valueSpan.textContent;
+// Helper functions
+function createInputField(field, currentValue) {
+    const input = document.createElement('input');
+    input.type = (field === 'email') ? 'email' : 'text';
+    input.value = currentValue;
+    input.className = 'edit-input';
+    input.id = field + 'Input';
+    return input;
+}
 
-        // Create input box
-        const input = document.createElement('input');
-        input.type = (field === 'email') ? 'email' : 'text';
-        input.value = currentValue;
-        input.className = 'edit-input';
+function createButton(text, className) {
+    const btn = document.createElement('button');
+    btn.textContent = text;
+    btn.className = className;
+    return btn;
+}
 
-        // Create save button
-        const saveBtn = document.createElement('button');
-        saveBtn.textContent = 'Save';
-        saveBtn.className = 'save-btn';
-
-        // Replace span with input + save button
-        valueSpan.replaceWith(input);
-        icon.replaceWith(saveBtn);
-
-        // Save click handler
-        saveBtn.addEventListener('click', () => {
-            const newValue = input.value.trim();
-            if (!newValue) { alert('Field cannot be empty'); return; }
-            if (field === 'email' && !/^\S+@\S+\.\S+$/.test(newValue)) {
-                alert('Invalid email format'); return;
-            }
-
-            const formData = new FormData();
-            formData.append(field, newValue);
-
-            fetch('update_profile.php', { method: 'POST', body: formData })
-                .then(res => res.json())
-                .then(data => {
-                    if (data.success) {
-                        alert('Field updated successfully!');
-                        input.replaceWith(createValueSpan(newValue, field));
-                        saveBtn.replaceWith(createEditIcon(field));
-                    } else {
-                        alert('Update failed: ' + data.error);
-                    }
-                });
-        });
-    });
-});
-
-// Helpers to recreate span and icon
 function createValueSpan(value, field) {
     const span = document.createElement('span');
     span.className = 'field-value';
@@ -169,15 +137,67 @@ function createEditIcon(field) {
     icon.className = 'edit-icon';
     icon.dataset.field = field;
     icon.innerHTML = '&#9998;';
-    icon.addEventListener('click', () => {
-        // Reuse the previous pencil click logic
-        icon.click();
-    });
+    icon.addEventListener('click', () => startEdit(field));
     return icon;
+}
+
+// Start editing field
+function startEdit(field) {
+    const valueSpan = document.getElementById(field + 'Value');
+    const currentValue = valueSpan.textContent;
+    const parentDiv = valueSpan.parentNode;
+    const icon = parentDiv.querySelector('.edit-icon');
+
+    // Create input, save, cancel
+    const input = createInputField(field, currentValue);
+    const saveBtn = createButton('Save', 'save-btn');
+    const cancelBtn = createButton('Cancel', 'cancel-btn');
+
+    // Replace span and icon
+    valueSpan.replaceWith(input);
+    icon.replaceWith(saveBtn);
+    parentDiv.appendChild(cancelBtn);
+
+    // Cancel click
+    cancelBtn.addEventListener('click', () => {
+        input.replaceWith(createValueSpan(currentValue, field));
+        saveBtn.replaceWith(createEditIcon(field));
+        cancelBtn.remove();
+    });
+
+    // Save click
+    saveBtn.addEventListener('click', () => {
+        const newValue = input.value.trim();
+        if (!newValue) { alert('Field cannot be empty'); return; }
+        if (field === 'email' && !/^\S+@\S+\.\S+$/.test(newValue)) {
+            alert('Invalid email format'); return;
+        }
+
+        const formData = new FormData();
+        formData.append(field, newValue);
+
+        fetch('update_profile.php', { method: 'POST', body: formData })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    alert('Field updated successfully!');
+                    input.replaceWith(createValueSpan(newValue, field));
+                    saveBtn.replaceWith(createEditIcon(field));
+                    cancelBtn.remove();
+                } else {
+                    alert('Update failed: ' + data.error);
+                }
+            });
+    });
 }
 
 // Initialize
 loadProfile();
+
+// Attach pencil icons
+document.querySelectorAll('.edit-icon').forEach(icon => {
+    icon.addEventListener('click', () => startEdit(icon.dataset.field));
+});
 </script>
 
 </body>
