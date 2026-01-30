@@ -42,19 +42,26 @@ if ($conn->connect_error) {
 
 // ---------------------------
 // 5. Save uploaded file
-$targetDir = "uploads/";
+$targetDir = "uploads/";  // Define the uploads folder
 
-// create folder if not exists
+// Create folder if it does not exist
 if (!is_dir($targetDir)) {
     mkdir($targetDir, 0755, true);
 }
 
-// generate unique filename
-$ext = pathinfo($_FILES["avatar"]["name"], PATHINFO_EXTENSION);
+// Generate a unique filename
+$ext = strtolower(pathinfo($_FILES["avatar"]["name"], PATHINFO_EXTENSION));
+$validExts = ['jpg', 'jpeg', 'png', 'gif'];  // Allow only these file extensions
+
+if (!in_array($ext, $validExts)) {
+    echo json_encode(["success" => false, "error" => "Invalid file type. Allowed types: jpg, jpeg, png, gif."]);
+    exit;
+}
+
 $filename = "avatar_user{$userID}_" . time() . "." . $ext;
 $targetFile = $targetDir . $filename;
 
-// move the uploaded file to target directory
+// Move the uploaded file to the target directory
 if (!move_uploaded_file($_FILES["avatar"]["tmp_name"], $targetFile)) {
     echo json_encode(["success" => false, "error" => "Failed to save uploaded file"]);
     $conn->close();
@@ -62,17 +69,17 @@ if (!move_uploaded_file($_FILES["avatar"]["tmp_name"], $targetFile)) {
 }
 
 // ---------------------------
-// 6. Update user table with relative path
-$imagePath = "/{$targetFile}";  // return relative path to the root
+// 6. Update user table with the relative path to the uploaded image
+$imagePath = "/{$targetFile}";  // relative path for use in the URL
 $stmt = $conn->prepare("UPDATE user SET image_url = ? WHERE userID = ?");
 $stmt->bind_param("si", $imagePath, $userID);
 $stmt->execute();
 $stmt->close();
 
-// Close database connection
+// Close the database connection
 $conn->close();
 
 // ---------------------------
-// 7. Return success with new image URL
+// 7. Return success with the new image URL
 echo json_encode(["success" => true, "image_url" => $imagePath]);
 ?>
