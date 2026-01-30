@@ -33,7 +33,7 @@ SELECT
         ELSE status
     END AS status,
     COUNT(*) AS count
-FROM BloodInventory
+FROM blood inventory
 GROUP BY bloodType, status;
 ";
 
