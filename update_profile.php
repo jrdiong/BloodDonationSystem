@@ -3,7 +3,7 @@ error_reporting(E_ALL);
 ini_set('display_errors', 1);
 header('Content-Type: application/json');
 
-// -------------------------------
+// -------------------
 // Database connection
 $servername = "localhost";
 $username = "root";
@@ -15,60 +15,64 @@ if ($conn->connect_error) {
     die(json_encode(["success" => false, "error" => "Database connection failed"]));
 }
 
-// -------------------------------
-// Get userID
-// TODO: Replace with $_SESSION['userID'] after login system
-$userID = isset($_POST['userID']) ? (int)$_POST['userID'] : 0;
+// -------------------
+// Get userID from session or POST (for testing)
+session_start();
+$userID = isset($_SESSION['userID']) ? (int)$_SESSION['userID'] : 0;
+
+// TEMP: allow POST userID for testing
+if ($userID <= 0 && isset($_POST['userID'])) {
+    $userID = (int)$_POST['userID'];
+}
 
 if ($userID <= 0) {
     echo json_encode(["success" => false, "error" => "Invalid userID"]);
     exit;
 }
 
-// -------------------------------
-// Get POST data
-$bloodType = $_POST['bloodType'] ?? '';
-$age = $_POST['age'] ?? '';
-$dateLastDonate = $_POST['dateLastDonate'] ?? '';
-$medicalHistory = $_POST['medicalHistory'] ?? '';
-$weight = $_POST['weight'] ?? '';
-$height = $_POST['height'] ?? '';
+// -------------------
+// Allowed fields to update
+$allowedFields = ['name', 'email', 'phoneNumber', 'location'];
+$updateFields = [];
+$types = '';
+$values = [];
 
-// Validation
-if (!$bloodType || !$age || !$dateLastDonate || !$medicalHistory || !$weight || !$height) {
-    echo json_encode(["success" => false, "error" => "Missing required fields"]);
+foreach ($allowedFields as $field) {
+    if (isset($_POST[$field])) {
+        $value = trim($_POST[$field]);
+        if ($value === '') {
+            echo json_encode(["success" => false, "error" => "Field $field cannot be empty"]);
+            exit;
+        }
+        if ($field === 'email' && !filter_var($value, FILTER_VALIDATE_EMAIL)) {
+            echo json_encode(["success" => false, "error" => "Invalid email format"]);
+            exit;
+        }
+        $updateFields[] = "$field = ?";
+        $values[] = $value;
+        $types .= ($field === 'email' || $field === 'name' || $field === 'location' || $field === 'phoneNumber') ? 's' : '';
+    }
+}
+
+if (empty($updateFields)) {
+    echo json_encode(["success" => false, "error" => "No fields to update"]);
     exit;
 }
 
-// Optional: further validation
-if (!in_array($bloodType, ['A','B','AB','O'])) {
-    echo json_encode(["success" => false, "error" => "Invalid blood type"]);
+// -------------------
+// Build query
+$sql = "UPDATE users SET " . implode(', ', $updateFields) . " WHERE userID = ?";
+$types .= 'i';
+$values[] = $userID;
+
+$stmt = $conn->prepare($sql);
+if (!$stmt) {
+    echo json_encode(["success" => false, "error" => "Prepare failed: " . $conn->error]);
     exit;
 }
 
-// -------------------------------
-// Update donor table
-$stmt = $conn->prepare("
-    UPDATE donor SET
-        bloodType = ?,
-        age = ?,
-        dateLastDonate = ?,
-        medicalHistory = ?,
-        weight = ?,
-        height = ?
-    WHERE userID = ?
-");
-
-$stmt->bind_param(
-    "sissddi", 
-    $bloodType, 
-    $age, 
-    $dateLastDonate, 
-    $medicalHistory, 
-    $weight, 
-    $height, 
-    $userID
-);
+// Bind parameters dynamically
+$stmt->bind_param($types, ...$values);
 
 if ($stmt->execute()) {
     echo json_encode(["success" => true]);
