@@ -1,71 +1,86 @@
 <?php
-session_start();
-error_reporting(E_ALL); ini_set('display_errors',1);
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
+header('Content-Type: application/json');
 
-if (!isset($_SESSION['userID']) || $_SESSION['role']!=='Hospital') { 
-    http_response_code(401); echo json_encode(["error"=>"Unauthorized"]); exit();
+// Database connection
+$servername = "localhost";
+$username = "root";
+$password = ""; 
+$dbname = "cbdc_system";
+
+$conn = new mysqli($servername, $username, $password, $dbname);
+if ($conn->connect_error) {
+    die(json_encode(["error"=>"Connection failed: ".$conn->connect_error]));
 }
 
-$userID=$_SESSION['userID'];
-$conn=mysqli_connect("localhost","root","","cbdc_system");
-if(!$conn){http_response_code(500); echo json_encode(["error"=>"DB connection failed"]); exit();}
+// Receive POST parameters from AJAX
+$bloodType = $_POST['bloodType'];
+$addAvailable = isset($_POST['addAvailable']) ? (int)$_POST['addAvailable'] : 0;
+$removeAvailable = isset($_POST['removeAvailable']) ? (int)$_POST['removeAvailable'] : 0;
+$addUsed = isset($_POST['addUsed']) ? (int)$_POST['addUsed'] : 0;
+$addDelivered = isset($_POST['addDelivered']) ? (int)$_POST['addDelivered'] : 0;
+$removeDelivered = isset($_POST['removeDelivered']) ? (int)$_POST['removeDelivered'] : 0;
 
-// Update expired automatically
-$expireSQL="UPDATE blood_inventory SET status='expired' WHERE status='available' AND expiryDate<CURDATE() AND userID=?";
-$stmtExpire=mysqli_prepare($conn,$expireSQL);
-mysqli_stmt_bind_param($stmtExpire,"i",$userID);
-mysqli_stmt_execute($stmtExpire);
+$conn->begin_transaction();
 
-// Request data
-$bloodType=$_POST['bloodType']??null;
-$action=$_POST['action']??null;
-$qty=intval($_POST['quantity']??0);
-if(!$bloodType || !$action || $qty<=0){ http_response_code(400); echo json_encode(["error"=>"Invalid request"]); exit(); }
-
-// Helpers
-function addAvailable($conn,$userID,$bloodType,$qty){
-    $sql="INSERT INTO blood_inventory (userID,bloodType,status,collectionTime,expiryDate) VALUES(?,?, 'available', NOW(), DATE_ADD(NOW(), INTERVAL 30 DAY))";
-    $stmt=mysqli_prepare($conn,$sql);
-    for($i=0;$i<$qty;$i++){ mysqli_stmt_bind_param($stmt,"is",$userID,$bloodType); mysqli_stmt_execute($stmt);}
-}
-
-function fifoUpdate($conn,$userID,$bloodType,$from,$to,$qty){
-    for($i=0;$i<$qty;$i++){
-        $sel="SELECT inventoryID FROM blood_inventory WHERE userID=? AND bloodType=? AND status=? ORDER BY expiryDate ASC LIMIT 1";
-        $stmt=mysqli_prepare($conn,$sel);
-        mysqli_stmt_bind_param($stmt,"iss",$userID,$bloodType,$from);
-        mysqli_stmt_execute($stmt);
-        $res=mysqli_stmt_get_result($stmt);
-        if(!$row=mysqli_fetch_assoc($res)) break;
-        $upd="UPDATE blood_inventory SET status=? WHERE inventoryID=?";
-        $stmtUpd=mysqli_prepare($conn,$upd);
-        mysqli_stmt_bind_param($stmtUpd,"si",$to,$row['inventoryID']);
-        mysqli_stmt_execute($stmtUpd);
+try {
+    //  Add Available
+    for($i=0; $i<$addAvailable; $i++){
+        $stmt = $conn->prepare("INSERT INTO `blood inventory` (userID, bloodType, collectionTime, expiryDate, status)
+                                VALUES (?, ?, NOW(), DATE_ADD(NOW(), INTERVAL 35 DAY), 'available')");
+        $userID = 1; // example userID
+        $stmt->bind_param("is", $userID, $bloodType);
+        $stmt->execute();
     }
-}
 
-function lifoUpdate($conn,$userID,$bloodType,$from,$to,$qty){
-    for($i=0;$i<$qty;$i++){
-        $sel="SELECT inventoryID FROM blood_inventory WHERE userID=? AND bloodType=? AND status=? ORDER BY collectionTime DESC LIMIT 1";
-        $stmt=mysqli_prepare($conn,$sel);
-        mysqli_stmt_bind_param($stmt,"iss",$userID,$bloodType,$from);
-        mysqli_stmt_execute($stmt);
-        $res=mysqli_stmt_get_result($stmt);
-        if(!$row=mysqli_fetch_assoc($res)) break;
-        $upd="UPDATE blood_inventory SET status=? WHERE inventoryID=?";
-        $stmtUpd=mysqli_prepare($conn,$upd);
-        mysqli_stmt_bind_param($stmtUpd,"si",$to,$row['inventoryID']);
-        mysqli_stmt_execute($stmtUpd);
+    //  Remove Available → mark as deleted
+    if($removeAvailable>0){
+        $stmt = $conn->prepare("UPDATE `blood inventory` 
+                                SET status='deleted' 
+                                WHERE bloodType=? AND status='available' 
+                                LIMIT ?");
+        $stmt->bind_param("si", $bloodType, $removeAvailable);
+        $stmt->execute();
     }
+
+    //  Add Used → automatically decrease Available
+    if($addUsed>0){
+        $stmt = $conn->prepare("UPDATE `blood inventory` 
+                                SET status='used' 
+                                WHERE bloodType=? AND status='available' 
+                                LIMIT ?");
+        $stmt->bind_param("si", $bloodType, $addUsed);
+        $stmt->execute();
+    }
+
+    //  Add Delivered → automatically decrease Available
+    if($addDelivered>0){
+        $stmt = $conn->prepare("UPDATE `blood inventory` 
+                                SET status='delivered' 
+                                WHERE bloodType=? AND status='available' 
+                                LIMIT ?");
+        $stmt->bind_param("si", $bloodType, $addDelivered);
+        $stmt->execute();
+    }
+
+    //  Remove Delivered → automatically increase Available
+    if($removeDelivered>0){
+        $stmt = $conn->prepare("UPDATE `blood inventory` 
+                                SET status='available' 
+                                WHERE bloodType=? AND status='delivered' 
+                                LIMIT ?");
+        $stmt->bind_param("si", $bloodType, $removeDelivered);
+        $stmt->execute();
+    }
+
+    $conn->commit();
+    echo json_encode(["success"=>true]);
+
+} catch(Exception $e){
+    $conn->rollback();
+    echo json_encode(["error"=>$e->getMessage()]);
 }
 
-// Actions
-switch($action){
-    case 'add_available': addAvailable($conn,$userID,$bloodType,$qty); break;
-    case 'deliver': fifoUpdate($conn,$userID,$bloodType,'available','delivered',$qty); break;
-    case 'return_delivered': lifoUpdate($conn,$userID,$bloodType,'delivered','available',$qty); break;
-    case 'use': fifoUpdate($conn,$userID,$bloodType,'delivered','used',$qty); break;
-    default: http_response_code(400); echo json_encode(["error"=>"Unknown action"]); exit();
-}
-
-echo json_encode(["status"=>"success"]);
+$conn->close();
+?>

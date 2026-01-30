@@ -1,64 +1,134 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <title>Blood Inventory Test</title>
-    <style>
-        body { font-family: Arial, sans-serif; margin: 20px; }
-        .blood-type-box {
-            border: 1px solid #333;
-            padding: 15px;
-            margin: 10px;
-            display: inline-block;
-            width: 200px;
-            vertical-align: top;
-        }
-        .status { margin: 5px 0; }
-    </style>
+<meta charset="UTF-8">
+<title>Blood Inventory Test</title>
+<style>
+/* Inventory boxes */
+.blood-box {
+    display:inline-block;
+    width:180px;
+    height:120px;
+    border:1px solid #333;
+    margin:10px;
+    padding:10px;
+    cursor:pointer;
+    text-align:left;
+    background:#f8f8f8;
+}
+
+/* Edit form modal */
+#editForm {
+    display:none;
+    position:fixed;
+    top:50%;
+    left:50%;
+    transform:translate(-50%,-50%);
+    background:#fff;
+    padding:20px;
+    border:2px solid #333;
+    z-index:1000;
+}
+
+#overlay {
+    display:none;
+    position:fixed;
+    top:0; left:0;
+    width:100%; height:100%;
+    background:rgba(0,0,0,0.5);
+    z-index:900;
+}
+</style>
 </head>
 <body>
-    <h1>Blood Inventory Summary (Test)</h1>
-    <div id="inventory-container"></div>
 
-    <script>
-        async function fetchInventory() {
-            try {
-                const response = await fetch('bloodinventory.php');
-                const data = await response.json();
+<h2>Blood Inventory</h2>
+<div id="inventoryContainer"></div>
 
-                const container = document.getElementById('inventory-container');
-                container.innerHTML = ''; 
+<!-- Overlay for modal -->
+<div id="overlay"></div>
 
-                const bloodTypes = ['A', 'B', 'AB', 'O'];
-                const statuses = ['available', 'expired', 'used', 'delivered'];
+<!-- Edit Form Modal -->
+<div id="editForm">
+    <h3 id="formTitle">Edit Blood Inventory</h3>
+    <label>Available (+/-):</label> <input type="number" id="available" value="0"><br><br>
+    <label>Used (+ only):</label> <input type="number" id="used" value="0" min="0"><br><br>
+    <label>Delivered (+/-):</label> <input type="number" id="delivered" value="0"><br><br>
+    <button onclick="submitEdit()">Submit</button>
+    <button onclick="closeForm()">Cancel</button>
+</div>
 
-                bloodTypes.forEach(type => {
-                    const box = document.createElement('div');
-                    box.className = 'blood-type-box';
+<script>
+let currentBloodType = "";
 
-                    const title = document.createElement('h2');
-                    title.textContent = 'Blood Type: ' + type;
-                    box.appendChild(title);
-
-                    statuses.forEach(status => {
-                        const statusDiv = document.createElement('div');
-                        statusDiv.className = 'status';
-                        const count = data[type] && data[type][status] ? data[type][status] : 0;
-                        statusDiv.textContent = status.charAt(0).toUpperCase() + status.slice(1) + ': ' + count;
-                        box.appendChild(statusDiv);
-                    });
-
-                    container.appendChild(box);
-                });
-
-            } catch (error) {
-                console.error('Error fetching inventory:', error);
-                document.getElementById('inventory-container').textContent = 'Failed to load inventory.';
+// Fetch inventory from bloodinventory.php
+function fetchInventory(){
+    fetch("bloodinventory.php")
+        .then(res=>res.json())
+        .then(data=>{
+            const container = document.getElementById("inventoryContainer");
+            container.innerHTML="";
+            for(const type in data){
+                let box = document.createElement("div");
+                box.className="blood-box";
+                box.innerHTML = `<strong>${type}</strong><br>
+                                 Available: ${data[type].available}<br>
+                                 Expired: ${data[type].expired}<br>
+                                 Used: ${data[type].used}<br>
+                                 Delivered: ${data[type].delivered}`;
+                box.onclick = ()=>openForm(type);
+                container.appendChild(box);
             }
-        }
+        });
+}
 
-        fetchInventory();
-        setInterval(fetchInventory, 10000); 
-    </script>
+// Open edit form modal
+function openForm(bloodType){
+    currentBloodType = bloodType;
+    document.getElementById("formTitle").innerText = `Edit ${bloodType} Inventory`;
+    document.getElementById("available").value=0;
+    document.getElementById("used").value=0;
+    document.getElementById("delivered").value=0;
+    document.getElementById("overlay").style.display="block";
+    document.getElementById("editForm").style.display="block";
+}
+
+// Close edit form modal
+function closeForm(){
+    document.getElementById("editForm").style.display="none";
+    document.getElementById("overlay").style.display="none";
+}
+
+// Submit edit form via AJAX
+function submitEdit(){
+    const availableVal = parseInt(document.getElementById("available").value);
+    const usedVal = parseInt(document.getElementById("used").value);
+    const deliveredVal = parseInt(document.getElementById("delivered").value);
+
+    const data = new FormData();
+    data.append("bloodType", currentBloodType);
+    data.append("addAvailable", availableVal>0?availableVal:0);
+    data.append("removeAvailable", availableVal<0?-availableVal:0);
+    data.append("addUsed", usedVal>0?usedVal:0);
+    data.append("addDelivered", deliveredVal>0?deliveredVal:0);
+    data.append("removeDelivered", deliveredVal<0?-deliveredVal:0);
+
+    fetch("edit_inventory.php", {method:"POST", body:data})
+        .then(res=>res.json())
+        .then(resp=>{
+            if(resp.success){
+                alert("Inventory updated!");
+                closeForm();
+                fetchInventory();
+            } else {
+                alert("Error: "+resp.error);
+            }
+        });
+}
+
+// Initial load
+fetchInventory();
+</script>
+
 </body>
 </html>
