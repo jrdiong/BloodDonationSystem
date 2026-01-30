@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Profile Test</title>
+<style>
+body {
+    font-family: Arial, sans-serif;
+    margin: 40px;
+}
+.profile-container {
+    width: 300px;
+    border: 1px solid #333;
+    padding: 20px;
+}
+.avatar {
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 1px solid #ccc;
+    display: block;
+    margin: 0 auto 15px auto;
+}
+.info {
+    text-align: center;
+    margin-bottom: 10px;
+}
+.extra {
+    margin-top: 15px;
+    padding-top: 10px;
+    border-top: 1px solid #ccc;
+}
+</style>
+</head>
+<body>
+
+<h2>Profile Test Page</h2>
+
+<div class="profile-container">
+    <img id="avatar" class="avatar" src="" alt="Avatar">
+    <div class="info"><strong>Email:</strong> <span id="email"></span></div>
+    <div class="info"><strong>Name:</strong> <span id="name"></span></div>
+    <div class="info"><strong>Phone:</strong> <span id="phone"></span></div>
+
+    <div id="extraInfo" class="extra"></div>
+</div>
+
+<script>
+const userID = 1; // change this to test different users
+
+fetch(`profile.php?userID=${userID}`)
+    .then(response => response.json())
+    .then(data => {
+        if (!data.success) {
+            alert(data.error);
+            return;
+        }
+
+        const profile = data.profile;
+
+        // Avatar
+        const avatar = document.getElementById("avatar");
+        avatar.src = profile.image_url ? profile.image_url : "default-avatar.png";
+
+        // Basic info
+        document.getElementById("email").innerText = profile.email;
+        document.getElementById("name").innerText = profile.name;
+        document.getElementById("phone").innerText = profile.phoneNumber;
+
+        // Role-specific info
+        const extra = document.getElementById("extraInfo");
+        if (profile.role === "Donor" && profile.donorInfo) {
+            extra.innerHTML = `
+                <strong>Donor Info</strong><br>
+                Blood Type: ${profile.donorInfo.bloodType}<br>
+                Age: ${profile.donorInfo.age}<br>
+                Last Donate: ${profile.donorInfo.dateLastDonate}
+            `;
+        } 
+        else if (profile.role === "Hospital" && profile.hospitalInfo) {
+            extra.innerHTML = `
+                <strong>Hospital Info</strong><br>
+                Location: ${profile.hospitalInfo.location}
+            `;
+        } 
+        else {
+            extra.innerHTML = `<strong>Role:</strong> ${profile.role}`;
+        }
+    })
+    .catch(err => {
+        console.error(err);
+        alert("Failed to load profile");
+    });
+</script>
+
+</body>
+</html>
