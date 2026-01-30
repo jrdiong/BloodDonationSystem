@@ -114,7 +114,7 @@ avatarInput.addEventListener('change', () => {
         });
 });
 
-// Load profile
+// Load profile data
 function loadProfile() {
     fetch('profile.php')
         .then(res => res.json())
@@ -126,7 +126,7 @@ function loadProfile() {
             document.getElementById('phoneNumberValue').textContent = profile.phoneNumber;
             if (profile.image_url) avatarImg.src = profile.image_url + '?t=' + new Date().getTime();
 
-            // Hospital
+            // Hospital info
             if (profile.role === 'Hospital') {
                 document.getElementById('hospitalField').style.display = 'block';
                 document.getElementById('locationValue').textContent = profile.hospitalInfo?.location || '';
@@ -143,10 +143,13 @@ function loadProfile() {
                 form.weight.value = profile.donorInfo?.weight || '';
                 form.height.value = profile.donorInfo?.height || '';
             }
+
+            // Bind edit icons after loading profile
+            bindEditIcons();
         });
 }
 
-// Helper functions for edit
+// ---------------- Helper functions ----------------
 function createInputField(field, currentValue) {
     const input = document.createElement('input');
     input.type = (field === 'email') ? 'email' : 'text';
@@ -176,11 +179,22 @@ function createEditIcon(field) {
     icon.className = 'edit-icon';
     icon.dataset.field = field;
     icon.innerHTML = '&#9998;';
-    icon.addEventListener('click', () => startEdit(field)); // Ensure new icon is clickable
+    icon.style.cursor = 'pointer';
+    icon.addEventListener('click', () => startEdit(field));
     return icon;
 }
 
-// Start editing profile field
+// Bind click event to all existing edit icons
+function bindEditIcons() {
+    document.querySelectorAll('.edit-icon').forEach(icon => {
+        if (!icon.dataset.bound) {
+            icon.addEventListener('click', () => startEdit(icon.dataset.field));
+            icon.dataset.bound = 'true';
+        }
+    });
+}
+
+// ---------------- Start editing profile field ----------------
 function startEdit(field) {
     const valueSpan = document.getElementById(field + 'Value');
     const currentValue = valueSpan.textContent;
@@ -196,14 +210,14 @@ function startEdit(field) {
     icon.replaceWith(saveBtn);
     parentDiv.appendChild(cancelBtn);
 
-    // Cancel
+    // Cancel button
     cancelBtn.addEventListener('click', () => {
         input.replaceWith(createValueSpan(currentValue, field));
         saveBtn.replaceWith(createEditIcon(field));
         cancelBtn.remove();
     });
 
-    // Save
+    // Save button
     saveBtn.addEventListener('click', () => {
         const newValue = input.value.trim();
         if (!newValue) { alert('Field cannot be empty'); return; }
@@ -213,6 +227,7 @@ function startEdit(field) {
 
         const formData = new FormData();
         formData.append(field, newValue);
+        formData.append('userID', 1); // TEMP: for testing if session not available
 
         fetch('update_profile.php', { method: 'POST', body: formData })
             .then(res => res.json())
@@ -229,7 +244,7 @@ function startEdit(field) {
     });
 }
 
-// Donor Health Report
+// ---------------- Donor Health Report ----------------
 const editHealthBtn = document.getElementById('editHealthBtn');
 const healthFormContainer = document.getElementById('healthFormContainer');
 const healthForm = document.getElementById('healthForm');
@@ -241,9 +256,7 @@ editHealthBtn.addEventListener('click', () => {
 healthForm.addEventListener('submit', (e) => {
     e.preventDefault();
     const formData = new FormData(healthForm);
-
-    // TEMP: add userID for testing if session not available
-    formData.append('userID', 1); // <-- replace 1 with your test userID
+    formData.append('userID', 1); // TEMP for testing
 
     fetch('update_health_report.php', {
         method: 'POST',
@@ -254,15 +267,18 @@ healthForm.addEventListener('submit', (e) => {
         if (data.success) {
             alert('Health report updated successfully!');
             healthFormContainer.style.display = 'none';
-            loadProfile(); // Refresh profile data
+            loadProfile();
         } else {
             alert('Update failed: ' + data.error);
         }
     });
 });
 
-// Initialize
-loadProfile();
+// ---------------- Initialize ----------------
+window.addEventListener('DOMContentLoaded', () => {
+    loadProfile();
+    bindEditIcons(); // Bind initial edit icons
+});
 </script>
 
 </body>
