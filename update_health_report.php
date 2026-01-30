@@ -1,4 +1,5 @@
 <?php
+session_start();
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
 header('Content-Type: application/json');
@@ -16,8 +17,7 @@ if ($conn->connect_error) {
 }
 
 // -------------------
-// Get userID from session (for real scenario)
-session_start();
+// Get userID from session
 $userID = isset($_SESSION['userID']) ? (int)$_SESSION['userID'] : 0;
 if ($userID <= 0) {
     echo json_encode(["success" => false, "error" => "Invalid user session"]);
@@ -25,21 +25,51 @@ if ($userID <= 0) {
 }
 
 // -------------------
+// Check if user is a donor
+$stmt = $conn->prepare("SELECT role FROM user WHERE userID=?");
+$stmt->bind_param("i", $userID);
+$stmt->execute();
+$result = $stmt->get_result();
+if ($result->num_rows === 0) {
+    echo json_encode(["success" => false, "error" => "User not found"]);
+    exit;
+}
+$user = $result->fetch_assoc();
+if ($user['role'] !== 'Donor') {
+    echo json_encode(["success" => false, "error" => "Only donors can update health report"]);
+    exit;
+}
+$stmt->close();
+
+// -------------------
 // Get POST data
-$requiredFields = ['bloodType','age','dateLastDonate','medicalHistory','weight','height'];
-$data = [];
-foreach ($requiredFields as $field) {
-    if (!isset($_POST[$field]) || $_POST[$field] === '') {
-        echo json_encode(["success" => false, "error" => "Missing field: $field"]);
-        exit;
-    }
-    $data[$field] = $_POST[$field];
+$bloodType = $_POST['bloodType'] ?? '';
+$age = $_POST['age'] ?? '';
+$dateLastDonate = $_POST['dateLastDonate'] ?? null;
+$medicalHistory = $_POST['medicalHistory'] ?? '';
+$weight = $_POST['weight'] ?? '';
+$height = $_POST['height'] ?? '';
+
+// -------------------
+// Validation
+$validBloodTypes = ['A','B','AB','O'];
+if (!in_array($bloodType, $validBloodTypes)) {
+    echo json_encode(["success" => false, "error" => "Invalid blood type"]);
+    exit;
 }
 
-// Optional: validate bloodType
-$validBloodTypes = ['A','B','AB','O'];
-if (!in_array($data['bloodType'], $validBloodTypes)) {
-    echo json_encode(["success" => false, "error" => "Invalid blood type"]);
+if (!is_numeric($age) || $age <= 0) {
+    echo json_encode(["success" => false, "error" => "Invalid age"]);
+    exit;
+}
+
+if ($weight !== '' && (!is_numeric($weight) || $weight <= 0)) {
+    echo json_encode(["success" => false, "error" => "Invalid weight"]);
+    exit;
+}
+
+if ($height !== '' && (!is_numeric($height) || $height <= 0)) {
+    echo json_encode(["success" => false, "error" => "Invalid height"]);
     exit;
 }
 
@@ -52,12 +82,12 @@ $stmt = $conn->prepare("
 ");
 $stmt->bind_param(
     "sissddi",
-    $data['bloodType'],
-    $data['age'],
-    $data['dateLastDonate'],
-    $data['medicalHistory'],
-    $data['weight'],
-    $data['height'],
+    $bloodType,
+    $age,
+    $dateLastDonate,
+    $medicalHistory,
+    $weight,
+    $height,
     $userID
 );
 

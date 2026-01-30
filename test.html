@@ -126,7 +126,7 @@ function loadProfile() {
             document.getElementById('phoneNumberValue').textContent = profile.phoneNumber;
             if (profile.image_url) avatarImg.src = profile.image_url + '?t=' + new Date().getTime();
 
-            // Hospital specific
+            // Hospital
             if (profile.role === 'Hospital') {
                 document.getElementById('hospitalField').style.display = 'block';
                 document.getElementById('locationValue').textContent = profile.hospitalInfo?.location || '';
@@ -146,7 +146,7 @@ function loadProfile() {
         });
 }
 
-// Helper functions
+// Helper functions for edit
 function createInputField(field, currentValue) {
     const input = document.createElement('input');
     input.type = (field === 'email') ? 'email' : 'text';
@@ -176,17 +176,18 @@ function createEditIcon(field) {
     icon.className = 'edit-icon';
     icon.dataset.field = field;
     icon.innerHTML = '&#9998;';
+    icon.addEventListener('click', () => startEdit(field)); // Ensure new icon is clickable
     return icon;
 }
 
-// Start editing field
+// Start editing profile field
 function startEdit(field) {
     const valueSpan = document.getElementById(field + 'Value');
     const currentValue = valueSpan.textContent;
     const parentDiv = valueSpan.parentNode;
     const icon = parentDiv.querySelector('.edit-icon');
 
-    // Create input, save, cancel
+    // Create input, save, cancel buttons
     const input = createInputField(field, currentValue);
     const saveBtn = createButton('Save', 'save-btn');
     const cancelBtn = createButton('Cancel', 'cancel-btn');
@@ -195,12 +196,14 @@ function startEdit(field) {
     icon.replaceWith(saveBtn);
     parentDiv.appendChild(cancelBtn);
 
+    // Cancel
     cancelBtn.addEventListener('click', () => {
         input.replaceWith(createValueSpan(currentValue, field));
         saveBtn.replaceWith(createEditIcon(field));
         cancelBtn.remove();
     });
 
+    // Save
     saveBtn.addEventListener('click', () => {
         const newValue = input.value.trim();
         if (!newValue) { alert('Field cannot be empty'); return; }
@@ -226,14 +229,7 @@ function startEdit(field) {
     });
 }
 
-// Event delegation for pencil icons
-document.body.addEventListener('click', function(e) {
-    if (e.target.classList.contains('edit-icon')) {
-        startEdit(e.target.dataset.field);
-    }
-});
-
-// Donor Health Report Form
+// Donor Health Report
 const editHealthBtn = document.getElementById('editHealthBtn');
 const healthFormContainer = document.getElementById('healthFormContainer');
 const healthForm = document.getElementById('healthForm');
@@ -245,6 +241,9 @@ editHealthBtn.addEventListener('click', () => {
 healthForm.addEventListener('submit', (e) => {
     e.preventDefault();
     const formData = new FormData(healthForm);
+
+    // TEMP: add userID for testing if session not available
+    formData.append('userID', 1); // <-- replace 1 with your test userID
 
     fetch('update_health_report.php', {
         method: 'POST',
