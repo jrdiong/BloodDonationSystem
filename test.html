@@ -2,141 +2,85 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Profile Test</title>
+<title>User Profile Test</title>
 <style>
-body {
-    font-family: Arial, sans-serif;
-    margin: 40px;
-}
-.profile-container {
-    width: 320px;
-    border: 1px solid #333;
-    padding: 20px;
-}
-.avatar {
-    width: 130px;
-    height: 130px;
-    border-radius: 50%;
-    object-fit: cover;
-    border: 1px solid #ccc;
-    display: block;
-    margin: 0 auto 10px auto;
-}
-.info {
-    text-align: center;
-    margin-bottom: 8px;
-}
-.extra {
-    margin-top: 15px;
-    padding-top: 10px;
-    border-top: 1px solid #ccc;
-    font-size: 14px;
-}
-form {
-    text-align: center;
-    margin-top: 10px;
-}
+    #avatar {
+        width: 120px;
+        height: 120px;
+        border-radius: 50%;
+        border: 2px solid #ccc;
+        cursor: pointer;
+        object-fit: cover;
+    }
+    .profile-info {
+        margin-top: 10px;
+    }
 </style>
 </head>
 <body>
 
-<h2>Profile Test Page</h2>
+<h2>User Profile Test</h2>
 
-<div class="profile-container">
-    <!-- Avatar -->
-    <img id="avatar" class="avatar" src="default-avatar.png" alt="Avatar">
+<!-- Avatar -->
+<img id="avatar" src="default-avatar.png" alt="Avatar">
+<input type="file" id="avatarInput" style="display:none" accept="image/*">
 
-    <!-- Upload Avatar -->
-    <form id="avatarForm" enctype="multipart/form-data">
-        <input type="file" name="avatar" accept="image/*" required>
-        <br><br>
-        <button type="submit">Upload Avatar</button>
-    </form>
-
-    <hr>
-
-    <!-- Basic Info -->
-    <div class="info"><strong>Email:</strong> <span id="email"></span></div>
-    <div class="info"><strong>Name:</strong> <span id="name"></span></div>
-    <div class="info"><strong>Phone:</strong> <span id="phone"></span></div>
-
-    <!-- Role Specific Info -->
-    <div id="extraInfo" class="extra"></div>
+<!-- User Info -->
+<div class="profile-info">
+    <p><strong>Name:</strong> <span id="name"></span></p>
+    <p><strong>Email:</strong> <span id="email"></span></p>
+    <p><strong>Phone:</strong> <span id="phone"></span></p>
 </div>
 
 <script>
-// ------------------------------
-// Load profile data
-fetch("profile.php")
-    .then(res => res.json())
-    .then(data => {
-        if (!data.success) {
-            alert(data.error);
-            return;
-        }
+const avatarImg = document.getElementById('avatar');
+const avatarInput = document.getElementById('avatarInput');
 
-        const profile = data.profile;
+// 点击头像触发选择文件
+avatarImg.addEventListener('click', () => avatarInput.click());
 
-        // Avatar
-        if (profile.image_url) {
-            document.getElementById("avatar").src = profile.image_url;
-        }
+// 上传头像
+avatarInput.addEventListener('change', () => {
+    const file = avatarInput.files[0];
+    if (!file) return;
 
-        // Basic info
-        document.getElementById("email").innerText = profile.email;
-        document.getElementById("name").innerText = profile.name;
-        document.getElementById("phone").innerText = profile.phoneNumber;
+    const formData = new FormData();
+    formData.append('avatar', file);
 
-        // Role specific
-        const extra = document.getElementById("extraInfo");
-        if (profile.role === "Donor" && profile.donorInfo) {
-            extra.innerHTML = `
-                <strong>Donor Info</strong><br>
-                Blood Type: ${profile.donorInfo.bloodType}<br>
-                Age: ${profile.donorInfo.age}<br>
-                Last Donate: ${profile.donorInfo.dateLastDonate}
-            `;
-        } else if (profile.role === "Hospital" && profile.hospitalInfo) {
-            extra.innerHTML = `
-                <strong>Hospital Info</strong><br>
-                Location: ${profile.hospitalInfo.location}
-            `;
-        } else {
-            extra.innerHTML = `<strong>Role:</strong> ${profile.role}`;
-        }
-    })
-    .catch(err => {
-        console.error(err);
-        alert("Failed to load profile");
-    });
-
-// ------------------------------
-// Upload avatar
-document.getElementById("avatarForm").addEventListener("submit", function(e){
-    e.preventDefault();
-
-    const formData = new FormData(this);
-
-    fetch("upload_avatar.php", {
-        method: "POST",
-        body: formData
-    })
-    .then(res => res.json())
-    .then(data => {
-        if (data.success) {
-            // Force refresh image (avoid cache)
-            document.getElementById("avatar").src =
-                data.image_url + "?t=" + new Date().getTime();
-            alert("Avatar uploaded successfully!");
-        } else {
-            alert(data.error);
-        }
-    })
-    .catch(err => {
-        console.error(err);
-        alert("Avatar upload failed");
-    });
+    fetch('upload_avatar.php', { method: 'POST', body: formData })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                avatarImg.src = data.image_url + '?t=' + new Date().getTime();
+                alert('Avatar updated successfully!');
+            } else {
+                alert('Upload failed: ' + data.error);
+            }
+        })
+        .catch(err => alert('Upload error: ' + err));
 });
+
+// Load profile info
+function loadProfile() {
+    fetch('profile.php')
+        .then(res => res.json())
+        .then(data => {
+            if (!data.success) {
+                alert(data.error);
+                return;
+            }
+            const profile = data.profile;
+            document.getElementById('name').textContent = profile.name;
+            document.getElementById('email').textContent = profile.email;
+            document.getElementById('phone').textContent = profile.phoneNumber;
+            if (profile.image_url) {
+                avatarImg.src = profile.image_url + '?t=' + new Date().getTime();
+            }
+        });
+}
+
+// 初始化
+loadProfile();
 </script>
 
 </body>
