@@ -16,6 +16,7 @@ if ($userID <= 0) {
 // 2. Check if file is uploaded
 if (!isset($_FILES['avatar']) || $_FILES['avatar']['error'] !== UPLOAD_ERR_OK) {
     echo json_encode(["success" => false, "error" => "No file uploaded or upload error"]);
+    var_dump($_FILES);  // Debug the uploaded file array
     exit;
 }
 
@@ -49,7 +50,8 @@ if (!is_dir($targetDir)) {
     mkdir($targetDir, 0755, true);
 }
 
-// Generate a unique filename
+// ---------------------------
+// Check the file extension and allow only specific types
 $ext = strtolower(pathinfo($_FILES["avatar"]["name"], PATHINFO_EXTENSION));
 $validExts = ['jpg', 'jpeg', 'png', 'gif'];  // Allow only these file extensions
 
@@ -58,6 +60,7 @@ if (!in_array($ext, $validExts)) {
     exit;
 }
 
+// Generate a unique filename to avoid overwriting
 $filename = "avatar_user{$userID}_" . time() . "." . $ext;
 $targetFile = $targetDir . $filename;
 
