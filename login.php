@@ -45,7 +45,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST['login'])) {
             $_SESSION['name'] = $row['name'];
             $_SESSION['role'] = $row['role'];
 
-            header("Location: dashboard.php"); 
+            header("Location: test.html"); 
             exit();
         } else {
             echo "<script>
