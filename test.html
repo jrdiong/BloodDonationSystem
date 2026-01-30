@@ -283,6 +283,7 @@ function startEdit(field) {
                     input.replaceWith(createValueSpan(newValue, field));
                     saveBtn.replaceWith(createEditIcon(field));
                     cancelBtn.remove();
+                    alert('Profile updated successfully!');
                 } else alert('Update failed: ' + data.error);
             });
     });
