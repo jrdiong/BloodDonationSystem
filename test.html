@@ -1,58 +1,97 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<title>User Profile Test</title>
-<style>
-body { font-family: Arial, sans-serif; margin: 20px; }
-#avatar {
-    width: 120px;
-    height: 120px;
-    border-radius: 50%;
-    border: 2px solid #ccc;
-    cursor: pointer;
-    object-fit: cover;
-}
-.profile-field { margin-bottom: 15px; }
-.field-label { display: inline-block; width: 120px; font-weight: bold; }
-.field-value { display: inline-block; min-width: 150px; }
-.edit-icon { cursor: pointer; margin-left: 5px; color: #007BFF; }
-.edit-input { padding: 3px; width: 200px; }
-.save-btn, .cancel-btn { margin-left: 5px; padding: 2px 6px; font-size: 12px; }
+    <meta charset="UTF-8">
+    <title>User Profile Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        #avatar {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            border: 2px solid #ccc;
+            cursor: pointer;
+            object-fit: cover;
+        }
+        .profile-field {
+            margin-bottom: 15px;
+        }
+        .field-label {
+            display: inline-block;
+            width: 120px;
+            font-weight: bold;
+        }
+        .field-value {
+            display: inline-block;
+            min-width: 150px;
+        }
+        .edit-icon {
+            cursor: pointer;
+            margin-left: 5px;
+            color: #007BFF;
+        }
+        .edit-input {
+            padding: 3px;
+            width: 200px;
+        }
+        .save-btn, .cancel-btn {
+            margin-left: 5px;
+            padding: 2px 6px;
+            font-size: 12px;
+        }
 
-/* Modal for Health Form */
-#healthModal {
-    display: none;
-    position: fixed;
-    top: 0; left: 0;
-    width: 100%; height: 100%;
-    background: rgba(0,0,0,0.5);
-    justify-content: center;
-    align-items: center;
-}
-#healthModalContent {
-    background: #fff;
-    padding: 20px;
-    border-radius: 5px;
-    width: 400px;
-    max-height: 90%;
-    overflow-y: auto;
-}
-#healthModalContent h3 { margin-top: 0; }
-#healthModalContent label { display: block; margin-bottom: 8px; }
-#healthModalContent input, #healthModalContent select, #healthModalContent textarea {
-    width: 100%; margin-bottom: 10px; padding: 5px;
-}
-#healthModalContent button { padding: 5px 10px; margin-right: 5px; }
-</style>
+        /* Modal for Health Form */
+        #healthModal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            justify-content: center;
+            align-items: center;
+        }
+        #healthModalContent {
+            background: #fff;
+            padding: 20px;
+            border-radius: 5px;
+            width: 400px;
+            max-height: 90%;
+            overflow-y: auto;
+        }
+        #healthModalContent h3 {
+            margin-top: 0;
+        }
+        #healthModalContent label {
+            display: block;
+            margin-bottom: 8px;
+        }
+        #healthModalContent input,
+        #healthModalContent select,
+        #healthModalContent textarea {
+            width: 100%;
+            margin-bottom: 10px;
+            padding: 5px;
+        }
+        #healthModalContent button {
+            padding: 5px 10px;
+            margin-right: 5px;
+        }
+    </style>
 </head>
 <body>
 
 <h2>User Profile</h2>
 
+<!-- Avatar -->
 <img id="avatar" src="default-avatar.png" alt="Avatar">
 <input type="file" id="avatarInput" style="display:none" accept="image/*">
 
+<!-- User Profile Fields -->
 <div class="profile-field">
     <span class="field-label">Name:</span>
     <span class="field-value" id="nameValue"></span>
@@ -80,7 +119,7 @@ body { font-family: Arial, sans-serif; margin: 20px; }
     <button id="editHealthBtn">Edit Health Report</button>
 </div>
 
-<!-- Modal -->
+<!-- Modal for Editing Health Report -->
 <div id="healthModal">
     <div id="healthModalContent">
         <h3>Edit Health Report</h3>
@@ -108,7 +147,11 @@ body { font-family: Arial, sans-serif; margin: 20px; }
 // ---------------- Avatar ----------------
 const avatarImg = document.getElementById('avatar');
 const avatarInput = document.getElementById('avatarInput');
+
+// Avatar image click triggers file input click
 avatarImg.addEventListener('click', () => avatarInput.click());
+
+// Handle file input change event to upload avatar
 avatarInput.addEventListener('change', () => {
     const file = avatarInput.files[0];
     if (!file) return;
@@ -118,42 +161,16 @@ avatarInput.addEventListener('change', () => {
     fetch('upload_avatar.php', { method: 'POST', body: formData })
         .then(res => res.json())
         .then(data => {
-            if (data.success) avatarImg.src = data.image_url + '?t=' + new Date().getTime();
-            else alert('Upload failed: ' + data.error);
+            if (data.success) {
+                avatarImg.src = data.image_url + '?t=' + new Date().getTime();  // Cache busting
+            } else {
+                alert('Upload failed: ' + data.error);
+            }
+        })
+        .catch(error => {
+            console.error('Error uploading avatar:', error);
+            alert('Upload failed: ' + error.message);
         });
-});
-
-
-const avatarimg = document.getElementById('avatar');
-const avatarinput = document.getElementById('avatarInput');
-
-
-avatarImg.addEventListener('click', () => avatarInput.click());
-
-
-avatarInput.addEventListener('change', () => {
-    const file = avatarInput.files[0]; 
-    if (!file) return;  
-    const formData = new FormData();
-    formData.append('avatar', file);
-
-    fetch('upload_avatar.php', { 
-        method: 'POST', 
-        body: formData 
-    })
-    .then(res => res.json())  
-    .then(data => {
-        if (data.success) {
-            const imageUrl = data.image_url;  
-            avatarImg.src = imageUrl + '?t=' + new Date().getTime(); 
-        } else {
-            alert('Upload failed: ' + data.error);
-        }
-    })
-    .catch(error => {
-        console.error('Error uploading avatar:', error);
-        alert('Upload failed: ' + error.message);
-    });
 });
 
 // ---------------- Load Profile ----------------
@@ -161,7 +178,10 @@ function loadProfile() {
     fetch('profile.php')
         .then(res => res.json())
         .then(data => {
-            if (!data.success) { alert(data.error); return; }
+            if (!data.success) {
+                alert(data.error);
+                return;
+            }
             const profile = data.profile;
             document.getElementById('nameValue').textContent = profile.name;
             document.getElementById('emailValue').textContent = profile.email;
@@ -189,38 +209,6 @@ function loadProfile() {
 }
 
 // ---------------- Edit Fields ----------------
-function createInputField(field, currentValue) {
-    const input = document.createElement('input');
-    input.type = (field === 'email') ? 'email' : 'text';
-    input.value = currentValue;
-    input.className = 'edit-input';
-    return input;
-}
-
-function createButton(text, className) {
-    const btn = document.createElement('button');
-    btn.textContent = text;
-    btn.className = className;
-    return btn;
-}
-
-function createValueSpan(value, field) {
-    const span = document.createElement('span');
-    span.className = 'field-value';
-    span.id = field + 'Value';
-    span.textContent = value;
-    return span;
-}
-
-function createEditIcon(field) {
-    const icon = document.createElement('span');
-    icon.className = 'edit-icon';
-    icon.dataset.field = field;
-    icon.innerHTML = '&#9998;';
-    icon.addEventListener('click', () => startEdit(field));
-    return icon;
-}
-
 function bindEditIcons() {
     document.querySelectorAll('.edit-icon').forEach(icon => {
         if (!icon.dataset.bound) {
@@ -230,6 +218,33 @@ function bindEditIcons() {
     });
 }
 
+// Create input field for editing
+function createInputField(field, currentValue) {
+    const input = document.createElement('input');
+    input.type = (field === 'email') ? 'email' : 'text';
+    input.value = currentValue;
+    input.className = 'edit-input';
+    return input;
+}
+
+// Create button for saving or cancelling
+function createButton(text, className) {
+    const btn = document.createElement('button');
+    btn.textContent = text;
+    btn.className = className;
+    return btn;
+}
+
+// Create value span element
+function createValueSpan(value, field) {
+    const span = document.createElement('span');
+    span.className = 'field-value';
+    span.id = field + 'Value';
+    span.textContent = value;
+    return span;
+}
+
+// Start editing the field
 function startEdit(field) {
     const valueSpan = document.getElementById(field + 'Value');
     const currentValue = valueSpan.textContent;

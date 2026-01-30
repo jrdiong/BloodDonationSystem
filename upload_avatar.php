@@ -43,7 +43,7 @@ if ($conn->connect_error) {
 
 // ---------------------------
 // 5. Save uploaded file
-$targetDir = "uploads/";  // Define the uploads folder
+$targetDir = $_SERVER['DOCUMENT_ROOT'] . "/uploads/";  // Absolute path
 
 // Create folder if it does not exist
 if (!is_dir($targetDir)) {
@@ -73,7 +73,7 @@ if (!move_uploaded_file($_FILES["avatar"]["tmp_name"], $targetFile)) {
 
 // ---------------------------
 // 6. Update user table with the relative path to the uploaded image
-$imagePath = "/{$targetFile}";  // relative path for use in the URL
+$imagePath = "/uploads/{$filename}";  // relative path for use in the URL
 $stmt = $conn->prepare("UPDATE user SET image_url = ? WHERE userID = ?");
 $stmt->bind_param("si", $imagePath, $userID);
 $stmt->execute();
