@@ -1,238 +1,178 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Blood Inventory</title>
-  <style>
-    /* ====== 基础样式（你可以换成自己的） ====== */
-    body {
-      font-family: Arial, sans-serif;
-      background: #f5f5f5;
-    }
+<meta charset="UTF-8">
+<title>Blood Inventory</title>
+<style>
+  body { font-family: Arial, sans-serif; padding: 20px; }
+  .blood-grid { display: flex; gap: 15px; flex-wrap: wrap; }
+  .blood-card { padding: 15px; border: 1px solid #ccc; border-radius: 5px; cursor: pointer; width: 150px; }
+  .blood-card h3 { margin: 0 0 10px 0; text-align: center; }
+  .status-bar { margin: 5px 0; padding: 5px; border-radius: 3px; color: #000; text-align:center; font-size:14px; }
 
-    .container {
-      width: 900px;
-      margin: 30px auto;
-      background: #fff;
-      padding: 20px;
-      border-radius: 10px;
-    }
+  .available { background-color: #d4edda; }  /* green */
+  .expired { background-color: #f8d7da; }    /* red */
+  .delivered { background-color: #fff3cd; }  /* yellow */
+  .used { background-color: #cce5ff; }       /* blue */
+  .zero { background-color: #f0f0f0; }       /* gray for 0 qty */
 
-    h1 {
-      color: red;
-    }
-
-    .blood-grid {
-      display: grid;
-      grid-template-columns: 1fr;
-      gap: 15px;
-      margin-top: 20px;
-    }
-
-    .blood-card {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 15px;
-      border-radius: 10px;
-      border: 1px solid #ddd;
-      cursor: pointer;
-      transition: 0.2s;
-    }
-
-    .blood-card:hover {
-      background: #ffe5e5;
-    }
-
-    .blood-type {
-      font-size: 24px;
-      font-weight: bold;
-      width: 60px;
-    }
-
-    .blood-info p {
-      margin: 4px 0;
-    }
-
-    /* ====== Modal ====== */
-    .modal {
-      display: none;
-      position: fixed;
-      inset: 0;
-      background: rgba(0,0,0,0.5);
-    }
-
-    .modal-content {
-      background: #fff;
-      width: 350px;
-      margin: 120px auto;
-      padding: 20px;
-      border-radius: 10px;
-    }
-
-    .modal-content h2 {
-      margin-top: 0;
-    }
-
-    .modal-content label {
-      display: block;
-      margin-top: 10px;
-    }
-
-    .modal-content input {
-      width: 100%;
-      padding: 6px;
-      margin-top: 5px;
-    }
-
-    .modal-actions {
-      margin-top: 15px;
-      text-align: right;
-    }
-
-    .btn {
-      padding: 6px 12px;
-      border: none;
-      border-radius: 6px;
-      cursor: pointer;
-    }
-
-    .btn-save {
-      background: green;
-      color: #fff;
-    }
-
-    .btn-cancel {
-      background: red;
-      color: #fff;
-    }
-  </style>
+  /* Modal */
+  .modal { display: none; position: fixed; z-index: 999; top: 0; left: 0; width: 100%; height: 100%; 
+           background-color: rgba(0,0,0,0.4); }
+  .modal-content { background: #fff; margin: 5% auto; padding: 20px; width: 500px; border-radius: 5px; }
+  .modal-header { font-weight: bold; margin-bottom: 10px; text-align:center; font-size:18px;}
+  .batch-table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+  .batch-table th, .batch-table td { border: 1px solid #ccc; padding: 5px; text-align: center; font-size:14px; }
+  button { padding: 3px 8px; margin: 0 3px; cursor:pointer; }
+</style>
 </head>
-
 <body>
 
-<div class="container">
-  <h1>Blood Inventory</h1>
-
-  <!-- ====== Blood Cards ====== -->
-  <div class="blood-grid">
-
-    <div class="blood-card" data-blood="A">
-      <div class="blood-type">A</div>
-      <div class="blood-info">
-        <p>Available: <span class="available">0</span></p>
-        <p>Expired: <span class="expired">0</span></p>
-        <p>Delivered: <span class="delivered">0</span></p>
-      </div>
-    </div>
-
-    <div class="blood-card" data-blood="B">
-      <div class="blood-type">B</div>
-      <div class="blood-info">
-        <p>Available: <span class="available">0</span></p>
-        <p>Expired: <span class="expired">0</span></p>
-        <p>Delivered: <span class="delivered">0</span></p>
-      </div>
-    </div>
-
-    <div class="blood-card" data-blood="AB">
-      <div class="blood-type">AB</div>
-      <div class="blood-info">
-        <p>Available: <span class="available">0</span></p>
-        <p>Expired: <span class="expired">0</span></p>
-        <p>Delivered: <span class="delivered">0</span></p>
-      </div>
-    </div>
-
-    <div class="blood-card" data-blood="O">
-      <div class="blood-type">O</div>
-      <div class="blood-info">
-        <p>Available: <span class="available">0</span></p>
-        <p>Expired: <span class="expired">0</span></p>
-        <p>Delivered: <span class="delivered">0</span></p>
-      </div>
-    </div>
-
-  </div>
+<h2>Blood Inventory</h2>
+<div class="blood-grid" id="bloodGrid">
 </div>
 
-<!-- ====== Edit Modal ====== -->
+<!-- Modal Edit Form -->
 <div class="modal" id="editModal">
   <div class="modal-content">
-    <h2>Edit Blood Inventory</h2>
+    <div class="modal-header" id="modalHeader"></div>
 
-    <form id="editForm">
-      <input type="hidden" name="blood_type" id="editBloodType">
+    <div style="margin-bottom:10px;">
+      <div style="margin:5px 0;">Available Units: 
+        <button onclick="updateInventory('add_available', 1)">+</button>
+        <button onclick="updateInventory('reduce_available', 1)">-</button>
+      </div>
+      <div style="margin:5px 0;">Delivered Units: 
+        <button onclick="updateInventory('deliver', 1)">+</button>
+        <button onclick="updateInventory('return_delivered', 1)">-</button>
+      </div>
+      <div style="margin:5px 0;">Used Units:
+        <button onclick="updateInventory('use', 1)">+</button>
+      </div>
+    </div>
 
-      <label>Available</label>
-      <input type="number" name="available" id="editAvailable">
+    <hr>
+    <div><strong>Existing (Not Expired) Blood Bags</strong></div>
+    <table class="batch-table" id="batchTable">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Status</th>
+          <th>Collection Time</th>
+          <th>Expiry Date</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
 
-      <label>Expired</label>
-      <input type="number" name="expired" id="editExpired">
-
-      <label>Delivered</label>
-      <input type="number" name="delivered" id="editDelivered">
-    </form>
-
-    <div class="modal-actions">
-      <button class="btn btn-cancel" onclick="closeModal()">Cancel</button>
-      <button class="btn btn-save" onclick="saveInventory()">Save</button>
+    <div style="text-align:center; margin-top:10px;">
+      <button onclick="closeModal()">Close</button>
     </div>
   </div>
 </div>
 
 <script>
-/* ====== Load Summary ====== */
-document.addEventListener("DOMContentLoaded", () => {
+let selectedBloodType = "";
+
+// Load summary
+function loadSummary() {
   fetch("bloodinventory.php")
     .then(res => res.json())
     .then(data => {
-      data.forEach(item => {
-        const card = document.querySelector(
-          `.blood-card[data-blood="${item.blood_type}"]`
-        );
-        if (card) {
-          card.querySelector(".available").textContent = item.available;
-          card.querySelector(".expired").textContent = item.expired;
-          card.querySelector(".delivered").textContent = item.delivered;
-        }
+      const grid = document.getElementById("bloodGrid");
+      grid.innerHTML = "";
+
+      
+      const bloodTypes = ["A","B","AB","O"];
+      const statuses = data.statuses; // ['available','expired','delivered','used']
+
+      bloodTypes.forEach(bloodType => {
+        const card = document.createElement("div");
+        card.className = "blood-card";
+        card.innerHTML = `<h3>${bloodType}</h3>`;
+
+        statuses.forEach(status => {
+          let info = (data.summary[bloodType] && data.summary[bloodType][status]) 
+                     ? data.summary[bloodType][status] 
+                     : {quantity: 0, nearestExpiry: '-'};
+
+          const div = document.createElement("div");
+          div.className = `status-bar ${status}`;
+          if(info.quantity === 0) div.classList.add("zero");
+          div.innerText = `${status}: ${info.quantity} | Nearest Expiry: ${info.nearestExpiry}`;
+          card.appendChild(div);
+        });
+
+        card.onclick = () => openModal(bloodType);
+        grid.appendChild(card);
       });
-    });
-});
+    })
+    .catch(err => console.error("Load summary error:", err));
+}
 
-/* ====== Click Card ====== */
-document.querySelectorAll(".blood-card").forEach(card => {
-  card.addEventListener("click", () => {
-    document.getElementById("editBloodType").value = card.dataset.blood;
-    document.getElementById("editAvailable").value =
-      card.querySelector(".available").textContent;
-    document.getElementById("editExpired").value =
-      card.querySelector(".expired").textContent;
-    document.getElementById("editDelivered").value =
-      card.querySelector(".delivered").textContent;
+// Open modal
+function openModal(bloodType) {
+  selectedBloodType = bloodType;
+  document.getElementById("modalHeader").innerText = `Edit Blood Inventory - ${bloodType}`;
+  document.getElementById("editModal").style.display = "block";
+  loadBatchTable();
+}
 
-    document.getElementById("editModal").style.display = "block";
-  });
-});
-
-/* ====== Modal ====== */
+// Close modal
 function closeModal() {
   document.getElementById("editModal").style.display = "none";
+  selectedBloodType = "";
 }
 
-function saveInventory() {
-  const formData = new FormData(document.getElementById("editForm"));
+// Load batch table
+function loadBatchTable() {
+  fetch(`get_blood_batches.php?bloodType=${selectedBloodType}`)
+    .then(res => res.json())
+    .then(data => {
+      const tbody = document.querySelector("#batchTable tbody");
+      tbody.innerHTML = "";
+      if(data.batches.length === 0){
+        const tr = document.createElement("tr");
+        tr.innerHTML = `<td colspan="4">No blood bags found</td>`;
+        tbody.appendChild(tr);
+        return;
+      }
+      data.batches.forEach((b, idx) => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `<td>${idx+1}</td>
+                        <td>${b.status}</td>
+                        <td>${b.collectionTime}</td>
+                        <td>${b.expiryDate}</td>`;
+        tbody.appendChild(tr);
+      });
+    })
+    .catch(err => console.error("Load batch error:", err));
+}
 
-  fetch("update_inventory.php", {
+// Update inventory
+function updateInventory(action, qty) {
+  fetch("edit_inventory.php", {
     method: "POST",
-    body: formData
+    body: new URLSearchParams({
+      bloodType: selectedBloodType,
+      action: action,
+      quantity: qty
+    })
   })
   .then(res => res.json())
-  .then(() => {
-    closeModal();
-    location.reload();
-  });
+  .then(data => {
+    if (data.status === "success") {
+      loadSummary();
+      loadBatchTable();
+    } else {
+      alert(data.error || "Operation failed");
+    }
+  })
+  .catch(err => console.error("Update inventory error:", err));
 }
+
+// Initial load
+loadSummary();
 </script>
 
 </body>

@@ -1,7 +1,7 @@
 <?php
 session_start();
+error_reporting(E_ALL); ini_set('display_errors',1);
 
-/* ---------- Access Control ---------- */
 if (!isset($_SESSION['userID']) || $_SESSION['role'] !== 'Hospital') {
     http_response_code(401);
     echo json_encode(["error" => "Unauthorized"]);
@@ -9,69 +9,34 @@ if (!isset($_SESSION['userID']) || $_SESSION['role'] !== 'Hospital') {
 }
 
 $userID = $_SESSION['userID'];
+$conn = mysqli_connect("localhost","root","","cbdc_system");
+if (!$conn) die(json_encode(["error"=>"DB connection failed"]));
 
-/* ---------- Database Connection ---------- */
-$conn = mysqli_connect("localhost", "root", "", "cbdc_system");
+// 自动更新过期
+$expireSQL = "UPDATE blood_inventory SET status='expired' WHERE status='available' AND expiryDate < CURDATE() AND userID=?";
+$stmt = mysqli_prepare($conn,$expireSQL);
+mysqli_stmt_bind_param($stmt,"i",$userID);
+mysqli_stmt_execute($stmt);
 
-if (!$conn) {
-    http_response_code(500);
-    echo json_encode(["error" => "Database connection failed"]);
-    exit();
-}
+$statuses = ['available','expired','delivered','used'];
 
-/* ---------- Update expired blood bags ---------- */
-$updateExpiredSQL = "
-    UPDATE blood_inventory
-    SET status = 'expired'
-    WHERE status = 'available'
-      AND expiryDate < CURDATE()
-      AND userID = ?
-";
-
-$stmtUpdate = mysqli_prepare($conn, $updateExpiredSQL);
-mysqli_stmt_bind_param($stmtUpdate, "i", $userID);
-mysqli_stmt_execute($stmtUpdate);
-
-/* ---------- Fetch inventory summary ---------- */
-$sql = "
-    SELECT 
-        bloodType,
-        status,
-        COUNT(*) AS quantity
-    FROM blood_inventory
-    WHERE userID = ?
-    GROUP BY bloodType, status
-";
-
-$stmt = mysqli_prepare($conn, $sql);
-mysqli_stmt_bind_param($stmt, "i", $userID);
+// Fetch inventory summary
+$sql = "SELECT bloodType,status,COUNT(*) AS quantity, MIN(expiryDate) AS nearestExpiry 
+        FROM blood_inventory WHERE userID=? GROUP BY bloodType,status";
+$stmt = mysqli_prepare($conn,$sql);
+mysqli_stmt_bind_param($stmt,"i",$userID);
 mysqli_stmt_execute($stmt);
 $result = mysqli_stmt_get_result($stmt);
 
-/* ---------- Prepare default structure ---------- */
-$bloodTypes = ['A', 'B', 'AB', 'O'];
-$summary = [];
-
-foreach ($bloodTypes as $type) {
-    $summary[$type] = [
-        "blood_type" => $type,
-        "available" => 0,
-        "expired" => 0,
-        "delivered" => 0
+$inventory = [];
+while ($row = mysqli_fetch_assoc($result)) {
+    $inventory[$row['bloodType']][$row['status']] = [
+        "quantity"=>$row['quantity'],
+        "nearestExpiry"=>$row['nearestExpiry']
     ];
 }
 
-/* ---------- Fill data from DB ---------- */
-while ($row = mysqli_fetch_assoc($result)) {
-    $bloodType = $row['bloodType'];
-    $status = $row['status'];
-    $qty = (int)$row['quantity'];
-
-    if (isset($summary[$bloodType][$status])) {
-        $summary[$bloodType][$status] = $qty;
-    }
-}
-
-/* ---------- Output JSON ---------- */
-header("Content-Type: application/json");
-echo json_encode(array_values($summary));
+echo json_encode([
+    "statuses"=>$statuses,
+    "summary"=>$inventory
+]);
