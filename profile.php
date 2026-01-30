@@ -3,6 +3,8 @@ error_reporting(E_ALL);
 ini_set('display_errors', 1);
 header('Content-Type: application/json');
 
+session_start();  // 记得加这行
+
 // -------------------------------
 // Database connection
 $servername = "localhost";
@@ -16,9 +18,8 @@ if ($conn->connect_error) {
 }
 
 // -------------------------------
-// Temporary: get userID from GET
-// Later replace with $_SESSION['userID']
-$userID = isset($_GET['userID']) ? (int)$_GET['userID'] : 0;
+// Get userID from session
+$userID = $_SESSION['userID'] ?? 0;
 
 if ($userID <= 0) {
     echo json_encode(["success" => false, "error" => "Invalid userID"]);
