@@ -13,22 +13,14 @@ body { font-family: Arial, sans-serif; margin: 20px; }
     cursor: pointer;
     object-fit: cover;
 }
-.profile-field {
-    margin-bottom: 15px;
-}
+.profile-field { margin-bottom: 15px; }
 .field-label { display: inline-block; width: 80px; font-weight: bold; }
 .field-value { display: inline-block; min-width: 150px; }
-.edit-icon {
-    cursor: pointer;
-    margin-left: 5px;
-    color: #007BFF;
-}
+.edit-icon { cursor: pointer; margin-left: 5px; color: #007BFF; }
 .edit-input { padding: 3px; width: 200px; }
-.save-btn, .cancel-btn {
-    margin-left: 5px;
-    padding: 2px 6px;
-    font-size: 12px;
-}
+.save-btn, .cancel-btn { margin-left: 5px; padding: 2px 6px; font-size: 12px; }
+#healthReportSection { margin-top: 20px; display: none; }
+#medicalHistory { width: 100%; max-width: 400px; }
 </style>
 </head>
 <body>
@@ -64,11 +56,18 @@ body { font-family: Arial, sans-serif; margin: 20px; }
     <span class="edit-icon" data-field="location">&#9998;</span>
 </div>
 
+<!-- Donor Health Report -->
+<div id="healthReportSection">
+    <h3>Upload Health Report</h3>
+    <textarea id="medicalHistory" rows="6" placeholder="Describe your health..."></textarea>
+    <button id="uploadHealthReport">Upload</button>
+</div>
+
 <script>
 const avatarImg = document.getElementById('avatar');
 const avatarInput = document.getElementById('avatarInput');
 
-// Click avatar to choose file
+// Avatar upload
 avatarImg.addEventListener('click', () => avatarInput.click());
 avatarInput.addEventListener('change', () => {
     const file = avatarInput.files[0];
@@ -89,12 +88,14 @@ avatarInput.addEventListener('change', () => {
 });
 
 // Load profile
+let profile = {};
 function loadProfile() {
     fetch('profile.php')
         .then(res => res.json())
         .then(data => {
             if (!data.success) { alert(data.error); return; }
-            const profile = data.profile;
+            profile = data.profile;
+
             document.getElementById('nameValue').textContent = profile.name;
             document.getElementById('emailValue').textContent = profile.email;
             document.getElementById('phoneNumberValue').textContent = profile.phoneNumber;
@@ -104,10 +105,16 @@ function loadProfile() {
                 document.getElementById('hospitalField').style.display = 'block';
                 document.getElementById('locationValue').textContent = profile.hospitalInfo?.location || '';
             }
+
+            // Show Health Report section only for Donor
+            if (profile.role === 'Donor') {
+                document.getElementById('healthReportSection').style.display = 'block';
+                document.getElementById('medicalHistory').value = profile.donorInfo?.medicalHistory || '';
+            }
         });
 }
 
-// Helper functions
+// Helper functions for editing fields
 function createInputField(field, currentValue) {
     const input = document.createElement('input');
     input.type = (field === 'email') ? 'email' : 'text';
@@ -141,31 +148,27 @@ function createEditIcon(field) {
     return icon;
 }
 
-// Start editing field
+// Start editing
 function startEdit(field) {
     const valueSpan = document.getElementById(field + 'Value');
     const currentValue = valueSpan.textContent;
     const parentDiv = valueSpan.parentNode;
     const icon = parentDiv.querySelector('.edit-icon');
 
-    // Create input, save, cancel
     const input = createInputField(field, currentValue);
     const saveBtn = createButton('Save', 'save-btn');
     const cancelBtn = createButton('Cancel', 'cancel-btn');
 
-    // Replace span and icon
     valueSpan.replaceWith(input);
     icon.replaceWith(saveBtn);
     parentDiv.appendChild(cancelBtn);
 
-    // Cancel click
     cancelBtn.addEventListener('click', () => {
         input.replaceWith(createValueSpan(currentValue, field));
         saveBtn.replaceWith(createEditIcon(field));
         cancelBtn.remove();
     });
 
-    // Save click
     saveBtn.addEventListener('click', () => {
         const newValue = input.value.trim();
         if (!newValue) { alert('Field cannot be empty'); return; }
@@ -191,10 +194,24 @@ function startEdit(field) {
     });
 }
 
+// Upload Health Report
+document.getElementById('uploadHealthReport').addEventListener('click', () => {
+    const medicalHistory = document.getElementById('medicalHistory').value.trim();
+    if (!medicalHistory) { alert('Health report cannot be empty'); return; }
+
+    const formData = new FormData();
+    formData.append('medicalHistory', medicalHistory);
+
+    fetch('update_profile.php', { method: 'POST', body: formData })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) alert('Health report uploaded successfully!');
+            else alert('Upload failed: ' + data.error);
+        });
+});
+
 // Initialize
 loadProfile();
-
-// Attach pencil icons
 document.querySelectorAll('.edit-icon').forEach(icon => {
     icon.addEventListener('click', () => startEdit(icon.dataset.field));
 });
