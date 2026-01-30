@@ -27,7 +27,7 @@ if ($userID <= 0) {
 
 // -------------------
 // Check if user is a donor
-$stmt = $conn->prepare("SELECT role FROM users WHERE userID=?");
+$stmt = $conn->prepare("SELECT role FROM user WHERE userID=?");
 $stmt->bind_param("i", $userID);
 $stmt->execute();
 $result = $stmt->get_result();
