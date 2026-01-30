@@ -4,10 +4,7 @@
     <meta charset="UTF-8">
     <title>Blood Inventory Test</title>
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 20px;
-        }
+        body { font-family: Arial, sans-serif; margin: 20px; }
         .blood-type-box {
             border: 1px solid #333;
             padding: 15px;
@@ -16,9 +13,7 @@
             width: 200px;
             vertical-align: top;
         }
-        .status {
-            margin: 5px 0;
-        }
+        .status { margin: 5px 0; }
     </style>
 </head>
 <body>
@@ -26,31 +21,35 @@
     <div id="inventory-container"></div>
 
     <script>
-        // Function to fetch inventory data
         async function fetchInventory() {
             try {
-                const response = await fetch('bloodinventory.php'); 
+                const response = await fetch('bloodinventory.php');
                 const data = await response.json();
 
                 const container = document.getElementById('inventory-container');
                 container.innerHTML = ''; 
-                for (const bloodType in data) {
+
+                const bloodTypes = ['A', 'B', 'AB', 'O'];
+                const statuses = ['available', 'expired', 'used', 'delivered'];
+
+                bloodTypes.forEach(type => {
                     const box = document.createElement('div');
                     box.className = 'blood-type-box';
 
                     const title = document.createElement('h2');
-                    title.textContent = 'Blood Type: ' + bloodType;
+                    title.textContent = 'Blood Type: ' + type;
                     box.appendChild(title);
 
-                    for (const status in data[bloodType]) {
+                    statuses.forEach(status => {
                         const statusDiv = document.createElement('div');
                         statusDiv.className = 'status';
-                        statusDiv.textContent = status.charAt(0).toUpperCase() + status.slice(1) + ': ' + data[bloodType][status];
+                        const count = data[type] && data[type][status] ? data[type][status] : 0;
+                        statusDiv.textContent = status.charAt(0).toUpperCase() + status.slice(1) + ': ' + count;
                         box.appendChild(statusDiv);
-                    }
+                    });
 
                     container.appendChild(box);
-                }
+                });
 
             } catch (error) {
                 console.error('Error fetching inventory:', error);
@@ -58,11 +57,8 @@
             }
         }
 
-        // Initial fetch
         fetchInventory();
-
-        // Optional: auto-refresh every 10 seconds
-        setInterval(fetchInventory, 10000);
+        setInterval(fetchInventory, 10000); 
     </script>
 </body>
 </html>
