@@ -64,7 +64,7 @@ if (!move_uploaded_file($_FILES["avatar"]["tmp_name"], $targetFile)) {
 // ---------------------------
 // 6. Update user table with relative path
 $imagePath = "/{$targetFile}";  // return relative path to the root
-$stmt = $conn->prepare("UPDATE users SET image_url = ? WHERE userID = ?");
+$stmt = $conn->prepare("UPDATE user SET image_url = ? WHERE userID = ?");
 $stmt->bind_param("si", $imagePath, $userID);
 $stmt->execute();
 $stmt->close();
