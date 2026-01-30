@@ -3,7 +3,7 @@ error_reporting(E_ALL);
 ini_set('display_errors', 1);
 header('Content-Type: application/json');
 
-session_start();  // 记得加这行
+session_start();
 
 // -------------------------------
 // Database connection
@@ -20,7 +20,6 @@ if ($conn->connect_error) {
 // -------------------------------
 // Get userID from session
 $userID = $_SESSION['userID'] ?? 0;
-
 if ($userID <= 0) {
     echo json_encode(["success" => false, "error" => "Invalid userID"]);
     exit;
@@ -30,7 +29,7 @@ if ($userID <= 0) {
 // Step 1: Get basic user info
 $stmt = $conn->prepare("
     SELECT userID, name, email, phoneNumber, image_url, role
-    FROM user
+    FROM users
     WHERE userID = ?
 ");
 $stmt->bind_param("i", $userID);
@@ -49,9 +48,10 @@ $stmt->close();
 // Step 2: Role-specific data
 $role = $profile['role'];
 
+// Donor info
 if ($role === 'Donor') {
     $stmt = $conn->prepare("
-        SELECT bloodType, age, dateLastDonate
+        SELECT bloodType, age, dateLastDonate, medicalHistory, weight, height
         FROM donor
         WHERE userID = ?
     ");
@@ -61,11 +61,18 @@ if ($role === 'Donor') {
 
     $profile['donorInfo'] = $donorResult->num_rows > 0
         ? $donorResult->fetch_assoc()
-        : null;
-
+        : [
+            'bloodType' => '',
+            'age' => '',
+            'dateLastDonate' => '',
+            'medicalHistory' => '',
+            'weight' => '',
+            'height' => ''
+        ];
     $stmt->close();
 }
 
+// Hospital info
 if ($role === 'Hospital') {
     $stmt = $conn->prepare("
         SELECT location
@@ -78,17 +85,13 @@ if ($role === 'Hospital') {
 
     $profile['hospitalInfo'] = $hospitalResult->num_rows > 0
         ? $hospitalResult->fetch_assoc()
-        : null;
-
+        : ['location' => ''];
     $stmt->close();
 }
 
-// Admin / Event Organize → no extra table yet
-
-$conn->close();
-
 // -------------------------------
-// Step 3: Return profile JSON
+// Return JSON
+$conn->close();
 echo json_encode([
     "success" => true,
     "profile" => $profile

@@ -26,7 +26,7 @@ if ($userID <= 0) {
 
 // -------------------
 // Check if user is a donor
-$stmt = $conn->prepare("SELECT role FROM user WHERE userID=?");
+$stmt = $conn->prepare("SELECT role FROM users WHERE userID=?");
 $stmt->bind_param("i", $userID);
 $stmt->execute();
 $result = $stmt->get_result();
@@ -42,13 +42,13 @@ if ($user['role'] !== 'Donor') {
 $stmt->close();
 
 // -------------------
-// Get POST data
-$bloodType = $_POST['bloodType'] ?? '';
-$age = $_POST['age'] ?? '';
-$dateLastDonate = $_POST['dateLastDonate'] ?? null;
-$medicalHistory = $_POST['medicalHistory'] ?? '';
-$weight = $_POST['weight'] ?? '';
-$height = $_POST['height'] ?? '';
+// Get POST data safely
+$bloodType = trim($_POST['bloodType'] ?? '');
+$age = trim($_POST['age'] ?? '');
+$dateLastDonate = trim($_POST['dateLastDonate'] ?? null);
+$medicalHistory = trim($_POST['medicalHistory'] ?? '');
+$weight = trim($_POST['weight'] ?? '');
+$height = trim($_POST['height'] ?? '');
 
 // -------------------
 // Validation
@@ -73,6 +73,11 @@ if ($height !== '' && (!is_numeric($height) || $height <= 0)) {
     exit;
 }
 
+// Normalize empty fields
+$weight = $weight === '' ? null : floatval($weight);
+$height = $height === '' ? null : floatval($height);
+$dateLastDonate = $dateLastDonate === '' ? null : $dateLastDonate;
+
 // -------------------
 // Update donor table
 $stmt = $conn->prepare("
@@ -80,6 +85,7 @@ $stmt = $conn->prepare("
     SET bloodType=?, age=?, dateLastDonate=?, medicalHistory=?, weight=?, height=?
     WHERE userID=?
 ");
+
 $stmt->bind_param(
     "sissddi",
     $bloodType,

@@ -13,53 +13,61 @@ body { font-family: Arial, sans-serif; margin: 20px; }
     cursor: pointer;
     object-fit: cover;
 }
-.profile-field {
-    margin-bottom: 15px;
-}
+.profile-field { margin-bottom: 15px; }
 .field-label { display: inline-block; width: 120px; font-weight: bold; }
 .field-value { display: inline-block; min-width: 150px; }
-.edit-icon {
-    cursor: pointer;
-    margin-left: 5px;
-    color: #007BFF;
-}
+.edit-icon { cursor: pointer; margin-left: 5px; color: #007BFF; }
 .edit-input { padding: 3px; width: 200px; }
-.save-btn, .cancel-btn {
-    margin-left: 5px;
-    padding: 2px 6px;
-    font-size: 12px;
+.save-btn, .cancel-btn { margin-left: 5px; padding: 2px 6px; font-size: 12px; }
+
+/* Modal for Health Form */
+#healthModal {
+    display: none;
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background: rgba(0,0,0,0.5);
+    justify-content: center;
+    align-items: center;
 }
-#healthFormContainer { margin-top: 10px; }
-#healthForm label { display: block; margin-bottom: 8px; }
+#healthModalContent {
+    background: #fff;
+    padding: 20px;
+    border-radius: 5px;
+    width: 400px;
+    max-height: 90%;
+    overflow-y: auto;
+}
+#healthModalContent h3 { margin-top: 0; }
+#healthModalContent label { display: block; margin-bottom: 8px; }
+#healthModalContent input, #healthModalContent select, #healthModalContent textarea {
+    width: 100%; margin-bottom: 10px; padding: 5px;
+}
+#healthModalContent button { padding: 5px 10px; margin-right: 5px; }
 </style>
 </head>
 <body>
 
 <h2>User Profile</h2>
 
-<!-- Avatar -->
 <img id="avatar" src="default-avatar.png" alt="Avatar">
 <input type="file" id="avatarInput" style="display:none" accept="image/*">
 
-<!-- Profile Fields -->
 <div class="profile-field">
     <span class="field-label">Name:</span>
     <span class="field-value" id="nameValue"></span>
     <span class="edit-icon" data-field="name">&#9998;</span>
 </div>
-
 <div class="profile-field">
     <span class="field-label">Email:</span>
     <span class="field-value" id="emailValue"></span>
     <span class="edit-icon" data-field="email">&#9998;</span>
 </div>
-
 <div class="profile-field">
     <span class="field-label">Phone:</span>
     <span class="field-value" id="phoneNumberValue"></span>
     <span class="edit-icon" data-field="phoneNumber">&#9998;</span>
 </div>
-
 <div class="profile-field" id="hospitalField" style="display:none;">
     <span class="field-label">Location:</span>
     <span class="field-value" id="locationValue"></span>
@@ -68,9 +76,14 @@ body { font-family: Arial, sans-serif; margin: 20px; }
 
 <!-- Donor Health Report Section -->
 <div id="healthRptSection" style="display:none; margin-top:20px;">
-    <h3>Update Health Report</h3>
+    <h3>Health Report</h3>
     <button id="editHealthBtn">Edit Health Report</button>
-    <div id="healthFormContainer" style="display:none;">
+</div>
+
+<!-- Modal -->
+<div id="healthModal">
+    <div id="healthModalContent">
+        <h3>Edit Health Report</h3>
         <form id="healthForm">
             <label>Blood Type:
                 <select name="bloodType" required>
@@ -85,16 +98,16 @@ body { font-family: Arial, sans-serif; margin: 20px; }
             <label>Medical History: <textarea name="medicalHistory" required></textarea></label>
             <label>Weight (kg): <input type="number" step="0.01" name="weight" required></label>
             <label>Height (cm): <input type="number" step="0.01" name="height" required></label>
-            <button type="submit">Save Health Report</button>
+            <button type="submit">Save</button>
+            <button type="button" id="cancelHealthBtn">Cancel</button>
         </form>
     </div>
 </div>
 
 <script>
+// ---------------- Avatar ----------------
 const avatarImg = document.getElementById('avatar');
 const avatarInput = document.getElementById('avatarInput');
-
-// Click avatar to choose file
 avatarImg.addEventListener('click', () => avatarInput.click());
 avatarInput.addEventListener('change', () => {
     const file = avatarInput.files[0];
@@ -105,16 +118,12 @@ avatarInput.addEventListener('change', () => {
     fetch('upload_avatar.php', { method: 'POST', body: formData })
         .then(res => res.json())
         .then(data => {
-            if (data.success) {
-                avatarImg.src = data.image_url + '?t=' + new Date().getTime();
-                alert('Avatar updated successfully!');
-            } else {
-                alert('Upload failed: ' + data.error);
-            }
+            if (data.success) avatarImg.src = data.image_url + '?t=' + new Date().getTime();
+            else alert('Upload failed: ' + data.error);
         });
 });
 
-// Load profile data
+// ---------------- Load Profile ----------------
 function loadProfile() {
     fetch('profile.php')
         .then(res => res.json())
@@ -126,13 +135,11 @@ function loadProfile() {
             document.getElementById('phoneNumberValue').textContent = profile.phoneNumber;
             if (profile.image_url) avatarImg.src = profile.image_url + '?t=' + new Date().getTime();
 
-            // Hospital info
             if (profile.role === 'Hospital') {
                 document.getElementById('hospitalField').style.display = 'block';
                 document.getElementById('locationValue').textContent = profile.hospitalInfo?.location || '';
             }
 
-            // Donor health report
             if (profile.role === 'Donor') {
                 document.getElementById('healthRptSection').style.display = 'block';
                 const form = document.getElementById('healthForm');
@@ -144,18 +151,16 @@ function loadProfile() {
                 form.height.value = profile.donorInfo?.height || '';
             }
 
-            // Bind edit icons after loading profile
             bindEditIcons();
         });
 }
 
-// ---------------- Helper functions ----------------
+// ---------------- Edit Fields ----------------
 function createInputField(field, currentValue) {
     const input = document.createElement('input');
     input.type = (field === 'email') ? 'email' : 'text';
     input.value = currentValue;
     input.className = 'edit-input';
-    input.id = field + 'Input';
     return input;
 }
 
@@ -179,12 +184,10 @@ function createEditIcon(field) {
     icon.className = 'edit-icon';
     icon.dataset.field = field;
     icon.innerHTML = '&#9998;';
-    icon.style.cursor = 'pointer';
     icon.addEventListener('click', () => startEdit(field));
     return icon;
 }
 
-// Bind click event to all existing edit icons
 function bindEditIcons() {
     document.querySelectorAll('.edit-icon').forEach(icon => {
         if (!icon.dataset.bound) {
@@ -194,14 +197,12 @@ function bindEditIcons() {
     });
 }
 
-// ---------------- Start editing profile field ----------------
 function startEdit(field) {
     const valueSpan = document.getElementById(field + 'Value');
     const currentValue = valueSpan.textContent;
     const parentDiv = valueSpan.parentNode;
     const icon = parentDiv.querySelector('.edit-icon');
 
-    // Create input, save, cancel buttons
     const input = createInputField(field, currentValue);
     const saveBtn = createButton('Save', 'save-btn');
     const cancelBtn = createButton('Cancel', 'cancel-btn');
@@ -210,14 +211,12 @@ function startEdit(field) {
     icon.replaceWith(saveBtn);
     parentDiv.appendChild(cancelBtn);
 
-    // Cancel button
     cancelBtn.addEventListener('click', () => {
         input.replaceWith(createValueSpan(currentValue, field));
         saveBtn.replaceWith(createEditIcon(field));
         cancelBtn.remove();
     });
 
-    // Save button
     saveBtn.addEventListener('click', () => {
         const newValue = input.value.trim();
         if (!newValue) { alert('Field cannot be empty'); return; }
@@ -227,58 +226,47 @@ function startEdit(field) {
 
         const formData = new FormData();
         formData.append(field, newValue);
-        formData.append('userID', 1); // TEMP: for testing if session not available
+        formData.append('userID', 1); // TEMP
 
         fetch('update_profile.php', { method: 'POST', body: formData })
             .then(res => res.json())
             .then(data => {
                 if (data.success) {
-                    alert('Field updated successfully!');
                     input.replaceWith(createValueSpan(newValue, field));
                     saveBtn.replaceWith(createEditIcon(field));
                     cancelBtn.remove();
-                } else {
-                    alert('Update failed: ' + data.error);
-                }
+                } else alert('Update failed: ' + data.error);
             });
     });
 }
 
-// ---------------- Donor Health Report ----------------
+// ---------------- Donor Health Modal ----------------
 const editHealthBtn = document.getElementById('editHealthBtn');
-const healthFormContainer = document.getElementById('healthFormContainer');
+const healthModal = document.getElementById('healthModal');
 const healthForm = document.getElementById('healthForm');
+const cancelHealthBtn = document.getElementById('cancelHealthBtn');
 
-editHealthBtn.addEventListener('click', () => {
-    healthFormContainer.style.display = healthFormContainer.style.display === 'none' ? 'block' : 'none';
-});
+editHealthBtn.addEventListener('click', () => healthModal.style.display = 'flex');
+cancelHealthBtn.addEventListener('click', () => healthModal.style.display = 'none');
 
 healthForm.addEventListener('submit', (e) => {
     e.preventDefault();
     const formData = new FormData(healthForm);
-    formData.append('userID', 1); // TEMP for testing
+    formData.append('userID', 1); // TEMP
 
-    fetch('update_health_report.php', {
-        method: 'POST',
-        body: formData
-    })
-    .then(res => res.json())
-    .then(data => {
-        if (data.success) {
-            alert('Health report updated successfully!');
-            healthFormContainer.style.display = 'none';
-            loadProfile();
-        } else {
-            alert('Update failed: ' + data.error);
-        }
-    });
+    fetch('update_health_report.php', { method: 'POST', body: formData })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                alert('Health report updated successfully!');
+                healthModal.style.display = 'none';
+                loadProfile();
+            } else alert('Update failed: ' + data.error);
+        });
 });
 
 // ---------------- Initialize ----------------
-window.addEventListener('DOMContentLoaded', () => {
-    loadProfile();
-    bindEditIcons(); // Bind initial edit icons
-});
+window.addEventListener('DOMContentLoaded', () => loadProfile());
 </script>
 
 </body>
