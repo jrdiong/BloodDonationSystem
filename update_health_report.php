@@ -54,10 +54,6 @@ $weight = isset($_POST['weight']) ? trim($_POST['weight']) : '';
 $height = isset($_POST['height']) ? trim($_POST['height']) : '';
 
 // -------------------
-// Debugging: Check the input values
-var_dump($bloodType, $age, $dateLastDonate, $medicalHistory, $weight, $height); // Check the data coming from the frontend
-
-// -------------------
 // Validation
 $validBloodTypes = ['A', 'B', 'AB', 'O'];
 if (!in_array($bloodType, $validBloodTypes)) {
@@ -111,7 +107,7 @@ $stmt->bind_param(
 
 // Execute the query and check for success
 if ($stmt->execute()) {
-    echo json_encode(["success" => true]);
+    echo json_encode(["success" => true, "message" => "Donor information updated successfully."]);
 } else {
     echo json_encode(["success" => false, "error" => $stmt->error]);
 }
