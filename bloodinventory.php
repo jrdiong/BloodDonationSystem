@@ -3,7 +3,8 @@ session_start();
 
 /* ---------- Access Control ---------- */
 if (!isset($_SESSION['userID']) || $_SESSION['role'] !== 'Hospital') {
-    header("Location: login.html");
+    http_response_code(401);
+    echo json_encode(["error" => "Unauthorized"]);
     exit();
 }
 
@@ -13,49 +14,30 @@ $userID = $_SESSION['userID'];
 $conn = mysqli_connect("localhost", "root", "", "cbdc_system");
 
 if (!$conn) {
-    die("Database connection failed: " . mysqli_connect_error());
+    http_response_code(500);
+    echo json_encode(["error" => "Database connection failed"]);
+    exit();
 }
 
 /* ---------- Update expired blood bags ---------- */
 $updateExpiredSQL = "
     UPDATE blood_inventory
     SET status = 'expired'
-    WHERE status = 'available' AND expiryDate < CURDATE()
+    WHERE status = 'available'
+      AND expiryDate < CURDATE()
+      AND userID = ?
 ";
-mysqli_query($conn, $updateExpiredSQL);
 
-/* ---------- Fetch distinct statuses from DB ---------- */
-$statusQuery = "SELECT DISTINCT status FROM blood_inventory";
-$statusResult = mysqli_query($conn, $statusQuery);
-$statuses = [];
-$statusColors = []; // optional: can map colors dynamically or from DB if needed
+$stmtUpdate = mysqli_prepare($conn, $updateExpiredSQL);
+mysqli_stmt_bind_param($stmtUpdate, "i", $userID);
+mysqli_stmt_execute($stmtUpdate);
 
-while ($row = mysqli_fetch_assoc($statusResult)) {
-    $statuses[] = $row['status'];
-    
-    // Optional: dynamic color mapping if you want
-    switch ($row['status']) {
-        case 'available':
-            $statusColors[$row['status']] = '#d4edda'; // green
-            break;
-        case 'expired':
-            $statusColors[$row['status']] = '#f8d7da'; // red
-            break;
-        case 'delivered':
-            $statusColors[$row['status']] = '#fff3cd'; // yellow
-            break;
-        default:
-            $statusColors[$row['status']] = '#e2e3e5'; // gray for unknown status
-    }
-}
-
-/* ---------- Fetch Inventory (COUNT per blood type & status) ---------- */
+/* ---------- Fetch inventory summary ---------- */
 $sql = "
     SELECT 
         bloodType,
         status,
-        COUNT(*) AS quantity,
-        MIN(expiryDate) AS nearestExpiry
+        COUNT(*) AS quantity
     FROM blood_inventory
     WHERE userID = ?
     GROUP BY bloodType, status
@@ -66,31 +48,30 @@ mysqli_stmt_bind_param($stmt, "i", $userID);
 mysqli_stmt_execute($stmt);
 $result = mysqli_stmt_get_result($stmt);
 
-/* ---------- Organize results for display ---------- */
-$inventory = [];
-while ($row = mysqli_fetch_assoc($result)) {
-    $inventory[$row['bloodType']][$row['status']] = [
-        'quantity' => $row['quantity'],
-        'nearestExpiry' => $row['nearestExpiry']
+/* ---------- Prepare default structure ---------- */
+$bloodTypes = ['A', 'B', 'AB', 'O'];
+$summary = [];
+
+foreach ($bloodTypes as $type) {
+    $summary[$type] = [
+        "blood_type" => $type,
+        "available" => 0,
+        "expired" => 0,
+        "delivered" => 0
     ];
 }
 
-/* Example display */
-foreach ($inventory as $bloodType => $statusesData) {
-    echo "<h3>Blood Type: $bloodType</h3>";
-    foreach ($statuses as $status) {
-        if (isset($statusesData[$status])) {
-            $qty = $statusesData[$status]['quantity'];
-            $expiry = $statusesData[$status]['nearestExpiry'];
-            $color = $statusColors[$status] ?? '#fff';
-            echo "<div style='background-color:$color; padding:5px; margin:3px;'>
-                    Status: $status | Quantity: $qty | Nearest Expiry: $expiry
-                  </div>";
-        } else {
-            echo "<div style='background-color:#f0f0f0; padding:5px; margin:3px;'>
-                    Status: $status | Quantity: 0
-                  </div>";
-        }
+/* ---------- Fill data from DB ---------- */
+while ($row = mysqli_fetch_assoc($result)) {
+    $bloodType = $row['bloodType'];
+    $status = $row['status'];
+    $qty = (int)$row['quantity'];
+
+    if (isset($summary[$bloodType][$status])) {
+        $summary[$bloodType][$status] = $qty;
     }
 }
-?>
+
+/* ---------- Output JSON ---------- */
+header("Content-Type: application/json");
+echo json_encode(array_values($summary));
