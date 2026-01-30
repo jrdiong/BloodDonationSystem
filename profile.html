@@ -284,6 +284,7 @@ function startEdit(field) {
                     saveBtn.replaceWith(createEditIcon(field));
                     cancelBtn.remove();
                     alert('Profile updated successfully!');
+                    loadProfile();  // Manually reload profile after successful update
                 } else alert('Update failed: ' + data.error);
             });
     });
@@ -309,7 +310,7 @@ healthForm.addEventListener('submit', (e) => {
             if (data.success) {
                 alert('Health report updated successfully!');
                 healthModal.style.display = 'none';
-                loadProfile();
+                loadProfile();  // Refresh profile after update
             } else alert('Update failed: ' + data.error);
         });
 });
