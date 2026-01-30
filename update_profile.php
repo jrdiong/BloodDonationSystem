@@ -16,103 +16,66 @@ if ($conn->connect_error) {
 }
 
 // -------------------------------
-// Get userID from session (temporary via GET for testing)
-$userID = isset($_GET['userID']) ? (int)$_GET['userID'] : 0;
+// Get userID
+// TODO: Replace with $_SESSION['userID'] after login system
+$userID = isset($_POST['userID']) ? (int)$_POST['userID'] : 0;
+
 if ($userID <= 0) {
     echo json_encode(["success" => false, "error" => "Invalid userID"]);
     exit;
 }
 
 // -------------------------------
-// Fetch user role
-$stmt = $conn->prepare("SELECT role FROM user WHERE userID = ?");
-$stmt->bind_param("i", $userID);
-$stmt->execute();
-$result = $stmt->get_result();
-if ($result->num_rows === 0) {
-    echo json_encode(["success" => false, "error" => "User not found"]);
+// Get POST data
+$bloodType = $_POST['bloodType'] ?? '';
+$age = $_POST['age'] ?? '';
+$dateLastDonate = $_POST['dateLastDonate'] ?? '';
+$medicalHistory = $_POST['medicalHistory'] ?? '';
+$weight = $_POST['weight'] ?? '';
+$height = $_POST['height'] ?? '';
+
+// Validation
+if (!$bloodType || !$age || !$dateLastDonate || !$medicalHistory || !$weight || !$height) {
+    echo json_encode(["success" => false, "error" => "Missing required fields"]);
     exit;
 }
-$user = $result->fetch_assoc();
-$role = $user['role'];
+
+// Optional: further validation
+if (!in_array($bloodType, ['A','B','AB','O'])) {
+    echo json_encode(["success" => false, "error" => "Invalid blood type"]);
+    exit;
+}
+
+// -------------------------------
+// Update donor table
+$stmt = $conn->prepare("
+    UPDATE donor SET
+        bloodType = ?,
+        age = ?,
+        dateLastDonate = ?,
+        medicalHistory = ?,
+        weight = ?,
+        height = ?
+    WHERE userID = ?
+");
+
+$stmt->bind_param(
+    "sissddi", 
+    $bloodType, 
+    $age, 
+    $dateLastDonate, 
+    $medicalHistory, 
+    $weight, 
+    $height, 
+    $userID
+);
+
+if ($stmt->execute()) {
+    echo json_encode(["success" => true]);
+} else {
+    echo json_encode(["success" => false, "error" => $stmt->error]);
+}
+
 $stmt->close();
-
-// -------------------------------
-// Fields to update
-$allowedUserFields = ['name', 'email', 'phoneNumber', 'location'];
-$allowedDonorFields = ['medicalHistory'];
-
-$updateUserFields = [];
-$updateUserValues = [];
-$updateUserTypes = '';
-
-foreach ($allowedUserFields as $field) {
-    if (isset($_POST[$field])) {
-        $value = trim($_POST[$field]);
-        if ($field !== 'location' && $value === '') {
-            echo json_encode(["success" => false, "error" => "Field '$field' cannot be empty"]);
-            exit;
-        }
-        if ($field === 'email' && !filter_var($value, FILTER_VALIDATE_EMAIL)) {
-            echo json_encode(["success" => false, "error" => "Invalid email format"]);
-            exit;
-        }
-        $updateUserFields[] = "$field = ?";
-        $updateUserValues[] = $value;
-        $updateUserTypes .= 's';
-    }
-}
-
-// -------------------------------
-// Update user table
-if (!empty($updateUserFields)) {
-    $sql = "UPDATE user SET " . implode(',', $updateUserFields) . " WHERE userID = ?";
-    $stmt = $conn->prepare($sql);
-    $updateUserTypes .= 'i';
-    $updateUserValues[] = $userID;
-    $stmt->bind_param($updateUserTypes, ...$updateUserValues);
-    if (!$stmt->execute()) {
-        echo json_encode(["success" => false, "error" => "Failed to update user: " . $stmt->error]);
-        exit;
-    }
-    $stmt->close();
-}
-
-// -------------------------------
-// Update donor table (only for Donor role)
-if ($role === 'Donor') {
-    $updateDonorFields = [];
-    $updateDonorValues = [];
-    $updateDonorTypes = '';
-
-    foreach ($allowedDonorFields as $field) {
-        if (isset($_POST[$field])) {
-            $value = trim($_POST[$field]);
-            if ($value === '') {
-                echo json_encode(["success" => false, "error" => "Field '$field' cannot be empty"]);
-                exit;
-            }
-            $updateDonorFields[] = "$field = ?";
-            $updateDonorValues[] = $value;
-            $updateDonorTypes .= 's';
-        }
-    }
-
-    if (!empty($updateDonorFields)) {
-        $sql = "UPDATE donor SET " . implode(',', $updateDonorFields) . " WHERE userID = ?";
-        $stmt = $conn->prepare($sql);
-        $updateDonorTypes .= 'i';
-        $updateDonorValues[] = $userID;
-        $stmt->bind_param($updateDonorTypes, ...$updateDonorValues);
-        if (!$stmt->execute()) {
-            echo json_encode(["success" => false, "error" => "Failed to update donor: " . $stmt->error]);
-            exit;
-        }
-        $stmt->close();
-    }
-}
-
 $conn->close();
-
-echo json_encode(["success" => true]);
 ?>
