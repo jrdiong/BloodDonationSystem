@@ -11,7 +11,6 @@ $username = "root";
 $password = "";
 $dbname = "cbdc_system";
 
-// 使用持久连接
 $conn = new mysqli("p:localhost", $username, $password, $dbname);
 if ($conn->connect_error) {
     die(json_encode(["success" => false, "error" => "Database connection failed"]));
@@ -44,16 +43,16 @@ $stmt->close();
 
 // -------------------
 // Get POST data safely
-$bloodType = trim($_POST['bloodType'] ?? '');
-$age = trim($_POST['age'] ?? '');
-$dateLastDonate = trim($_POST['dateLastDonate'] ?? null);
-$medicalHistory = trim($_POST['medicalHistory'] ?? '');
-$weight = trim($_POST['weight'] ?? '');
-$height = trim($_POST['height'] ?? '');
+$bloodType = isset($_POST['bloodType']) ? trim($_POST['bloodType']) : '';
+$age = isset($_POST['age']) ? trim($_POST['age']) : '';
+$dateLastDonate = isset($_POST['dateLastDonate']) ? trim($_POST['dateLastDonate']) : null;
+$medicalHistory = isset($_POST['medicalHistory']) ? trim($_POST['medicalHistory']) : '';
+$weight = isset($_POST['weight']) ? trim($_POST['weight']) : '';
+$height = isset($_POST['height']) ? trim($_POST['height']) : '';
 
 // -------------------
 // Validation
-$validBloodTypes = ['A','B','AB','O'];
+$validBloodTypes = ['A', 'B', 'AB', 'O'];
 if (!in_array($bloodType, $validBloodTypes)) {
     echo json_encode(["success" => false, "error" => "Invalid blood type"]);
     exit;
@@ -88,7 +87,7 @@ $stmt = $conn->prepare("
 ");
 
 $stmt->bind_param(
-    "sissddi",
+    "sissddi",  
     $bloodType,
     $age,
     $dateLastDonate,
