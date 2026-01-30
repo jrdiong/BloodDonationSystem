@@ -1,178 +1,80 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<title>Blood Inventory</title>
+<meta charset="UTF-8" />
+<title>Blood Inventory API Test</title>
 <style>
-  body { font-family: Arial, sans-serif; padding: 20px; }
-  .blood-grid { display: flex; gap: 15px; flex-wrap: wrap; }
-  .blood-card { padding: 15px; border: 1px solid #ccc; border-radius: 5px; cursor: pointer; width: 150px; }
-  .blood-card h3 { margin: 0 0 10px 0; text-align: center; }
-  .status-bar { margin: 5px 0; padding: 5px; border-radius: 3px; color: #000; text-align:center; font-size:14px; }
-
-  .available { background-color: #d4edda; }  /* green */
-  .expired { background-color: #f8d7da; }    /* red */
-  .delivered { background-color: #fff3cd; }  /* yellow */
-  .used { background-color: #cce5ff; }       /* blue */
-  .zero { background-color: #f0f0f0; }       /* gray for 0 qty */
-
-  /* Modal */
-  .modal { display: none; position: fixed; z-index: 999; top: 0; left: 0; width: 100%; height: 100%; 
-           background-color: rgba(0,0,0,0.4); }
-  .modal-content { background: #fff; margin: 5% auto; padding: 20px; width: 500px; border-radius: 5px; }
-  .modal-header { font-weight: bold; margin-bottom: 10px; text-align:center; font-size:18px;}
-  .batch-table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-  .batch-table th, .batch-table td { border: 1px solid #ccc; padding: 5px; text-align: center; font-size:14px; }
-  button { padding: 3px 8px; margin: 0 3px; cursor:pointer; }
+  body { font-family: Arial; padding: 20px; }
+  label, select, button { font-size: 16px; margin: 5px 0; }
+  pre { background: #f4f4f4; padding: 10px; border: 1px solid #ddd; max-height: 300px; overflow: auto; }
 </style>
 </head>
 <body>
 
-<h2>Blood Inventory</h2>
-<div class="blood-grid" id="bloodGrid">
+<h2>Blood Inventory API Test</h2>
+
+<label for="bloodType">Select Blood Type:</label>
+<select id="bloodType">
+  <option value="A">A</option>
+  <option value="B">B</option>
+  <option value="AB">AB</option>
+  <option value="O">O</option>
+</select>
+
+<div style="margin-top:15px;">
+  <button id="btnGetInventory">Get Inventory Summary</button>
+  <button id="btnGetBatches">Get Batches</button>
+  <button id="btnEditInventory">Test Edit Inventory (Add 1 Available Unit)</button>
 </div>
 
-<!-- Modal Edit Form -->
-<div class="modal" id="editModal">
-  <div class="modal-content">
-    <div class="modal-header" id="modalHeader"></div>
-
-    <div style="margin-bottom:10px;">
-      <div style="margin:5px 0;">Available Units: 
-        <button onclick="updateInventory('add_available', 1)">+</button>
-        <button onclick="updateInventory('reduce_available', 1)">-</button>
-      </div>
-      <div style="margin:5px 0;">Delivered Units: 
-        <button onclick="updateInventory('deliver', 1)">+</button>
-        <button onclick="updateInventory('return_delivered', 1)">-</button>
-      </div>
-      <div style="margin:5px 0;">Used Units:
-        <button onclick="updateInventory('use', 1)">+</button>
-      </div>
-    </div>
-
-    <hr>
-    <div><strong>Existing (Not Expired) Blood Bags</strong></div>
-    <table class="batch-table" id="batchTable">
-      <thead>
-        <tr>
-          <th>#</th>
-          <th>Status</th>
-          <th>Collection Time</th>
-          <th>Expiry Date</th>
-        </tr>
-      </thead>
-      <tbody></tbody>
-    </table>
-
-    <div style="text-align:center; margin-top:10px;">
-      <button onclick="closeModal()">Close</button>
-    </div>
-  </div>
-</div>
+<h3>API Response:</h3>
+<pre id="responseArea">No data yet.</pre>
 
 <script>
-let selectedBloodType = "";
+const bloodTypeSelect = document.getElementById('bloodType');
+const responseArea = document.getElementById('responseArea');
 
-// Load summary
-function loadSummary() {
-  fetch("bloodinventory.php")
-    .then(res => res.json())
-    .then(data => {
-      const grid = document.getElementById("bloodGrid");
-      grid.innerHTML = "";
+document.getElementById('btnGetInventory').addEventListener('click', () => {
+  fetch('bloodinventory.php', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({ action: 'get_summary' })
+  })
+  .then(res => res.json())
+  .then(data => {
+    responseArea.textContent = JSON.stringify(data, null, 2);
+  })
+  .catch(e => responseArea.textContent = 'Error: ' + e.message);
+});
 
-      
-      const bloodTypes = ["A","B","AB","O"];
-      const statuses = data.statuses; // ['available','expired','delivered','used']
+document.getElementById('btnGetBatches').addEventListener('click', () => {
+  const bt = bloodTypeSelect.value;
+  fetch('get_batches.php?bloodType=' + encodeURIComponent(bt))
+  .then(res => res.json())
+  .then(data => {
+    responseArea.textContent = JSON.stringify(data, null, 2);
+  })
+  .catch(e => responseArea.textContent = 'Error: ' + e.message);
+});
 
-      bloodTypes.forEach(bloodType => {
-        const card = document.createElement("div");
-        card.className = "blood-card";
-        card.innerHTML = `<h3>${bloodType}</h3>`;
-
-        statuses.forEach(status => {
-          let info = (data.summary[bloodType] && data.summary[bloodType][status]) 
-                     ? data.summary[bloodType][status] 
-                     : {quantity: 0, nearestExpiry: '-'};
-
-          const div = document.createElement("div");
-          div.className = `status-bar ${status}`;
-          if(info.quantity === 0) div.classList.add("zero");
-          div.innerText = `${status}: ${info.quantity} | Nearest Expiry: ${info.nearestExpiry}`;
-          card.appendChild(div);
-        });
-
-        card.onclick = () => openModal(bloodType);
-        grid.appendChild(card);
-      });
-    })
-    .catch(err => console.error("Load summary error:", err));
-}
-
-// Open modal
-function openModal(bloodType) {
-  selectedBloodType = bloodType;
-  document.getElementById("modalHeader").innerText = `Edit Blood Inventory - ${bloodType}`;
-  document.getElementById("editModal").style.display = "block";
-  loadBatchTable();
-}
-
-// Close modal
-function closeModal() {
-  document.getElementById("editModal").style.display = "none";
-  selectedBloodType = "";
-}
-
-// Load batch table
-function loadBatchTable() {
-  fetch(`get_blood_batches.php?bloodType=${selectedBloodType}`)
-    .then(res => res.json())
-    .then(data => {
-      const tbody = document.querySelector("#batchTable tbody");
-      tbody.innerHTML = "";
-      if(data.batches.length === 0){
-        const tr = document.createElement("tr");
-        tr.innerHTML = `<td colspan="4">No blood bags found</td>`;
-        tbody.appendChild(tr);
-        return;
-      }
-      data.batches.forEach((b, idx) => {
-        const tr = document.createElement("tr");
-        tr.innerHTML = `<td>${idx+1}</td>
-                        <td>${b.status}</td>
-                        <td>${b.collectionTime}</td>
-                        <td>${b.expiryDate}</td>`;
-        tbody.appendChild(tr);
-      });
-    })
-    .catch(err => console.error("Load batch error:", err));
-}
-
-// Update inventory
-function updateInventory(action, qty) {
-  fetch("edit_inventory.php", {
-    method: "POST",
-    body: new URLSearchParams({
-      bloodType: selectedBloodType,
-      action: action,
-      quantity: qty
+document.getElementById('btnEditInventory').addEventListener('click', () => {
+  const bt = bloodTypeSelect.value;
+  // 测试往available增加1单位，具体根据你接口设计调整
+  fetch('edit_bloodinventory.php', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({
+      bloodType: bt,
+      action: 'add_available',
+      units: 1
     })
   })
   .then(res => res.json())
   .then(data => {
-    if (data.status === "success") {
-      loadSummary();
-      loadBatchTable();
-    } else {
-      alert(data.error || "Operation failed");
-    }
+    responseArea.textContent = JSON.stringify(data, null, 2);
   })
-  .catch(err => console.error("Update inventory error:", err));
-}
-
-// Initial load
-loadSummary();
+  .catch(e => responseArea.textContent = 'Error: ' + e.message);
+});
 </script>
 
 </body>
