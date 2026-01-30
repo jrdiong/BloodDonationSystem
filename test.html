@@ -38,6 +38,11 @@
     background:rgba(0,0,0,0.5);
     z-index:900;
 }
+
+label {
+    display:inline-block;
+    width:100px;
+}
 </style>
 </head>
 <body>
@@ -46,7 +51,7 @@
 <div id="inventoryContainer"></div>
 
 <!-- Overlay for modal -->
-<div id="overlay"></div>
+<div id="overlay" onclick="closeForm()"></div>
 
 <!-- Edit Form Modal -->
 <div id="editForm">
@@ -60,12 +65,14 @@
 
 <script>
 let currentBloodType = "";
+let inventoryData = {}; // store latest inventory
 
 // Fetch inventory from bloodinventory.php
 function fetchInventory(){
     fetch("bloodinventory.php")
         .then(res=>res.json())
         .then(data=>{
+            inventoryData = data; // store latest
             const container = document.getElementById("inventoryContainer");
             container.innerHTML="";
             for(const type in data){
@@ -101,10 +108,22 @@ function closeForm(){
 
 // Submit edit form via AJAX
 function submitEdit(){
-    const availableVal = parseInt(document.getElementById("available").value);
-    const usedVal = parseInt(document.getElementById("used").value);
-    const deliveredVal = parseInt(document.getElementById("delivered").value);
+    const availableVal = parseInt(document.getElementById("available").value) || 0;
+    const usedVal = parseInt(document.getElementById("used").value) || 0;
+    const deliveredVal = parseInt(document.getElementById("delivered").value) || 0;
 
+    const currentAvailable = inventoryData[currentBloodType].available;
+
+    // Check if Used + Delivered exceeds Available
+    let totalDecrease = usedVal>0 ? usedVal : 0;
+    totalDecrease += deliveredVal>0 ? deliveredVal : 0;
+
+    if(totalDecrease > currentAvailable){
+        alert("Error: Cannot increase Used or Delivered more than Available!");
+        return; // prevent submit
+    }
+
+    // Prepare form data
     const data = new FormData();
     data.append("bloodType", currentBloodType);
     data.append("addAvailable", availableVal>0?availableVal:0);
@@ -113,6 +132,7 @@ function submitEdit(){
     data.append("addDelivered", deliveredVal>0?deliveredVal:0);
     data.append("removeDelivered", deliveredVal<0?-deliveredVal:0);
 
+    // Submit via AJAX
     fetch("edit_inventory.php", {method:"POST", body:data})
         .then(res=>res.json())
         .then(resp=>{
