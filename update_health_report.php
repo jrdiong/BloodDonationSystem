@@ -11,7 +11,8 @@ $username = "root";
 $password = "";
 $dbname = "cbdc_system";
 
-$conn = new mysqli($servername, $username, $password, $dbname);
+// 使用持久连接
+$conn = new mysqli("p:localhost", $username, $password, $dbname);
 if ($conn->connect_error) {
     die(json_encode(["success" => false, "error" => "Database connection failed"]));
 }
