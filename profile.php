@@ -44,6 +44,11 @@ if ($result->num_rows === 0) {
 $profile = $result->fetch_assoc();
 $stmt->close();
 
+// Ensure the profile has all necessary fields
+if (!$profile['image_url']) {
+    $profile['image_url'] = '/path/to/default/avatar.jpg';  // 设置默认头像路径
+}
+
 // -------------------------------
 // Step 2: Role-specific data
 $role = $profile['role'];

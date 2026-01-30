@@ -20,7 +20,15 @@ if (!isset($_FILES['avatar']) || $_FILES['avatar']['error'] !== UPLOAD_ERR_OK) {
 }
 
 // ---------------------------
-// 3. Database connection
+// 3. Check file type (only allow images)
+$fileInfo = getimagesize($_FILES['avatar']['tmp_name']);
+if ($fileInfo === false) {
+    echo json_encode(["success" => false, "error" => "Uploaded file is not an image"]);
+    exit;
+}
+
+// ---------------------------
+// 4. Database connection
 $servername = "localhost";
 $username = "root";
 $password = "";
@@ -33,7 +41,7 @@ if ($conn->connect_error) {
 }
 
 // ---------------------------
-// 4. Save uploaded file
+// 5. Save uploaded file
 $targetDir = "uploads/";
 
 // create folder if not exists
@@ -46,6 +54,7 @@ $ext = pathinfo($_FILES["avatar"]["name"], PATHINFO_EXTENSION);
 $filename = "avatar_user{$userID}_" . time() . "." . $ext;
 $targetFile = $targetDir . $filename;
 
+// move the uploaded file to target directory
 if (!move_uploaded_file($_FILES["avatar"]["tmp_name"], $targetFile)) {
     echo json_encode(["success" => false, "error" => "Failed to save uploaded file"]);
     $conn->close();
@@ -53,15 +62,17 @@ if (!move_uploaded_file($_FILES["avatar"]["tmp_name"], $targetFile)) {
 }
 
 // ---------------------------
-// 5. Update user table with relative path
-$stmt = $conn->prepare("UPDATE user SET image_url = ? WHERE userID = ?");
-$stmt->bind_param("si", $targetFile, $userID);
+// 6. Update user table with relative path
+$imagePath = "/{$targetFile}";  // return relative path to the root
+$stmt = $conn->prepare("UPDATE users SET image_url = ? WHERE userID = ?");
+$stmt->bind_param("si", $imagePath, $userID);
 $stmt->execute();
 $stmt->close();
 
+// Close database connection
 $conn->close();
 
 // ---------------------------
-// 6. Return success with new image URL
-echo json_encode(["success" => true, "image_url" => $targetFile]);
+// 7. Return success with new image URL
+echo json_encode(["success" => true, "image_url" => $imagePath]);
 ?>
