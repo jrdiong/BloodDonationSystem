@@ -1,81 +1,726 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<title>Blood Inventory API Test</title>
-<style>
-  body { font-family: Arial; padding: 20px; }
-  label, select, button { font-size: 16px; margin: 5px 0; }
-  pre { background: #f4f4f4; padding: 10px; border: 1px solid #ddd; max-height: 300px; overflow: auto; }
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Blood Inventory Management System</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: #f5f7fa;
+            color: #333;
+            line-height: 1.6;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid #e1e5eb;
+        }
+
+        h1 {
+            color: #c62828;
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            color: #666;
+            font-size: 1.1rem;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .main-content {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 30px;
+            margin-bottom: 40px;
+        }
+
+        .inventory-section {
+            flex: 1;
+            min-width: 300px;
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
+            padding: 25px;
+        }
+
+        .edit-form-section {
+            flex: 1;
+            min-width: 300px;
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
+            padding: 25px;
+        }
+
+        .section-title {
+            font-size: 1.5rem;
+            color: #2c3e50;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #f0f0f0;
+        }
+
+        .blood-type-group {
+            margin-bottom: 25px;
+        }
+
+        .blood-type-title {
+            font-size: 1.3rem;
+            color: #c62828;
+            margin-bottom: 15px;
+            font-weight: 600;
+        }
+
+        .blood-box-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .blood-box {
+            width: 70px;
+            height: 70px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            user-select: none;
+        }
+
+        .blood-box:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 5px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .blood-box.selected {
+            background-color: #c62828;
+            color: white;
+            border-color: #c62828;
+        }
+
+        .blood-box.A { color: #e74c3c; }
+        .blood-box.B { color: #3498db; }
+        .blood-box.AB { color: #9b59b6; }
+        .blood-box.O { color: #2ecc71; }
+
+        .status-indicator {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 25px;
+            padding-top: 15px;
+            border-top: 1px solid #eee;
+        }
+
+        .status-item {
+            text-align: center;
+        }
+
+        .status-color {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 8px;
+        }
+
+        .status-available .status-color { background-color: #2ecc71; }
+        .status-expired .status-color { background-color: #f39c12; }
+        .status-used .status-color { background-color: #3498db; }
+        .status-delivered .status-color { background-color: #9b59b6; }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+
+        select, input {
+            width: 100%;
+            padding: 12px 15px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 1rem;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 15px;
+            margin-top: 25px;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            flex: 1;
+        }
+
+        .btn-add {
+            background-color: #2ecc71;
+            color: white;
+        }
+
+        .btn-add:hover {
+            background-color: #27ae60;
+        }
+
+        .btn-remove {
+            background-color: #e74c3c;
+            color: white;
+        }
+
+        .btn-remove:hover {
+            background-color: #c0392b;
+        }
+
+        .btn-edit {
+            background-color: #3498db;
+            color: white;
+        }
+
+        .btn-edit:hover {
+            background-color: #2980b9;
+        }
+
+        .btn:disabled {
+            background-color: #bdc3c7;
+            cursor: not-allowed;
+        }
+
+        .status-explanation {
+            background-color: #f8f9fa;
+            border-radius: 8px;
+            padding: 20px;
+            margin-top: 30px;
+            border-left: 4px solid #c62828;
+        }
+
+        .status-explanation h3 {
+            color: #2c3e50;
+            margin-bottom: 15px;
+        }
+
+        .status-explanation ul {
+            padding-left: 20px;
+        }
+
+        .status-explanation li {
+            margin-bottom: 10px;
+        }
+
+        .inventory-info {
+            background-color: #e8f4fc;
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 20px;
+            font-size: 0.9rem;
+        }
+
+        .selected-blood-info {
+            background-color: #fff8e1;
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 15px;
+            display: none;
+        }
+
+        .selected-blood-info.active {
+            display: block;
+        }
+
+        @media (max-width: 768px) {
+            .main-content {
+                flex-direction: column;
+            }
+            
+            .action-buttons {
+                flex-direction: column;
+            }
+        }
+    </style>
 </head>
 <body>
+    <div class="container">
+        <header>
+            <h1>Blood Inventory Management</h1>
+            <p class="subtitle">Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.</p>
+        </header>
 
-<h2>Blood Inventory API Test</h2>
+        <div class="main-content">
+            <section class="inventory-section">
+                <h2 class="section-title">Blood Inventory</h2>
+                
+                <div class="blood-type-group">
+                    <h3 class="blood-type-title">A</h3>
+                    <div class="blood-box-container" id="blood-type-A">
+                        <!-- Blood boxes will be generated by JavaScript -->
+                    </div>
+                </div>
+                
+                <div class="blood-type-group">
+                    <h3 class="blood-type-title">B</h3>
+                    <div class="blood-box-container" id="blood-type-B">
+                        <!-- Blood boxes will be generated by JavaScript -->
+                    </div>
+                </div>
+                
+                <div class="blood-type-group">
+                    <h3 class="blood-type-title">AB</h3>
+                    <div class="blood-box-container" id="blood-type-AB">
+                        <!-- Blood boxes will be generated by JavaScript -->
+                    </div>
+                </div>
+                
+                <div class="blood-type-group">
+                    <h3 class="blood-type-title">O</h3>
+                    <div class="blood-box-container" id="blood-type-O">
+                        <!-- Blood boxes will be generated by JavaScript -->
+                    </div>
+                </div>
+                
+                <div class="status-indicator">
+                    <div class="status-item status-available">
+                        <span class="status-color"></span>
+                        <span>Available</span>
+                    </div>
+                    <div class="status-item status-expired">
+                        <span class="status-color"></span>
+                        <span>Expired</span>
+                    </div>
+                    <div class="status-item status-used">
+                        <span class="status-color"></span>
+                        <span>Used</span>
+                    </div>
+                    <div class="status-item status-delivered">
+                        <span class="status-color"></span>
+                        <span>Delivered</span>
+                    </div>
+                </div>
+                
+                <div class="selected-blood-info" id="selected-blood-info">
+                    <strong>Selected Blood Type:</strong> <span id="selected-type">None</span><br>
+                    <strong>Status:</strong> <span id="selected-status">None</span><br>
+                    <strong>Collection Time:</strong> <span id="selected-collection">None</span><br>
+                    <strong>Expiry Date:</strong> <span id="selected-expiry">None</span>
+                </div>
+            </section>
+            
+            <section class="edit-form-section">
+                <h2 class="section-title">Edit Inventory</h2>
+                
+                <div class="form-group">
+                    <label for="bloodType">Blood Type</label>
+                    <select id="bloodType">
+                        <option value="A">A</option>
+                        <option value="B">B</option>
+                        <option value="AB">AB</option>
+                        <option value="O">O</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="status">Status</label>
+                    <select id="status">
+                        <option value="1">Available</option>
+                        <option value="2">Expired</option>
+                        <option value="3">Used</option>
+                        <option value="4">Delivered</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="quantity">Quantity</label>
+                    <input type="number" id="quantity" min="1" max="20" value="1">
+                </div>
+                
+                <div class="action-buttons">
+                    <button class="btn btn-add" id="addBtn">
+                        <i class="fas fa-plus"></i> Add
+                    </button>
+                    <button class="btn btn-remove" id="removeBtn">
+                        <i class="fas fa-minus"></i> Remove
+                    </button>
+                </div>
+                
+                <div class="inventory-info">
+                    <p><strong>Note:</strong> "Remove" for Available status will delete the blood bag closest to expiry date. Deleted items are not shown in the frontend.</p>
+                    <p><strong>Current Inventory Count:</strong> <span id="total-count">0</span> bags</p>
+                </div>
+            </section>
+        </div>
+        
+        <div class="status-explanation">
+            <h3>Status Logic Explanation</h3>
+            <ul>
+                <li><strong>Available (1):</strong> Can add or remove. When adding, collection time is set to current timestamp. When removing, the bag closest to expiry is marked as deleted (not shown in frontend).</li>
+                <li><strong>Expired (2):</strong> Can add or remove. Expired bags are shown in inventory but cannot be used.</li>
+                <li><strong>Used (3):</strong> Can only add (irreversible). When adding used bags, available count decreases accordingly.</li>
+                <li><strong>Delivered (4):</strong> Can add or remove. When adding delivered bags, available count decreases. When removing delivered bags, available count increases.</li>
+                <li><strong>Deleted (0):</strong> Not shown in frontend. This is a system status only.</li>
+            </ul>
+        </div>
+    </div>
 
-<label for="bloodType">Select Blood Type:</label>
-<select id="bloodType">
-  <option value="A">A</option>
-  <option value="B">B</option>
-  <option value="AB">AB</option>
-  <option value="O">O</option>
-</select>
-
-<div style="margin-top:15px;">
-  <button id="btnGetInventory">Get Inventory Summary</button>
-  <button id="btnGetBatches">Get Batches</button>
-  <button id="btnEditInventory">Test Edit Inventory (Add 1 Available Unit)</button>
-</div>
-
-<h3>API Response:</h3>
-<pre id="responseArea">No data yet.</pre>
-
-<script>
-const bloodTypeSelect = document.getElementById('bloodType');
-const responseArea = document.getElementById('responseArea');
-
-document.getElementById('btnGetInventory').addEventListener('click', () => {
-  fetch('bloodinventory.php', {
-    method: 'POST',
-    headers: {'Content-Type': 'application/json'},
-    body: JSON.stringify({ action: 'get_summary' })
-  })
-  .then(res => res.json())
-  .then(data => {
-    responseArea.textContent = JSON.stringify(data, null, 2);
-  })
-  .catch(e => responseArea.textContent = 'Error: ' + e.message);
-});
-
-document.getElementById('btnGetBatches').addEventListener('click', () => {
-  const bt = bloodTypeSelect.value;
-  fetch('get_batches.php?bloodType=' + encodeURIComponent(bt))
-  .then(res => res.json())
-  .then(data => {
-    responseArea.textContent = JSON.stringify(data, null, 2);
-  })
-  .catch(e => responseArea.textContent = 'Error: ' + e.message);
-});
-
-document.getElementById('btnEditInventory').addEventListener('click', () => {
-  const bt = bloodTypeSelect.value;
-  // 测试往available增加1单位，具体根据你接口设计调整
-  fetch('edit_bloodinventory.php', {
-    method: 'POST',
-    headers: {'Content-Type': 'application/json'},
-    body: JSON.stringify({
-      bloodType: bt,
-      action: 'add_available',
-      units: 1
-    })
-  })
-  .then(res => res.json())
-  .then(data => {
-    responseArea.textContent = JSON.stringify(data, null, 2);
-  })
-  .catch(e => responseArea.textContent = 'Error: ' + e.message);
-});
-</script>
-
+    <script>
+        // Blood Inventory Management System
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initialize inventory data structure
+            let inventory = {
+                'A': [],
+                'B': [],
+                'AB': [],
+                'O': []
+            };
+            
+            // Status mapping: 0=deleted, 1=available, 2=expired, 3=used, 4=delivered
+            const statusMap = {
+                0: {name: 'Deleted', color: '#95a5a6', display: false},
+                1: {name: 'Available', color: '#2ecc71', display: true},
+                2: {name: 'Expired', color: '#f39c12', display: true},
+                3: {name: 'Used', color: '#3498db', display: true},
+                4: {name: 'Delivered', color: '#9b59b6', display: true}
+            };
+            
+            // Generate initial blood boxes (10 for each type with various statuses)
+            function initializeInventory() {
+                const bloodTypes = ['A', 'B', 'AB', 'O'];
+                let inventoryID = 1;
+                
+                bloodTypes.forEach(type => {
+                    // Create 10 blood bags for each type with random statuses (excluding deleted)
+                    for (let i = 0; i < 10; i++) {
+                        // Random status between 1-4 (excluding deleted)
+                        let status = Math.floor(Math.random() * 4) + 1;
+                        
+                        // Generate random dates
+                        let collectionDate = new Date();
+                        collectionDate.setDate(collectionDate.getDate() - Math.floor(Math.random() * 30));
+                        
+                        let expiryDate = new Date(collectionDate);
+                        expiryDate.setDate(expiryDate.getDate() + 42); // Blood expires after 42 days
+                        
+                        // Randomly set some as expired
+                        if (Math.random() > 0.7) {
+                            expiryDate.setDate(expiryDate.getDate() - 50);
+                            status = 2; // Expired
+                        }
+                        
+                        inventory[type].push({
+                            inventoryID: inventoryID++,
+                            userID: Math.floor(Math.random() * 100) + 1,
+                            bloodType: type,
+                            collectionTime: collectionDate,
+                            expiryDate: expiryDate,
+                            status: status
+                        });
+                    }
+                    
+                    // Sort by expiry date (closest to expiry first)
+                    inventory[type].sort((a, b) => new Date(a.expiryDate) - new Date(b.expiryDate));
+                });
+                
+                updateInventoryDisplay();
+            }
+            
+            // Create blood box elements
+            function createBloodBox(bloodBag) {
+                const box = document.createElement('div');
+                box.className = `blood-box ${bloodBag.bloodType}`;
+                box.dataset.id = bloodBag.inventoryID;
+                box.dataset.type = bloodBag.bloodType;
+                box.dataset.status = bloodBag.status;
+                box.textContent = bloodBag.bloodType;
+                
+                // Set color based on status
+                const statusColor = statusMap[bloodBag.status].color;
+                box.style.borderColor = statusColor;
+                box.style.color = statusColor;
+                
+                // Add click event
+                box.addEventListener('click', function() {
+                    // Remove selected class from all boxes
+                    document.querySelectorAll('.blood-box').forEach(b => {
+                        b.classList.remove('selected');
+                        b.style.backgroundColor = 'white';
+                    });
+                    
+                    // Add selected class to clicked box and make it red
+                    this.classList.add('selected');
+                    this.style.backgroundColor = '#c62828';
+                    this.style.color = 'white';
+                    this.style.borderColor = '#c62828';
+                    
+                    // Show selected blood info
+                    showSelectedBloodInfo(bloodBag);
+                });
+                
+                return box;
+            }
+            
+            // Update the inventory display
+            function updateInventoryDisplay() {
+                const bloodTypes = ['A', 'B', 'AB', 'O'];
+                let totalCount = 0;
+                
+                bloodTypes.forEach(type => {
+                    const container = document.getElementById(`blood-type-${type}`);
+                    container.innerHTML = '';
+                    
+                    // Filter out deleted items (status 0)
+                    const displayItems = inventory[type].filter(item => item.status !== 0);
+                    totalCount += displayItems.length;
+                    
+                    // Create boxes for each blood bag
+                    displayItems.forEach(bloodBag => {
+                        const box = createBloodBox(bloodBag);
+                        container.appendChild(box);
+                    });
+                    
+                    // Add empty boxes to show available slots
+                    const emptyBoxes = 15 - displayItems.length;
+                    for (let i = 0; i < emptyBoxes; i++) {
+                        const emptyBox = document.createElement('div');
+                        emptyBox.className = `blood-box ${type}`;
+                        emptyBox.textContent = type;
+                        container.appendChild(emptyBox);
+                    }
+                });
+                
+                // Update total count
+                document.getElementById('total-count').textContent = totalCount;
+                
+                // Update button states based on selected status
+                updateButtonStates();
+            }
+            
+            // Show selected blood information
+            function showSelectedBloodInfo(bloodBag) {
+                const infoDiv = document.getElementById('selected-blood-info');
+                infoDiv.classList.add('active');
+                
+                document.getElementById('selected-type').textContent = bloodBag.bloodType;
+                document.getElementById('selected-status').textContent = statusMap[bloodBag.status].name;
+                document.getElementById('selected-collection').textContent = 
+                    bloodBag.collectionTime.toLocaleDateString() + ' ' + bloodBag.collectionTime.toLocaleTimeString();
+                document.getElementById('selected-expiry').textContent = 
+                    bloodBag.expiryDate.toLocaleDateString();
+                
+                // Set form values to match selected blood type
+                document.getElementById('bloodType').value = bloodBag.bloodType;
+            }
+            
+            // Update button states based on selected status
+            function updateButtonStates() {
+                const statusSelect = document.getElementById('status');
+                const selectedStatus = parseInt(statusSelect.value);
+                const removeBtn = document.getElementById('removeBtn');
+                
+                // Used status can only be added, not removed
+                if (selectedStatus === 3) {
+                    removeBtn.disabled = true;
+                    removeBtn.title = "Used items cannot be removed (irreversible)";
+                } else {
+                    removeBtn.disabled = false;
+                    removeBtn.title = "";
+                }
+            }
+            
+            // Add blood bags to inventory
+            function addBloodBags() {
+                const bloodType = document.getElementById('bloodType').value;
+                const status = parseInt(document.getElementById('status').value);
+                const quantity = parseInt(document.getElementById('quantity').value);
+                
+                if (!bloodType || quantity < 1) {
+                    alert('Please enter valid values');
+                    return;
+                }
+                
+                // Generate new blood bags
+                for (let i = 0; i < quantity; i++) {
+                    const now = new Date();
+                    let collectionTime = now;
+                    let expiryDate = new Date(now);
+                    
+                    // For available status, set collection time to now
+                    if (status === 1) {
+                        collectionTime = now;
+                        expiryDate.setDate(expiryDate.getDate() + 42); // 42 days expiry
+                    } else if (status === 2) {
+                        // For expired status, set collection time in the past and expiry date passed
+                        collectionTime = new Date(now);
+                        collectionTime.setDate(collectionTime.getDate() - 50);
+                        expiryDate = new Date(collectionTime);
+                        expiryDate.setDate(expiryDate.getDate() + 42);
+                    } else {
+                        // For other statuses, set random collection time
+                        collectionTime = new Date();
+                        collectionTime.setDate(collectionTime.getDate() - Math.floor(Math.random() * 30));
+                        expiryDate = new Date(collectionTime);
+                        expiryDate.setDate(expiryDate.getDate() + 42);
+                    }
+                    
+                    // Generate a new inventory ID
+                    let maxID = 0;
+                    Object.keys(inventory).forEach(type => {
+                        inventory[type].forEach(item => {
+                            if (item.inventoryID > maxID) maxID = item.inventoryID;
+                        });
+                    });
+                    
+                    const newBloodBag = {
+                        inventoryID: maxID + 1,
+                        userID: Math.floor(Math.random() * 100) + 1,
+                        bloodType: bloodType,
+                        collectionTime: collectionTime,
+                        expiryDate: expiryDate,
+                        status: status
+                    };
+                    
+                    // Handle status-specific logic
+                    if (status === 3) { // Used
+                        // Find and remove an available bag if possible
+                        const availableBagIndex = inventory[bloodType].findIndex(
+                            item => item.status === 1 && new Date(item.expiryDate) > new Date()
+                        );
+                        
+                        if (availableBagIndex !== -1) {
+                            // Mark the available bag as used
+                            inventory[bloodType][availableBagIndex].status = 3;
+                        } else {
+                            // If no available bag, just add the used bag
+                            inventory[bloodType].push(newBloodBag);
+                        }
+                    } else if (status === 4) { // Delivered
+                        // Find and remove an available bag if possible
+                        const availableBagIndex = inventory[bloodType].findIndex(
+                            item => item.status === 1 && new Date(item.expiryDate) > new Date()
+                        );
+                        
+                        if (availableBagIndex !== -1) {
+                            // Mark the available bag as delivered
+                            inventory[bloodType][availableBagIndex].status = 4;
+                        } else {
+                            // If no available bag, just add the delivered bag
+                            inventory[bloodType].push(newBloodBag);
+                        }
+                    } else {
+                        // For available and expired, just add the bag
+                        inventory[bloodType].push(newBloodBag);
+                    }
+                }
+                
+                // Sort by expiry date
+                inventory[bloodType].sort((a, b) => new Date(a.expiryDate) - new Date(b.expiryDate));
+                
+                updateInventoryDisplay();
+                alert(`Added ${quantity} ${bloodType} blood bag(s) with status: ${statusMap[status].name}`);
+            }
+            
+            // Remove blood bags from inventory
+            function removeBloodBags() {
+                const bloodType = document.getElementById('bloodType').value;
+                const status = parseInt(document.getElementById('status').value);
+                const quantity = parseInt(document.getElementById('quantity').value);
+                
+                if (!bloodType || quantity < 1) {
+                    alert('Please enter valid values');
+                    return;
+                }
+                
+                // Check if removal is possible
+                const itemsOfStatus = inventory[bloodType].filter(item => item.status === status);
+                
+                if (itemsOfStatus.length < quantity) {
+                    alert(`Cannot remove ${quantity} items. Only ${itemsOfStatus.length} items with status "${statusMap[status].name}" exist.`);
+                    return;
+                }
+                
+                // Handle status-specific removal logic
+                if (status === 1) { // Available
+                    // Remove the bags closest to expiry (they are already sorted)
+                    let removedCount = 0;
+                    for (let i = 0; i < inventory[bloodType].length && removedCount < quantity; i++) {
+                        if (inventory[bloodType][i].status === 1) {
+                            // Mark as deleted (status 0) instead of removing
+                            inventory[bloodType][i].status = 0;
+                            removedCount++;
+                        }
+                    }
+                } else if (status === 4) { // Delivered
+                    // Remove delivered bags and add available bags
+                    let removedCount = 0;
+                    for (let i = 0; i < inventory[bloodType].length && removedCount < quantity; i++) {
+                        if (inventory[bloodType][i].status === 4) {
+                            // Change status to available
+                            inventory[bloodType][i].status = 1;
+                            removedCount++;
+                        }
+                    }
+                } else {
+                    // For expired and used, mark as deleted
+                    let removedCount = 0;
+                    for (let i = 0; i < inventory[bloodType].length && removedCount < quantity; i++) {
+                        if (inventory[bloodType][i].status === status) {
+                            inventory[bloodType][i].status = 0;
+                            removedCount++;
+                        }
+                    }
+                }
+                
+                updateInventoryDisplay();
+                alert(`Removed ${quantity} ${bloodType} blood bag(s) with status: ${statusMap[status].name}`);
+            }
+            
+            // Event Listeners
+            document.getElementById('addBtn').addEventListener('click', addBloodBags);
+            document.getElementById('removeBtn').addEventListener('click', removeBloodBags);
+            document.getElementById('status').addEventListener('change', updateButtonStates);
+            
+            // Initialize the inventory
+            initializeInventory();
+            
+            // Add some sample data info
+            setTimeout(() => {
+                document.querySelector('.blood-box.A').click();
+            }, 500);
+        });
+    </script>
 </body>
 </html>
