@@ -26,18 +26,13 @@ if ($userID <= 0) {
 }
 
 // -------------------
-// Check if user is a donor
-$stmt = $conn->prepare("SELECT role FROM user WHERE userID=?");
+// Check if user is a donor in the donor table
+$stmt = $conn->prepare("SELECT userID FROM donor WHERE userID=?");
 $stmt->bind_param("i", $userID);
 $stmt->execute();
 $result = $stmt->get_result();
 if ($result->num_rows === 0) {
-    echo json_encode(["success" => false, "error" => "User not found"]);
-    exit;
-}
-$user = $result->fetch_assoc();
-if ($user['role'] !== 'Donor') {
-    echo json_encode(["success" => false, "error" => "Only donors can update health report"]);
+    echo json_encode(["success" => false, "error" => "User is not a donor or no donor record found"]);
     exit;
 }
 $stmt->close();
