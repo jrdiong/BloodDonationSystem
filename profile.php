@@ -1,26 +1,12 @@
 <?php
-session_start();
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
 header('Content-Type: application/json');
 
-// ---------------------------
-// 1. Check if user is logged in
-$userID = $_SESSION['userID'] ?? 0;
-if ($userID <= 0) {
-    echo json_encode(["success" => false, "error" => "Invalid userID"]);
-    exit;
-}
+session_start();  // 记得加这行
 
-// ---------------------------
-// 2. Check if file is uploaded
-if (!isset($_FILES['avatar']) || $_FILES['avatar']['error'] !== UPLOAD_ERR_OK) {
-    echo json_encode(["success" => false, "error" => "No file uploaded or upload error"]);
-    exit;
-}
-
-// ---------------------------
-// 3. Database connection
+// -------------------------------
+// Database connection
 $servername = "localhost";
 $username = "root";
 $password = "";
@@ -28,40 +14,83 @@ $dbname = "cbdc_system";
 
 $conn = new mysqli($servername, $username, $password, $dbname);
 if ($conn->connect_error) {
-    echo json_encode(["success" => false, "error" => "Database connection failed"]);
+    die(json_encode(["success" => false, "error" => "Database connection failed"]));
+}
+
+// -------------------------------
+// Get userID from session
+$userID = $_SESSION['userID'] ?? 0;
+
+if ($userID <= 0) {
+    echo json_encode(["success" => false, "error" => "Invalid userID"]);
     exit;
 }
 
-// ---------------------------
-// 4. Save uploaded file
-$targetDir = "uploads/";
-
-// create folder if not exists
-if (!is_dir($targetDir)) {
-    mkdir($targetDir, 0755, true);
-}
-
-// generate unique filename
-$ext = pathinfo($_FILES["avatar"]["name"], PATHINFO_EXTENSION);
-$filename = "avatar_user{$userID}_" . time() . "." . $ext;
-$targetFile = $targetDir . $filename;
-
-if (!move_uploaded_file($_FILES["avatar"]["tmp_name"], $targetFile)) {
-    echo json_encode(["success" => false, "error" => "Failed to save uploaded file"]);
-    $conn->close();
-    exit;
-}
-
-// ---------------------------
-// 5. Update user table with relative path
-$stmt = $conn->prepare("UPDATE user SET image_url = ? WHERE userID = ?");
-$stmt->bind_param("si", $targetFile, $userID);
+// -------------------------------
+// Step 1: Get basic user info
+$stmt = $conn->prepare("
+    SELECT userID, name, email, phoneNumber, image_url, role
+    FROM user
+    WHERE userID = ?
+");
+$stmt->bind_param("i", $userID);
 $stmt->execute();
+$result = $stmt->get_result();
+
+if ($result->num_rows === 0) {
+    echo json_encode(["success" => false, "error" => "User not found"]);
+    exit;
+}
+
+$profile = $result->fetch_assoc();
 $stmt->close();
+
+// -------------------------------
+// Step 2: Role-specific data
+$role = $profile['role'];
+
+if ($role === 'Donor') {
+    $stmt = $conn->prepare("
+        SELECT bloodType, age, dateLastDonate
+        FROM donor
+        WHERE userID = ?
+    ");
+    $stmt->bind_param("i", $userID);
+    $stmt->execute();
+    $donorResult = $stmt->get_result();
+
+    $profile['donorInfo'] = $donorResult->num_rows > 0
+        ? $donorResult->fetch_assoc()
+        : null;
+
+    $stmt->close();
+}
+
+if ($role === 'Hospital') {
+    $stmt = $conn->prepare("
+        SELECT location
+        FROM hospital
+        WHERE userID = ?
+    ");
+    $stmt->bind_param("i", $userID);
+    $stmt->execute();
+    $hospitalResult = $stmt->get_result();
+
+    $profile['hospitalInfo'] = $hospitalResult->num_rows > 0
+        ? $hospitalResult->fetch_assoc()
+        : null;
+
+    $stmt->close();
+}
+
+// Admin / Event Organize → no extra table yet
 
 $conn->close();
 
-// ---------------------------
-// 6. Return success with new image URL
-echo json_encode(["success" => true, "image_url" => $targetFile]);
+// -------------------------------
+// Step 3: Return profile JSON
+echo json_encode([
+    "success" => true,
+    "profile" => $profile
+]);
 ?>
