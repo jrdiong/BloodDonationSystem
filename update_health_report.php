@@ -11,6 +11,7 @@ $username = "root";
 $password = "";
 $dbname = "cbdc_system";
 
+// 使用持久连接
 $conn = new mysqli("p:localhost", $username, $password, $dbname);
 if ($conn->connect_error) {
     die(json_encode(["success" => false, "error" => "Database connection failed"]));
@@ -51,6 +52,10 @@ $weight = isset($_POST['weight']) ? trim($_POST['weight']) : '';
 $height = isset($_POST['height']) ? trim($_POST['height']) : '';
 
 // -------------------
+// Debugging: Check the input values
+var_dump($bloodType, $age, $dateLastDonate, $medicalHistory, $weight, $height); // Check the data coming from the frontend
+
+// -------------------
 // Validation
 $validBloodTypes = ['A', 'B', 'AB', 'O'];
 if (!in_array($bloodType, $validBloodTypes)) {
@@ -86,8 +91,13 @@ $stmt = $conn->prepare("
     WHERE userID=?
 ");
 
+if ($stmt === false) {
+    echo json_encode(["success" => false, "error" => "Prepare failed: " . $conn->error]);
+    exit;
+}
+
 $stmt->bind_param(
-    "sissddi",  
+    "sissddi",  // Param types: string, integer, string, string, double, double, integer
     $bloodType,
     $age,
     $dateLastDonate,
@@ -97,6 +107,7 @@ $stmt->bind_param(
     $userID
 );
 
+// Execute the query and check for success
 if ($stmt->execute()) {
     echo json_encode(["success" => true]);
 } else {
