@@ -4,19 +4,31 @@
 <meta charset="UTF-8">
 <title>User Profile Test</title>
 <style>
-    body { font-family: Arial, sans-serif; margin: 20px; }
-    #avatar {
-        width: 120px;
-        height: 120px;
-        border-radius: 50%;
-        border: 2px solid #ccc;
-        cursor: pointer;
-        object-fit: cover;
-    }
-    form { margin-top: 20px; }
-    label { display: block; margin-bottom: 10px; }
-    input { padding: 5px; width: 250px; }
-    button { padding: 8px 15px; margin-top: 10px; }
+body { font-family: Arial, sans-serif; margin: 20px; }
+#avatar {
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    border: 2px solid #ccc;
+    cursor: pointer;
+    object-fit: cover;
+}
+.profile-field {
+    margin-bottom: 15px;
+}
+.field-label { display: inline-block; width: 80px; font-weight: bold; }
+.field-value { display: inline-block; min-width: 150px; }
+.edit-icon {
+    cursor: pointer;
+    margin-left: 5px;
+    color: #007BFF;
+}
+input.edit-input { padding: 3px; width: 200px; }
+.save-btn {
+    margin-left: 5px;
+    padding: 2px 6px;
+    font-size: 12px;
+}
 </style>
 </head>
 <body>
@@ -27,27 +39,37 @@
 <img id="avatar" src="default-avatar.png" alt="Avatar">
 <input type="file" id="avatarInput" style="display:none" accept="image/*">
 
-<!-- Profile Form -->
-<form id="profileForm">
-    <label>Name: <input type="text" id="name" name="name"></label>
-    <label>Email: <input type="email" id="email" name="email"></label>
-    <label>Phone: <input type="text" id="phoneNumber" name="phoneNumber"></label>
-    <div id="hospitalFields" style="display:none;">
-        <label>Location: <input type="text" id="location" name="location"></label>
-    </div>
-    <button type="submit">Update Profile</button>
-</form>
+<!-- Profile Fields -->
+<div class="profile-field">
+    <span class="field-label">Name:</span>
+    <span class="field-value" id="nameValue"></span>
+    <span class="edit-icon" data-field="name">&#9998;</span>
+</div>
+
+<div class="profile-field">
+    <span class="field-label">Email:</span>
+    <span class="field-value" id="emailValue"></span>
+    <span class="edit-icon" data-field="email">&#9998;</span>
+</div>
+
+<div class="profile-field">
+    <span class="field-label">Phone:</span>
+    <span class="field-value" id="phoneValue"></span>
+    <span class="edit-icon" data-field="phoneNumber">&#9998;</span>
+</div>
+
+<div class="profile-field" id="hospitalField" style="display:none;">
+    <span class="field-label">Location:</span>
+    <span class="field-value" id="locationValue"></span>
+    <span class="edit-icon" data-field="location">&#9998;</span>
+</div>
 
 <script>
 const avatarImg = document.getElementById('avatar');
 const avatarInput = document.getElementById('avatarInput');
-const profileForm = document.getElementById('profileForm');
-const hospitalFields = document.getElementById('hospitalFields');
 
 // Click avatar to choose file
 avatarImg.addEventListener('click', () => avatarInput.click());
-
-// Upload avatar
 avatarInput.addEventListener('change', () => {
     const file = avatarInput.files[0];
     if (!file) return;
@@ -63,51 +85,96 @@ avatarInput.addEventListener('change', () => {
             } else {
                 alert('Upload failed: ' + data.error);
             }
-        })
-        .catch(err => alert('Upload error: ' + err));
+        });
 });
 
-// Load user profile
+// Load profile
 function loadProfile() {
     fetch('profile.php')
         .then(res => res.json())
         .then(data => {
-            if (!data.success) {
-                alert(data.error);
-                return;
-            }
+            if (!data.success) { alert(data.error); return; }
             const profile = data.profile;
-            document.getElementById('name').value = profile.name;
-            document.getElementById('email').value = profile.email;
-            document.getElementById('phoneNumber').value = profile.phoneNumber;
-            if (profile.image_url) {
-                avatarImg.src = profile.image_url + '?t=' + new Date().getTime();
-            }
+            document.getElementById('nameValue').textContent = profile.name;
+            document.getElementById('emailValue').textContent = profile.email;
+            document.getElementById('phoneValue').textContent = profile.phoneNumber;
+            if (profile.image_url) avatarImg.src = profile.image_url + '?t=' + new Date().getTime();
 
-            // Show hospital location if role is Hospital
             if (profile.role === 'Hospital') {
-                hospitalFields.style.display = 'block';
-                document.getElementById('location').value = profile.hospitalInfo?.location || '';
+                document.getElementById('hospitalField').style.display = 'block';
+                document.getElementById('locationValue').textContent = profile.hospitalInfo?.location || '';
             }
         });
 }
 
-// Submit profile update
-profileForm.addEventListener('submit', (e) => {
-    e.preventDefault();
-    const formData = new FormData(profileForm);
+// Handle pencil click → edit field
+document.querySelectorAll('.edit-icon').forEach(icon => {
+    icon.addEventListener('click', () => {
+        const field = icon.dataset.field;
+        const valueSpan = document.getElementById(field + 'Value');
+        const currentValue = valueSpan.textContent;
 
-    fetch('update_profile.php', { method: 'POST', body: formData })
-        .then(res => res.json())
-        .then(data => {
-            if (data.success) {
-                alert(data.message);
-            } else {
-                alert('Update failed: ' + data.error);
+        // Create input box
+        const input = document.createElement('input');
+        input.type = (field === 'email') ? 'email' : 'text';
+        input.value = currentValue;
+        input.className = 'edit-input';
+
+        // Create save button
+        const saveBtn = document.createElement('button');
+        saveBtn.textContent = 'Save';
+        saveBtn.className = 'save-btn';
+
+        // Replace span with input + save button
+        valueSpan.replaceWith(input);
+        icon.replaceWith(saveBtn);
+
+        // Save click handler
+        saveBtn.addEventListener('click', () => {
+            const newValue = input.value.trim();
+            if (!newValue) { alert('Field cannot be empty'); return; }
+            if (field === 'email' && !/^\S+@\S+\.\S+$/.test(newValue)) {
+                alert('Invalid email format'); return;
             }
-        })
-        .catch(err => alert('Update error: ' + err));
+
+            const formData = new FormData();
+            formData.append(field, newValue);
+
+            fetch('update_profile.php', { method: 'POST', body: formData })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        alert('Field updated successfully!');
+                        input.replaceWith(createValueSpan(newValue, field));
+                        saveBtn.replaceWith(createEditIcon(field));
+                    } else {
+                        alert('Update failed: ' + data.error);
+                    }
+                });
+        });
+    });
 });
+
+// Helpers to recreate span and icon
+function createValueSpan(value, field) {
+    const span = document.createElement('span');
+    span.className = 'field-value';
+    span.id = field + 'Value';
+    span.textContent = value;
+    return span;
+}
+
+function createEditIcon(field) {
+    const icon = document.createElement('span');
+    icon.className = 'edit-icon';
+    icon.dataset.field = field;
+    icon.innerHTML = '&#9998;';
+    icon.addEventListener('click', () => {
+        // Reuse the previous pencil click logic
+        icon.click();
+    });
+    return icon;
+}
 
 // Initialize
 loadProfile();
