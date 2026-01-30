@@ -29,7 +29,7 @@ if ($userID <= 0) {
 // Step 1: Get basic user info
 $stmt = $conn->prepare("
     SELECT userID, name, email, phoneNumber, image_url, role
-    FROM users
+    FROM user
     WHERE userID = ?
 ");
 $stmt->bind_param("i", $userID);
@@ -46,7 +46,7 @@ $stmt->close();
 
 // Ensure the profile has all necessary fields
 if (!$profile['image_url']) {
-    $profile['image_url'] = '/path/to/default/avatar.jpg';  // 设置默认头像路径
+    $profile['image_url'] = '/path/to/default/avatar.jpg';  
 }
 
 // -------------------------------

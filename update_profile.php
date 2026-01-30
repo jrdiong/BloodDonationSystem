@@ -63,7 +63,7 @@ if (empty($updateFields)) {
 
 // -------------------
 // Prepare query
-$sql = "UPDATE users SET " . implode(', ', $updateFields) . " WHERE userID = ?";
+$sql = "UPDATE user SET " . implode(', ', $updateFields) . " WHERE userID = ?";
 $values[] = $userID;
 $types .= 'i';
 
