@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <title>User Profile Test</title>
 <style>
+    body { font-family: Arial, sans-serif; margin: 20px; }
     #avatar {
         width: 120px;
         height: 120px;
@@ -12,38 +13,44 @@
         cursor: pointer;
         object-fit: cover;
     }
-    .profile-info {
-        margin-top: 10px;
-    }
+    form { margin-top: 20px; }
+    label { display: block; margin-bottom: 10px; }
+    input { padding: 5px; width: 250px; }
+    button { padding: 8px 15px; margin-top: 10px; }
 </style>
 </head>
 <body>
 
-<h2>User Profile Test</h2>
+<h2>User Profile</h2>
 
 <!-- Avatar -->
 <img id="avatar" src="default-avatar.png" alt="Avatar">
 <input type="file" id="avatarInput" style="display:none" accept="image/*">
 
-<!-- User Info -->
-<div class="profile-info">
-    <p><strong>Name:</strong> <span id="name"></span></p>
-    <p><strong>Email:</strong> <span id="email"></span></p>
-    <p><strong>Phone:</strong> <span id="phone"></span></p>
-</div>
+<!-- Profile Form -->
+<form id="profileForm">
+    <label>Name: <input type="text" id="name" name="name"></label>
+    <label>Email: <input type="email" id="email" name="email"></label>
+    <label>Phone: <input type="text" id="phoneNumber" name="phoneNumber"></label>
+    <div id="hospitalFields" style="display:none;">
+        <label>Location: <input type="text" id="location" name="location"></label>
+    </div>
+    <button type="submit">Update Profile</button>
+</form>
 
 <script>
 const avatarImg = document.getElementById('avatar');
 const avatarInput = document.getElementById('avatarInput');
+const profileForm = document.getElementById('profileForm');
+const hospitalFields = document.getElementById('hospitalFields');
 
-// 点击头像触发选择文件
+// Click avatar to choose file
 avatarImg.addEventListener('click', () => avatarInput.click());
 
-// 上传头像
+// Upload avatar
 avatarInput.addEventListener('change', () => {
     const file = avatarInput.files[0];
     if (!file) return;
-
     const formData = new FormData();
     formData.append('avatar', file);
 
@@ -60,7 +67,7 @@ avatarInput.addEventListener('change', () => {
         .catch(err => alert('Upload error: ' + err));
 });
 
-// Load profile info
+// Load user profile
 function loadProfile() {
     fetch('profile.php')
         .then(res => res.json())
@@ -70,16 +77,39 @@ function loadProfile() {
                 return;
             }
             const profile = data.profile;
-            document.getElementById('name').textContent = profile.name;
-            document.getElementById('email').textContent = profile.email;
-            document.getElementById('phone').textContent = profile.phoneNumber;
+            document.getElementById('name').value = profile.name;
+            document.getElementById('email').value = profile.email;
+            document.getElementById('phoneNumber').value = profile.phoneNumber;
             if (profile.image_url) {
                 avatarImg.src = profile.image_url + '?t=' + new Date().getTime();
+            }
+
+            // Show hospital location if role is Hospital
+            if (profile.role === 'Hospital') {
+                hospitalFields.style.display = 'block';
+                document.getElementById('location').value = profile.hospitalInfo?.location || '';
             }
         });
 }
 
-// 初始化
+// Submit profile update
+profileForm.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const formData = new FormData(profileForm);
+
+    fetch('update_profile.php', { method: 'POST', body: formData })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                alert(data.message);
+            } else {
+                alert('Update failed: ' + data.error);
+            }
+        })
+        .catch(err => alert('Update error: ' + err));
+});
+
+// Initialize
 loadProfile();
 </script>
 
