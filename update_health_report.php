@@ -26,16 +26,23 @@ if ($userID <= 0) {
 }
 
 // -------------------
-// Check if user is a donor in the donor table
+// Check if user is already a donor in the donor table
 $stmt = $conn->prepare("SELECT userID FROM donor WHERE userID=?");
 $stmt->bind_param("i", $userID);
 $stmt->execute();
 $result = $stmt->get_result();
 if ($result->num_rows === 0) {
-    echo json_encode(["success" => false, "error" => "User is not a donor or no donor record found"]);
-    exit;
+    // User not found in donor table, insert new record
+    $stmt->close();
+
+    // Insert new record into donor table if not exists
+    $stmt = $conn->prepare("INSERT INTO donor (userID) VALUES (?)");
+    $stmt->bind_param("i", $userID);
+    if (!$stmt->execute()) {
+        echo json_encode(["success" => false, "error" => "Failed to create donor record"]);
+        exit;
+    }
 }
-$stmt->close();
 
 // -------------------
 // Get POST data safely
@@ -79,7 +86,7 @@ $height = $height === '' ? null : floatval($height);
 $dateLastDonate = $dateLastDonate === '' ? null : $dateLastDonate;
 
 // -------------------
-// Update donor table
+// Update donor table with new health data
 $stmt = $conn->prepare("
     UPDATE donor
     SET bloodType=?, age=?, dateLastDonate=?, medicalHistory=?, weight=?, height=?
