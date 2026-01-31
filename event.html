@@ -1,298 +1,255 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Event Management</title>
+    <title>Event Creation</title>
     <style>
-        /* Basic styling for the layout */
         body {
             font-family: Arial, sans-serif;
-            display: flex;
-            min-height: 100vh;
+            background-color: #f4f4f9;
             margin: 0;
-            background-color: #f8f8f8;
+            padding: 0;
+        }
+
+        .container {
+            display: flex;
+            justify-content: space-between;
+            padding: 20px;
         }
 
         /* Sidebar */
-        .nav {
-            width: 250px;
-            background-color: #333;
-            color: white;
-            padding: 20px;
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-        }
-
-        .nav a {
-            color: white;
-            text-decoration: none;
-            padding: 10px 0;
-            margin: 10px 0;
+        .sidebar {
+            width: 60px;
+            background-color: #2a3d5f;
+            padding-top: 50px;
             text-align: center;
-            background-color: #444;
-            border-radius: 5px;
         }
 
-        .nav a:hover {
+        .sidebar button {
+            display: block;
             background-color: #555;
+            border: none;
+            width: 40px;
+            height: 40px;
+            margin: 10px 0;
+            color: white;
+            border-radius: 50%;
+            cursor: pointer;
         }
 
-        .nav a.active {
-            background-color: #e74c3c;
+        .sidebar button:hover {
+            background-color: #777;
         }
 
-        /* Main content area */
-        .content {
-            flex: 1;
+        /* Main Content */
+        .main-content {
+            width: 80%;
+            background-color: #fff;
             padding: 20px;
-            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
         }
 
-        .header {
-            background-color: #f8d7da;
+        h1 {
+            color: red;
+            margin-bottom: 10px;
+        }
+
+        .heading {
+            background-color: #f9d8d8;
             padding: 15px;
+            border-radius: 8px;
             margin-bottom: 20px;
         }
 
-        .header h1 {
-            margin: 0;
+        .form-group {
+            margin-bottom: 15px;
         }
 
-        /* Event list */
-        .event-list {
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
+        .form-group label {
+            display: block;
+            font-weight: bold;
+            margin-bottom: 5px;
         }
 
-        .event-item {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            background-color: #f0f0f0;
-            padding: 10px;
-            border-radius: 5px;
-            border: 1px solid #ddd;
-            position: relative;
-        }
-
-        .event-item img {
-            width: 80px;
-            height: 80px;
-            object-fit: cover;
-            border-radius: 5px;
-            margin-right: 15px;
-        }
-
-        .event-item span {
-            margin-right: 10px;
-        }
-
-        .event-status {
-            width: 80px;
-            height: 20px;
-            border-radius: 5px;
-        }
-
-        .status-green {
-            background-color: green;
-            color: white;
-        }
-
-        .status-red {
-            background-color: red;
-            color: white;
-        }
-
-        .status-yellow {
-            background-color: yellow;
-            color: black;
-        }
-
-        /* Event Edit Form */
-        .event-form {
-            display: none;
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            background-color: white;
-            padding: 30px;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-            width: 80%;
-            max-width: 500px;
-            z-index: 100;
-            border-radius: 5px;
-        }
-
-        .event-form input, .event-form select, .event-form textarea {
+        .form-group input,
+        .form-group textarea,
+        .form-group select {
             width: 100%;
-            padding: 10px;
-            margin-bottom: 10px;
-            border-radius: 5px;
+            padding: 8px;
+            border-radius: 4px;
             border: 1px solid #ccc;
         }
 
-        .event-form button {
-            padding: 10px 15px;
-            background-color: #3498db;
+        .form-group button {
+            padding: 10px 20px;
+            background-color: #FF8C00;
             color: white;
             border: none;
             border-radius: 5px;
             cursor: pointer;
         }
 
-        .event-form button:hover {
-            background-color: #2980b9;
+        .form-group button:hover {
+            background-color: #e07b00;
         }
 
-        .close-form {
+        /* Status Bar */
+        .status-bar {
+            margin-top: 20px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .status-bar .status {
+            height: 10px;
+            margin: 5px 0;
+            border-radius: 5px;
+        }
+
+        .status-bar .status.green {
+            background-color: green;
+        }
+
+        .status-bar .status.red {
+            background-color: red;
+        }
+
+        .status-bar .status.gray {
+            background-color: gray;
+        }
+
+        /* Alert Icon */
+        .alert-icon {
             position: absolute;
-            top: 10px;
-            right: 10px;
+            top: 20px;
+            right: 20px;
+            background-color: red;
+            color: white;
+            padding: 10px;
+            border-radius: 50%;
             cursor: pointer;
-            color: #3498db;
-            font-size: 20px;
         }
-
     </style>
 </head>
+
 <body>
-
-    <!-- Sidebar (Nav) -->
-    <div class="nav">
-        <a href="#" class="active">Events</a>
-        <a href="#">Profile</a>
-        <a href="#">Settings</a>
-    </div>
-
-    <!-- Main Content -->
-    <div class="content">
-        <!-- Header Section -->
-        <div class="header">
-            <h1>Events</h1>
-            <p>Manage and organize blood donation events easily.</p>
+    <div class="container">
+        <!-- Sidebar -->
+        <div class="sidebar">
+            <button>1</button>
+            <button>2</button>
+            <button>3</button>
+            <button>4</button>
+            <button>5</button>
         </div>
 
-        <!-- "Create New Event" Button (Only visible for Event Organizers) -->
-        <div id="createNewEventButtonContainer" style="margin-bottom: 20px;">
-            <button id="createNewEventButton" style="display: none;">Create New Event</button>
-        </div>
+        <!-- Main Content -->
+        <div class="main-content">
+            <div class="alert-icon">
+                !
+            </div>
+            <h1>Event</h1>
 
-        <!-- Event List -->
-        <div class="event-list" id="eventList">
-            <!-- Event items will be dynamically inserted here -->
-        </div>
+            <div class="heading">
+                <h2>Heading</h2>
+                <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.</p>
+            </div>
 
-        <!-- Event Edit Form -->
-        <div class="event-form" id="eventForm">
-            <span class="close-form" onclick="closeForm()">×</span>
-            <h2>Create New Event</h2>
-            <form id="eventFormFields" enctype="multipart/form-data" onsubmit="createEvent(event)">
-                <input type="text" id="eventName" placeholder="Event Name" required>
-                <textarea id="eventDescription" placeholder="Description" required></textarea>
-                <input type="datetime-local" id="eventDateTime" required>
-                <input type="text" id="eventLocation" placeholder="Location" required>
-                <input type="number" id="eventMaxDonors" placeholder="Max Donors" required>
+            <form id="eventForm">
+                <!-- Event Name -->
+                <div class="form-group">
+                    <label for="eventName">Event Name</label>
+                    <input type="text" id="eventName" name="eventName" required>
+                </div>
 
-                <label for="eventImage">Upload Event Image</label>
-                <input type="file" id="eventImage" name="eventImage" accept="image/*">
+                <!-- Event Image URL -->
+                <div class="form-group">
+                    <label for="image_url">Image URL</label>
+                    <input type="text" id="image_url" name="image_url" required>
+                </div>
 
-                <button type="submit">Create Event</button>
+                <!-- Location -->
+                <div class="form-group">
+                    <label for="location">Location</label>
+                    <input type="text" id="location" name="location" required>
+                </div>
+
+                <!-- Date and Time -->
+                <div class="form-group">
+                    <label for="dateTime">Date & Time</label>
+                    <input type="datetime-local" id="dateTime" name="dateTime" required>
+                </div>
+
+                <!-- Max Donors -->
+                <div class="form-group">
+                    <label for="maxDonors">Max Donors</label>
+                    <input type="number" id="maxDonors" name="maxDonors" required>
+                </div>
+
+                <!-- Description -->
+                <div class="form-group">
+                    <label for="description">Description</label>
+                    <textarea id="description" name="description" required></textarea>
+                </div>
+
+                <!-- Submit Button -->
+                <div class="form-group">
+                    <button type="submit">Create Event</button>
+                </div>
             </form>
+
+            <!-- Status Bar -->
+            <div class="status-bar">
+                <div class="status green"></div>
+                <div class="status gray"></div>
+                <div class="status green"></div>
+                <div class="status red"></div>
+                <div class="status green"></div>
+                <div class="status green"></div>
+            </div>
         </div>
     </div>
 
     <script>
-        // Simulate a logged-in user
-        const role = 'Event Organizer'; // This should come from the session or backend
-        const userID = 1; // Also comes from the session or backend
-
-        // Load events and show/hide "Create New Event" button based on role
-        function loadEvents() {
-            const xhr = new XMLHttpRequest();
-            xhr.open('GET', 'event.php', true);
-            xhr.onreadystatechange = function () {
-                if (xhr.readyState == 4 && xhr.status == 200) {
-                    const response = JSON.parse(xhr.responseText);
-                    const events = response.events || [];
-                    const eventListContainer = document.getElementById('eventList');
-                    eventListContainer.innerHTML = '';
-                    events.forEach(event => {
-                        const eventDiv = document.createElement('div');
-                        eventDiv.classList.add('event-item');
-                        eventDiv.innerHTML = `
-                            <img src="${event.image_url}" alt="${event.eventName}">
-                            <span>${event.eventName}</span>
-                            <span class="event-status ${event.status === 1 ? 'status-green' : 'status-red'}">${event.status === 1 ? 'Active' : 'Deleted'}</span>
-                            <button onclick="viewEvent(${event.eventID})">View</button>
-                            ${role === 'Donor' ? `<button onclick="bookEvent(${event.eventID})">Book</button>` : ''}
-                            ${role === 'Donor' ? `<button onclick="cancelEvent()">Cancel</button>` : ''}
-                            ${role === 'Event Organizer' || role === 'Admin' ? `<button onclick="editEvent(${event.eventID})">Edit</button>` : ''}
-                            ${role === 'Admin' ? `<button onclick="deleteEvent(${event.eventID})">Delete</button>` : ''}
-                        `;
-                        eventListContainer.appendChild(eventDiv);
-                    });
-
-                    // Show the "Create New Event" button for Event Organizers
-                    if (response.showCreateButton) {
-                        document.getElementById('createNewEventButton').style.display = 'inline-block';
-                    }
-                }
-            };
-            xhr.send();
-        }
-
-        // Function to view event details
-        function viewEvent(eventID) {
-            console.log(`Viewing event with ID: ${eventID}`);
-        }
-
-        // Function to create a new event
-        function createEvent(event) {
+        // Form submission with AJAX
+        document.getElementById('eventForm').addEventListener('submit', function(event) {
             event.preventDefault();
-            const formData = new FormData(document.getElementById('eventFormFields'));
-            const xhr = new XMLHttpRequest();
-            xhr.open('POST', 'event.php', true);
-            xhr.onreadystatechange = function () {
-                if (xhr.readyState == 4 && xhr.status == 200) {
+
+            const formData = new FormData(this);
+            const data = {};
+            formData.forEach((value, key) => {
+                data[key] = value;
+            });
+
+            // Get the JWT token (assuming it's stored in localStorage)
+            const token = localStorage.getItem('auth_token');
+
+            fetch('event.php', {
+                method: 'POST',
+                headers: {
+                    'Authorization': token,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(data)
+            })
+            .then(response => response.json())
+            .then(result => {
+                if (result.status === 'success') {
                     alert('Event created successfully!');
-                    closeForm();
-                    loadEvents();  // Reload events
+                    console.log(result); // Handle success (you can redirect or update UI)
+                } else {
+                    alert('Error: ' + result.message); // Handle error
                 }
-            };
-            xhr.send(formData);
-        }
-
-        // Function to delete an event
-        function deleteEvent(eventID) {
-            if (confirm('Are you sure you want to delete this event?')) {
-                const xhr = new XMLHttpRequest();
-                xhr.open('DELETE', `event.php?eventID=${eventID}`, true);
-                xhr.onreadystatechange = function () {
-                    if (xhr.readyState == 4 && xhr.status == 200) {
-                        alert('Event deleted successfully!');
-                        loadEvents();
-                    }
-                };
-                xhr.send();
-            }
-        }
-
-        // Function to open the event form (create event)
-        document.getElementById('createNewEventButton').addEventListener('click', function () {
-            document.getElementById('eventForm').style.display = 'block';
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Something went wrong!');
+            });
         });
-
-        // Function to close the event form
-        function closeForm() {
-            document.getElementById('eventForm').style.display = 'none';
-        }
-
-        // Load events on page load
-        loadEvents();
     </script>
 </body>
+
 </html>

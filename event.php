@@ -1,163 +1,99 @@
 <?php
-// Enable error reporting for debugging
+// Set the content type to JSON
+header('Content-Type: application/json');
+
+// Enable error reporting for debugging (you can remove this in production)
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
 
-// Start session to retrieve user info from session
-session_start();
-
-// Set content type to JSON
-header('Content-Type: application/json');
-
-// Database connection settings
+// Database connection details
 $servername = "localhost";
 $username = "root";
 $password = "";
 $dbname = "cbdc_system";
 
-// Create connection
+// Create a new MySQLi connection
 $conn = new mysqli($servername, $username, $password, $dbname);
 
-// Check the connection
+// Check if the connection was successful
 if ($conn->connect_error) {
-    die(json_encode(["error" => "Connection failed: " . $conn->connect_error]));
+    die(json_encode(['status' => 'error', 'message' => 'Connection failed: ' . $conn->connect_error]));
 }
 
-// Fetch events based on user role
-function getEvents($role, $userID) {
-    global $conn;
+// Get the token from the request header
+$token = isset($_SERVER['HTTP_AUTHORIZATION']) ? $_SERVER['HTTP_AUTHORIZATION'] : null;
 
-    // Fetch events based on the user's role
-    if ($role === 'Donor') {
-        $sql = "SELECT * FROM event WHERE status = 1";  // Donor can only view active events
-    } elseif ($role === 'Event Organizer') {
-        $sql = "SELECT * FROM event WHERE organizerID = $userID";  // Event Organizer can view their own events
-    } elseif ($role === 'Hospital') {
-        $sql = "SELECT * FROM event WHERE hospitalID = $userID";  // Hospital can view events related to them
-    } elseif ($role === 'Admin') {
-        $sql = "SELECT * FROM event";  // Admin can view all events
-    } else {
-        return [];
-    }
-
-    $result = $conn->query($sql);
-    $events = [];
-
-    if ($result->num_rows > 0) {
-        while ($row = $result->fetch_assoc()) {
-            $events[] = $row;
-        }
-    }
-
-    return $events;
+// If no token is provided, return 401 Unauthorized error
+if (!$token) {
+    echo json_encode(['status' => 'error', 'message' => 'No token provided']);
+    exit;
 }
 
-// Book an event for Donor
-function bookEvent($userID, $eventID) {
-    global $conn;
-
-    $sql = "INSERT INTO event_booking (userID, eventID) VALUES ($userID, $eventID)";
-    if ($conn->query($sql) === TRUE) {
-        return ['success' => 'Event booked successfully'];
-    } else {
-        return ['error' => 'Error booking event: ' . $conn->error];
-    }
+// Function to verify the JWT token (you can replace this with your own JWT verification logic)
+function verify_token($token) {
+    // Sample JWT verification (replace this with actual logic)
+    // This function should return a decoded token or false if invalid
+    // Example:
+    // return ['userID' => 1, 'role' => 'Event Organize']; // Mocked for demo purposes
+    return true;  // Mocked success for demo purposes
 }
 
-// Cancel event booking
-function cancelEvent($userID, $eventID) {
-    global $conn;
+// Verify the token
+$decoded = verify_token($token);
 
-    $sql = "DELETE FROM event_booking WHERE userID = $userID AND eventID = $eventID";
-    if ($conn->query($sql) === TRUE) {
-        return ['success' => 'Event booking cancelled successfully'];
-    } else {
-        return ['error' => 'Error cancelling booking: ' . $conn->error];
-    }
+// If token verification fails, return 403 Forbidden error
+if (!$decoded) {
+    echo json_encode(['status' => 'error', 'message' => 'Invalid token']);
+    exit;
 }
 
-// Create a new event by Event Organizer
-function createEvent($userID, $eventData) {
-    global $conn;
+// Get user ID and role from decoded token
+$userID = $decoded['userID'];
+$role = $decoded['role'];
 
-    // Handle file upload for event image
-    if (isset($_FILES['eventImage'])) {
-        $imagePath = 'uploads/' . $_FILES['eventImage']['name'];
-        move_uploaded_file($_FILES['eventImage']['tmp_name'], $imagePath);
-    } else {
-        $imagePath = '';
-    }
-
-    // Insert new event data into the event table
-    $sql = "INSERT INTO event (eventName, description, dateTime, location, maxDonors, organizerID, status, image_url)
-            VALUES ('{$eventData['eventName']}', '{$eventData['eventDescription']}', '{$eventData['eventDateTime']}', 
-                    '{$eventData['eventLocation']}', '{$eventData['eventMaxDonors']}', $userID, 1, '$imagePath')";
-
-    if ($conn->query($sql) === TRUE) {
-        return ['success' => 'Event created successfully'];
-    } else {
-        return ['error' => 'Error creating event: ' . $conn->error];
-    }
+// If the user is not an event organizer, return a 403 Forbidden error
+if ($role !== 'Event Organize') {
+    echo json_encode(['status' => 'error', 'message' => 'You are not authorized to create an event.']);
+    exit;
 }
 
-// Delete an event by Admin
-function deleteEvent($eventID) {
-    global $conn;
+// Get the event data from the POST request
+$data = json_decode(file_get_contents('php://input'), true);
 
-    $sql = "DELETE FROM event WHERE eventID = $eventID";
-    if ($conn->query($sql) === TRUE) {
-        return ['success' => 'Event deleted successfully'];
-    } else {
-        return ['error' => 'Error deleting event: ' . $conn->error];
-    }
+// Assign variables for event data
+$eventName = $data['eventName'];
+$image_url = $data['image_url'];
+$location = $data['location'];
+$dateTime = $data['dateTime'];
+$maxDonors = $data['maxDonors'];
+$description = $data['description'];
+
+// Check if required fields are missing
+if (!$eventName || !$image_url || !$location || !$dateTime || !$maxDonors || !$description) {
+    echo json_encode(['status' => 'error', 'message' => 'Required fields are missing.']);
+    exit;
 }
 
-// Handle GET request to fetch events and user information
-if ($_SERVER['REQUEST_METHOD'] == 'GET') {
-    if (isset($_SESSION['userID']) && isset($_SESSION['role'])) {
-        $role = $_SESSION['role']; // Get role from session
-        $userID = $_SESSION['userID']; // Get userID from session
+// Insert the event data into the database
+$query = "INSERT INTO event (eventName, image_url, location, dateTime, maxDonors, description, organizerID) 
+          VALUES (?, ?, ?, ?, ?, ?, ?)";
 
-        // Output the current logged-in user's ID, role, and if the "Create New Event" button should be shown
-        echo json_encode([
-            'userID' => $userID,
-            'role' => $role,
-            'showCreateButton' => $role === 'Event Organizer' // Show button only for Event Organizers
-        ]);
+$stmt = $conn->prepare($query);  // Use $conn to prepare the query
+$stmt->bind_param("ssssisi", $eventName, $image_url, $location, $dateTime, $maxDonors, $description, $userID);
 
-        // Fetch and return events for the current user based on their role
-        $events = getEvents($role, $userID);
-        echo json_encode($events);
-    } else {
-        echo json_encode(['error' => 'User not logged in']);
-    }
+// Execute the query and check if the event was created successfully
+if ($stmt->execute()) {
+    echo json_encode([
+        'status' => 'success',
+        'eventID' => $stmt->insert_id,
+        'eventName' => $eventName,
+        'location' => $location,
+        'dateTime' => $dateTime,
+        'maxDonors' => $maxDonors,
+        'description' => $description,
+        'organizerID' => $userID
+    ]);
+} else {
+    echo json_encode(['status' => 'error', 'message' => 'Failed to create event.']);
 }
-
-// Handle POST request for creating a new event
-if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-    // Only allow Event Organizers to create events
-    if (isset($_SESSION['userID']) && isset($_SESSION['role']) && $_SESSION['role'] == 'Event Organizer') {
-        $userID = $_SESSION['userID'];
-
-        // Check if all required fields are provided
-        if (isset($_POST['eventName'], $_POST['eventDescription'], $_POST['eventDateTime'], $_POST['eventLocation'], $_POST['eventMaxDonors'])) {
-            $eventData = [
-                'eventName' => $_POST['eventName'],
-                'eventDescription' => $_POST['eventDescription'],
-                'eventDateTime' => $_POST['eventDateTime'],
-                'eventLocation' => $_POST['eventLocation'],
-                'eventMaxDonors' => $_POST['eventMaxDonors']
-            ];
-
-            // Create the event
-            $response = createEvent($userID, $eventData);
-            echo json_encode($response);
-        } else {
-            echo json_encode(['error' => 'All fields are required to create an event']);
-        }
-    }
-}
-
-// Close the database connection
-$conn->close();
 ?>
