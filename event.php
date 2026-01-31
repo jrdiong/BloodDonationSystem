@@ -1,6 +1,10 @@
 <?php
+// Enable error reporting for debugging
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
+
 // Database connection settings
-$host = 'localhost';      // Database host
+$host = 'localhost';      
 $dbname = 'cbdc_system';   // Your database name
 $username = 'root';        // Database username
 $password = '';            // Database password (change as needed)
@@ -10,15 +14,13 @@ try {
     $pdo = new PDO("mysql:host=$host;dbname=$dbname", $username, $password);
     $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION); // Enable exception mode
 } catch (PDOException $e) {
-    // If connection fails, output error message
     echo 'Connection failed: ' . $e->getMessage();
     exit;
 }
 
 // Handle GET request to fetch events
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {
-    // SQL to fetch all events from the database
-    $sql = "SELECT * FROM events"; // Fetch all events
+    $sql = "SELECT * FROM event"; // Fetch all events from the 'event' table
     $stmt = $pdo->prepare($sql);
     $stmt->execute();
     $events = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -27,44 +29,63 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     echo json_encode($events);
 }
 
-// Handle POST request to create a new event
+// Handle POST request to create a new event (including file upload)
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    // Get POST data from the form
+    // Get POST data
     $eventName = $_POST['eventName'];
-    $imageUrl = $_POST['imageUrl'];
     $location = $_POST['location'];
     $dateTime = $_POST['dateTime'];
     $maxDonors = $_POST['maxDonors'];
     $description = $_POST['description'];
-    $organizerID = $_POST['organizerID'];
+    $organizerID = $_POST['organizerID'];  // Ensure these fields are correctly handled
     $hospitalID = $_POST['hospitalID'];
 
-    // Validate required fields
-    if (empty($eventName) || empty($location) || empty($dateTime) || empty($maxDonors) || empty($organizerID) || empty($hospitalID)) {
-        echo json_encode(["status" => "error", "message" => "All fields are required."]);
-        exit;
+    // Handle image upload
+    if (isset($_FILES['imageUpload'])) {
+        $imageTmp = $_FILES['imageUpload']['tmp_name'];
+        $imageName = $_FILES['imageUpload']['name'];
+        $imagePath = 'uploads/' . basename($imageName);
+
+        // Ensure the 'uploads' directory exists
+        if (!is_dir('uploads')) {
+            mkdir('uploads', 0755, true);
+        }
+
+        // Move the uploaded file to the 'uploads' directory
+        if (move_uploaded_file($imageTmp, $imagePath)) {
+            // Image uploaded successfully
+        } else {
+            // Error uploading the image
+            echo json_encode(["status" => "error", "message" => "Failed to upload image."]);
+            exit;
+        }
+    } else {
+        $imagePath = null; // Set to null if no image is uploaded
     }
 
-    // SQL query to insert the new event into the database
-    $sql = "INSERT INTO events (eventName, image_url, location, dateTime, maxDonors, description, organizerID, hospitalID, status)
-            VALUES (:eventName, :imageUrl, :location, :dateTime, :maxDonors, :description, :organizerID, :hospitalID, 1)";
-    
-    // Prepare the SQL statement
-    $stmt = $pdo->prepare($sql);
-    $stmt->bindParam(':eventName', $eventName);
-    $stmt->bindParam(':imageUrl', $imageUrl);
-    $stmt->bindParam(':location', $location);
-    $stmt->bindParam(':dateTime', $dateTime);
-    $stmt->bindParam(':maxDonors', $maxDonors);
-    $stmt->bindParam(':description', $description);
-    $stmt->bindParam(':organizerID', $organizerID);
-    $stmt->bindParam(':hospitalID', $hospitalID);
-    
-    // Execute the query and check for success
-    if ($stmt->execute()) {
-        echo json_encode(["status" => "success", "message" => "Event created successfully"]);
-    } else {
-        echo json_encode(["status" => "error", "message" => "Failed to create event"]);
+    // Insert event data into the 'event' table (updated table name)
+    try {
+        $sql = "INSERT INTO event (eventName, image_url, location, dateTime, maxDonors, description, organizerID, hospitalID, status)
+                VALUES (:eventName, :image_url, :location, :dateTime, :maxDonors, :description, :organizerID, :hospitalID, 1)";
+        
+        $stmt = $pdo->prepare($sql);
+        $stmt->bindParam(':eventName', $eventName);
+        $stmt->bindParam(':image_url', $imagePath);
+        $stmt->bindParam(':location', $location);
+        $stmt->bindParam(':dateTime', $dateTime);
+        $stmt->bindParam(':maxDonors', $maxDonors);
+        $stmt->bindParam(':description', $description);
+        $stmt->bindParam(':organizerID', $organizerID);
+        $stmt->bindParam(':hospitalID', $hospitalID);
+        
+        if ($stmt->execute()) {
+            echo json_encode(["status" => "success", "message" => "Event created successfully"]);
+        } else {
+            echo json_encode(["status" => "error", "message" => "Failed to create event"]);
+        }
+    } catch (PDOException $e) {
+        // If there is a database error, catch and display it
+        echo json_encode(["status" => "error", "message" => "Database error: " . $e->getMessage()]);
     }
 }
 ?>
