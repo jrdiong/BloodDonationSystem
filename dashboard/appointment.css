@@ -123,6 +123,12 @@
   color: #fff;
 }
 
+.btn.danger {
+  background: #fff;
+  color: #d32f2f;
+  border: 1px solid #d32f2f;
+}
+
 .btn.secondary {
   background: #ffffff;
   border: 1px solid #d21919;
