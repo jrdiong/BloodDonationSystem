@@ -71,7 +71,7 @@ body {
 
             <div class="card-actions">
                 <button class="btn disabled" disabled>Feedback</button>
-                <button class="btn primary">Cancel</button>
+                <button class="btn danger">Cancel</button>
             </div>
         </div>
 
