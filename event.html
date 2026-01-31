@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Create Event - Blood Donation App</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <h2>Manage Events</h2>
+        <!-- Display events for all users -->
+        <div id="eventList">
+            <!-- Existing events will be dynamically inserted here -->
+        </div>
+
+        <!-- Event Organizer can add a new event -->
+        <div id="createEventBtnContainer">
+            <!-- Only show for Event Organizers -->
+            <button id="createEventBtn" onclick="showCreateForm()">+ Create New Event</button>
+        </div>
+
+        <!-- Create Event Form -->
+        <div id="createEventForm" style="display:none;">
+            <form id="eventForm" action="event.php" method="POST" enctype="multipart/form-data">
+                <div class="form-group">
+                    <label for="eventName">Event Name</label>
+                    <input type="text" id="eventName" name="eventName" required>
+                </div>
+                <div class="form-group">
+                    <label for="description">Description</label>
+                    <textarea id="description" name="description" required></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="dateTime">Event Date and Time</label>
+                    <input type="datetime-local" id="dateTime" name="dateTime" required>
+                </div>
+                <div class="form-group">
+                    <label for="location">Event Location</label>
+                    <input type="text" id="location" name="location" required>
+                </div>
+                <div class="form-group">
+                    <label for="maxDonors">Max Donors</label>
+                    <input type="number" id="maxDonors" name="maxDonors" min="1" required>
+                </div>
+                <div class="form-group">
+                    <label for="hospital">Select Hospital</label>
+                    <select id="hospital" name="hospitalID" required>
+                        <!-- Hospital options will be dynamically filled -->
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="image">Upload Event Image</label>
+                    <input type="file" id="image" name="image" accept="image/*">
+                </div>
+                <button type="submit">Submit Event Request</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // Function to fetch events and display based on the user role
+        function loadEvents() {
+            // You can use Ajax to fetch the events dynamically from your backend
+            // For now, we assume events are loaded on page load based on the user's role
+            const role = 'Event Organizer'; // This should come from the backend session
+            const events = [
+                { id: 1, name: 'Blood Donation Camp', hospital: 'City Hospital', status: 1, organizer: 'Organizer1' },
+                { id: 2, name: 'Health Awareness', hospital: 'General Hospital', status: 1, organizer: 'Organizer2' }
+            ];
+            const eventListContainer = document.getElementById('eventList');
+            eventListContainer.innerHTML = '';
+            events.forEach(event => {
+                const eventDiv = document.createElement('div');
+                eventDiv.classList.add('event');
+                eventDiv.innerHTML = `
+                    <div class="event-name">${event.name}</div>
+                    <div class="event-hospital">${event.hospital}</div>
+                    <div class="event-status">${event.status === 1 ? 'Active' : 'Deleted'}</div>
+                    <div class="event-organizer">${event.organizer}</div>
+                `;
+                // Only Event Organizers can create a new event
+                if (role === 'Event Organizer') {
+                    eventDiv.innerHTML += `<button class="editBtn" onclick="editEvent(${event.id})">Edit</button>`;
+                }
+                eventListContainer.appendChild(eventDiv);
+            });
+        }
+
+        // Function to display the create event form for Event Organizers
+        function showCreateForm() {
+            const createEventForm = document.getElementById('createEventForm');
+            createEventForm.style.display = 'block';
+            fetchHospitals();
+        }
+
+        // Fetch hospitals for the drop-down list
+        function fetchHospitals() {
+            // This will be a backend call to fetch the hospitals dynamically
+            const hospitals = [
+                { id: 1, name: 'City Hospital' },
+                { id: 2, name: 'General Hospital' }
+            ];
+
+            const hospitalSelect = document.getElementById('hospital');
+            hospitalSelect.innerHTML = '';
+            hospitals.forEach(hospital => {
+                const option = document.createElement('option');
+                option.value = hospital.id;
+                option.innerText = hospital.name;
+                hospitalSelect.appendChild(option);
+            });
+        }
+
+        // Function to edit the event
+        function editEvent(eventID) {
+            // Redirect to the event edit page or show the form with event data
+            console.log('Editing event with ID:', eventID);
+        }
+
+        // Call loadEvents on page load
+        loadEvents();
+    </script>
+</body>
+</html>
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Create Event - Blood Donation App</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <h2>Manage Events</h2>
+        <!-- Display events for all users -->
+        <div id="eventList">
+            <!-- Existing events will be dynamically inserted here -->
+        </div>
+
+        <!-- Event Organizer can add a new event -->
+        <div id="createEventBtnContainer">
+            <!-- Only show for Event Organizers -->
+            <button id="createEventBtn" onclick="showCreateForm()">+ Create New Event</button>
+        </div>
+
+        <!-- Create Event Form -->
+        <div id="createEventForm" style="display:none;">
+            <form id="eventForm" action="event.php" method="POST" enctype="multipart/form-data">
+                <div class="form-group">
+                    <label for="eventName">Event Name</label>
+                    <input type="text" id="eventName" name="eventName" required>
+                </div>
+                <div class="form-group">
+                    <label for="description">Description</label>
+                    <textarea id="description" name="description" required></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="dateTime">Event Date and Time</label>
+                    <input type="datetime-local" id="dateTime" name="dateTime" required>
+                </div>
+                <div class="form-group">
+                    <label for="location">Event Location</label>
+                    <input type="text" id="location" name="location" required>
+                </div>
+                <div class="form-group">
+                    <label for="maxDonors">Max Donors</label>
+                    <input type="number" id="maxDonors" name="maxDonors" min="1" required>
+                </div>
+                <div class="form-group">
+                    <label for="hospital">Select Hospital</label>
+                    <select id="hospital" name="hospitalID" required>
+                        <!-- Hospital options will be dynamically filled -->
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="image">Upload Event Image</label>
+                    <input type="file" id="image" name="image" accept="image/*">
+                </div>
+                <button type="submit">Submit Event Request</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // Function to fetch events and display based on the user role
+        function loadEvents() {
+            // You can use Ajax to fetch the events dynamically from your backend
+            // For now, we assume events are loaded on page load based on the user's role
+            const role = 'Event Organizer'; // This should come from the backend session
+            const events = [
+                { id: 1, name: 'Blood Donation Camp', hospital: 'City Hospital', status: 1, organizer: 'Organizer1' },
+                { id: 2, name: 'Health Awareness', hospital: 'General Hospital', status: 1, organizer: 'Organizer2' }
+            ];
+            const eventListContainer = document.getElementById('eventList');
+            eventListContainer.innerHTML = '';
+            events.forEach(event => {
+                const eventDiv = document.createElement('div');
+                eventDiv.classList.add('event');
+                eventDiv.innerHTML = `
+                    <div class="event-name">${event.name}</div>
+                    <div class="event-hospital">${event.hospital}</div>
+                    <div class="event-status">${event.status === 1 ? 'Active' : 'Deleted'}</div>
+                    <div class="event-organizer">${event.organizer}</div>
+                `;
+                // Only Event Organizers can create a new event
+                if (role === 'Event Organizer') {
+                    eventDiv.innerHTML += `<button class="editBtn" onclick="editEvent(${event.id})">Edit</button>`;
+                }
+                eventListContainer.appendChild(eventDiv);
+            });
+        }
+
+        // Function to display the create event form for Event Organizers
+        function showCreateForm() {
+            const createEventForm = document.getElementById('createEventForm');
+            createEventForm.style.display = 'block';
+            fetchHospitals();
+        }
+
+        // Fetch hospitals for the drop-down list
+        function fetchHospitals() {
+            // This will be a backend call to fetch the hospitals dynamically
+            const hospitals = [
+                { id: 1, name: 'City Hospital' },
+                { id: 2, name: 'General Hospital' }
+            ];
+
+            const hospitalSelect = document.getElementById('hospital');
+            hospitalSelect.innerHTML = '';
+            hospitals.forEach(hospital => {
+                const option = document.createElement('option');
+                option.value = hospital.id;
+                option.innerText = hospital.name;
+                hospitalSelect.appendChild(option);
+            });
+        }
+
+        // Function to edit the event
+        function editEvent(eventID) {
+            // Redirect to the event edit page or show the form with event data
+            console.log('Editing event with ID:', eventID);
+        }
+
+        // Call loadEvents on page load
+        loadEvents();
+    </script>
+</body>
+</html>
