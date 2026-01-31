@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Test Create User</title>
+    <title>Create New User</title>
     <style>
         body { font-family: Arial, sans-serif; padding: 20px; }
         label { display: block; margin: 10px 0 5px; }
@@ -17,7 +17,7 @@
 </head>
 <body>
 
-<h2>Create New User (Test)</h2>
+<h2>Create New User</h2>
 
 <form id="createUserForm">
     <label for="name">Name</label>
@@ -64,21 +64,11 @@
     document.getElementById('createUserForm').addEventListener('submit', function (e) {
         e.preventDefault();
 
-        var formData = new FormData(this);
+        var formData = new FormData(this);  // Using FormData
 
-        fetch('createUser.php', {
+        fetch('manage_user_information.php', {
             method: 'POST',
-            body: JSON.stringify({
-                name: formData.get('name'),
-                email: formData.get('email'),
-                phoneNumber: formData.get('phoneNumber'),
-                role: formData.get('role'),
-                password: formData.get('password'),
-                location: formData.get('location')  // Only for Hospital role
-            }),
-            headers: {
-                'Content-Type': 'application/json'
-            }
+            body: formData,  // Directly sending FormData
         })
         .then(response => response.json())
         .then(data => {
