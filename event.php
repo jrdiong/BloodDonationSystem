@@ -1,118 +1,163 @@
 <?php
-// Include the database connection file
-include('db_connection.php');
+// Enable error reporting for debugging
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
 
-// Start the session to retrieve user information
+// Start session to retrieve user info from session
 session_start();
 
-// Ensure the user is logged in
-if (!isset($_SESSION['userID'])) {
-    die('Please log in first');
-}
-$userID = $_SESSION['userID'];
-$role = $_SESSION['role'];  // Get the role from session
+// Set content type to JSON
+header('Content-Type: application/json');
 
-// Handle actions based on user roles
+// Database connection settings
+$servername = "localhost";
+$username = "root";
+$password = "";
+$dbname = "cbdc_system";
+
+// Create connection
+$conn = new mysqli($servername, $username, $password, $dbname);
+
+// Check the connection
+if ($conn->connect_error) {
+    die(json_encode(["error" => "Connection failed: " . $conn->connect_error]));
+}
+
+// Fetch events based on user role
+function getEvents($role, $userID) {
+    global $conn;
+
+    // Fetch events based on the user's role
+    if ($role === 'Donor') {
+        $sql = "SELECT * FROM event WHERE status = 1";  // Donor can only view active events
+    } elseif ($role === 'Event Organizer') {
+        $sql = "SELECT * FROM event WHERE organizerID = $userID";  // Event Organizer can view their own events
+    } elseif ($role === 'Hospital') {
+        $sql = "SELECT * FROM event WHERE hospitalID = $userID";  // Hospital can view events related to them
+    } elseif ($role === 'Admin') {
+        $sql = "SELECT * FROM event";  // Admin can view all events
+    } else {
+        return [];
+    }
+
+    $result = $conn->query($sql);
+    $events = [];
+
+    if ($result->num_rows > 0) {
+        while ($row = $result->fetch_assoc()) {
+            $events[] = $row;
+        }
+    }
+
+    return $events;
+}
+
+// Book an event for Donor
+function bookEvent($userID, $eventID) {
+    global $conn;
+
+    $sql = "INSERT INTO event_booking (userID, eventID) VALUES ($userID, $eventID)";
+    if ($conn->query($sql) === TRUE) {
+        return ['success' => 'Event booked successfully'];
+    } else {
+        return ['error' => 'Error booking event: ' . $conn->error];
+    }
+}
+
+// Cancel event booking
+function cancelEvent($userID, $eventID) {
+    global $conn;
+
+    $sql = "DELETE FROM event_booking WHERE userID = $userID AND eventID = $eventID";
+    if ($conn->query($sql) === TRUE) {
+        return ['success' => 'Event booking cancelled successfully'];
+    } else {
+        return ['error' => 'Error cancelling booking: ' . $conn->error];
+    }
+}
+
+// Create a new event by Event Organizer
+function createEvent($userID, $eventData) {
+    global $conn;
+
+    // Handle file upload for event image
+    if (isset($_FILES['eventImage'])) {
+        $imagePath = 'uploads/' . $_FILES['eventImage']['name'];
+        move_uploaded_file($_FILES['eventImage']['tmp_name'], $imagePath);
+    } else {
+        $imagePath = '';
+    }
+
+    // Insert new event data into the event table
+    $sql = "INSERT INTO event (eventName, description, dateTime, location, maxDonors, organizerID, status, image_url)
+            VALUES ('{$eventData['eventName']}', '{$eventData['eventDescription']}', '{$eventData['eventDateTime']}', 
+                    '{$eventData['eventLocation']}', '{$eventData['eventMaxDonors']}', $userID, 1, '$imagePath')";
+
+    if ($conn->query($sql) === TRUE) {
+        return ['success' => 'Event created successfully'];
+    } else {
+        return ['error' => 'Error creating event: ' . $conn->error];
+    }
+}
+
+// Delete an event by Admin
+function deleteEvent($eventID) {
+    global $conn;
+
+    $sql = "DELETE FROM event WHERE eventID = $eventID";
+    if ($conn->query($sql) === TRUE) {
+        return ['success' => 'Event deleted successfully'];
+    } else {
+        return ['error' => 'Error deleting event: ' . $conn->error];
+    }
+}
+
+// Handle GET request to fetch events and user information
 if ($_SERVER['REQUEST_METHOD'] == 'GET') {
-    // Fetch all events that are not deleted
-    if ($role == 'Donor') {
-        // Donors can see all events, regardless of hospital or organizer
-        $query = "SELECT * FROM event WHERE status = 1";
-    } elseif ($role == 'Event Organizer' || $role == 'Hospital') {
-        // Event Organizers and Hospitals only see events they are involved in
-        $query = "SELECT * FROM event WHERE status = 1 AND (organizerID = ? OR hospitalID = ?)";
-        $stmt = $conn->prepare($query);
-        $stmt->bind_param("ii", $userID, $userID);
-        $stmt->execute();
-        $result = $stmt->get_result();
-        $events = $result->fetch_all(MYSQLI_ASSOC);
-    } elseif ($role == 'Admin') {
-        // Admin can see all events
-        $query = "SELECT * FROM event WHERE status != 0"; // Including deleted events for admin
-    }
+    if (isset($_SESSION['userID']) && isset($_SESSION['role'])) {
+        $role = $_SESSION['role']; // Get role from session
+        $userID = $_SESSION['userID']; // Get userID from session
 
-    // Fetch events and return to frontend
-    if ($role == 'Event Organizer' || $role == 'Hospital') {
-        echo json_encode($events); // Return the events for Event Organizer or Hospital
-        exit;
-    }
+        // Output the current logged-in user's ID, role, and if the "Create New Event" button should be shown
+        echo json_encode([
+            'userID' => $userID,
+            'role' => $role,
+            'showCreateButton' => $role === 'Event Organizer' // Show button only for Event Organizers
+        ]);
 
-    // Handle form submission (POST request)
-} elseif ($_SERVER['REQUEST_METHOD'] == 'POST') {
-    
-    // Handle Event Organizer submitting a new event
-    if ($role == 'Event Organizer') {
-        $eventName = trim($_POST['eventName']);
-        $description = trim($_POST['description']);
-        $dateTime = $_POST['dateTime'];
-        $location = trim($_POST['location']);
-        $maxDonors = (int) $_POST['maxDonors'];
-        $hospitalID = (int) $_POST['hospitalID'];  // Hospital selected by Event Organizer
-
-        // Validate the form data
-        if (empty($eventName) || empty($description) || empty($dateTime) || empty($location) || $maxDonors <= 0 || $hospitalID <= 0) {
-            die('Please ensure all fields are filled correctly.');
-        }
-
-        // Insert the new event request into the database (pending approval)
-        $query = "INSERT INTO event (eventName, description, dateTime, location, maxDonors, organizerID, hospitalID, status) 
-                  VALUES (?, ?, ?, ?, ?, ?, ?, 1)";  // Status is set to 1 (active)
-        $stmt = $conn->prepare($query);
-        $stmt->bind_param("ssssis", $eventName, $description, $dateTime, $location, $maxDonors, $userID, $hospitalID);
-        if ($stmt->execute()) {
-            echo 'Event request has been successfully created and sent for admin approval.';
-        } else {
-            echo 'Failed to create the event. Please try again later.';
-        }
-        $stmt->close();
-        exit;
-    }
-
-    // Handle Admin deleting an event
-    if ($role == 'Admin') {
-        $eventID = (int) $_POST['eventID'];
-
-        // Validate the event ID
-        if ($eventID <= 0) {
-            die('Invalid event ID.');
-        }
-
-        // Update event status to 0 (deleted) instead of actually deleting the record
-        $query = "UPDATE event SET status = 0 WHERE eventID = ?";
-        $stmt = $conn->prepare($query);
-        $stmt->bind_param("i", $eventID);
-        if ($stmt->execute()) {
-            echo 'Event has been deleted successfully.';
-        } else {
-            echo 'Failed to delete the event. Please try again later.';
-        }
-        $stmt->close();
-        exit;
-    }
-
-    // Handle Donor booking an event
-    if ($role == 'Donor') {
-        $eventID = (int) $_POST['eventID'];
-
-        // Validate the event ID
-        if ($eventID <= 0) {
-            die('Invalid event ID.');
-        }
-
-        // Add event to Donor's event page (assuming a `donor_events` table exists to track bookings)
-        $query = "INSERT INTO donor_events (donorID, eventID) VALUES (?, ?)";
-        $stmt = $conn->prepare($query);
-        $stmt->bind_param("ii", $userID, $eventID);
-        if ($stmt->execute()) {
-            echo 'Event has been booked successfully.';
-        } else {
-            echo 'Failed to book the event. Please try again later.';
-        }
-        $stmt->close();
-        exit;
+        // Fetch and return events for the current user based on their role
+        $events = getEvents($role, $userID);
+        echo json_encode($events);
+    } else {
+        echo json_encode(['error' => 'User not logged in']);
     }
 }
 
-// Closing database connection
+// Handle POST request for creating a new event
+if ($_SERVER['REQUEST_METHOD'] == 'POST') {
+    // Only allow Event Organizers to create events
+    if (isset($_SESSION['userID']) && isset($_SESSION['role']) && $_SESSION['role'] == 'Event Organizer') {
+        $userID = $_SESSION['userID'];
+
+        // Check if all required fields are provided
+        if (isset($_POST['eventName'], $_POST['eventDescription'], $_POST['eventDateTime'], $_POST['eventLocation'], $_POST['eventMaxDonors'])) {
+            $eventData = [
+                'eventName' => $_POST['eventName'],
+                'eventDescription' => $_POST['eventDescription'],
+                'eventDateTime' => $_POST['eventDateTime'],
+                'eventLocation' => $_POST['eventLocation'],
+                'eventMaxDonors' => $_POST['eventMaxDonors']
+            ];
+
+            // Create the event
+            $response = createEvent($userID, $eventData);
+            echo json_encode($response);
+        } else {
+            echo json_encode(['error' => 'All fields are required to create an event']);
+        }
+    }
+}
+
+// Close the database connection
 $conn->close();
 ?>
