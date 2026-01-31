@@ -82,10 +82,9 @@ try {
     exit;
 }
 
-// ==================== New Function: Fetch Hospital and Event Organizer Users ====================
 
 try {
-    // Query for Hospital users (without location)
+    // Query for Hospital users
     $sqlHospital = "
         SELECT u.userID, u.name, u.email, u.phoneNumber, u.role
         FROM user u
