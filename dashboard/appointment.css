@@ -1,0 +1,243 @@
+/* ===== Filter Bar ===== */
+.filter-bar {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.filter-bar input,
+.filter-bar select {
+  padding: 10px 12px;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+  background: #fff;
+}
+
+.filter-bar input {
+  flex: 1;
+}
+
+/* ===== Card List ===== */
+.card-list {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* ===== Appointment Card ===== */
+.appointment-card {
+  display: flex;
+  align-items: center;
+  background: #fff;
+  border-radius: 14px;
+  padding: 16px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+}
+
+/* ===== Date Badge ===== */
+.date-badge {
+  width: 90px;
+  min-width: 90px;
+  height: 110px;
+  border-radius: 14px;
+  color: #fff;
+  text-align: center;
+  padding: 12px;
+  font-weight: 600;
+}
+
+.date-badge .month {
+  font-size: 16px;
+}
+
+.date-badge .day {
+  font-size: 32px;
+  line-height: 1;
+}
+
+.date-badge .year {
+  font-size: 14px;
+}
+
+.date-badge.upcoming {
+  background: #d32f2f;
+}
+
+.date-badge.past {
+  background: #8e8e8e;
+}
+
+/* ===== Card Info ===== */
+.card-info {
+  flex: 1;
+  padding: 0 20px;
+}
+
+.card-info h4 {
+  margin: 0 0 6px;
+  font-size: 16px;
+}
+
+.card-info p {
+  margin: 2px 0;
+  color: #555;
+  font-size: 14px;
+}
+
+/* ===== Status ===== */
+.status {
+  display: inline-block;
+  margin-top: 6px;
+  font-size: 12px;
+  padding: 4px 10px;
+  border-radius: 12px;
+}
+
+.status.upcoming {
+  background: #fdecea;
+  color: #d32f2f;
+}
+
+.status.completed {
+  background: #eee;
+  color: #666;
+}
+
+/* ===== Actions ===== */
+.card-actions {
+  display: flex;
+  gap: 12px;
+}
+
+/* ===== Buttons ===== */
+.btn {
+  padding: 8px 16px;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.btn.primary {
+  background: #1976d2;
+  color: #fff;
+}
+
+.btn.danger {
+  background: #fff;
+  color: #d32f2f;
+  border: 1px solid #d32f2f;
+}
+
+.btn.secondary {
+  background: #ffffff;
+  border: 1px solid #1976d2;
+  color: #1976d2;
+}
+
+.btn.disabled {
+  background: #e0e0e0;
+  color: #999;
+  cursor: not-allowed;
+}
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.4);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.modal-overlay.hidden { display: none; }
+
+.rating-box {
+  position: relative;
+  background: #fff;
+  padding: 25px 50px 35px;
+  border-radius: 25px;
+  box-shadow: 0 5px 10px rgba(0, 0, 0, 0.05);
+  text-align: center;
+}
+
+.rating-box header {
+  font-size: 22px;
+  color: #333;
+  font-weight: 500;
+  margin-bottom: 20px;
+}
+
+.stars {
+  display: flex;
+  justify-content: center;
+  gap: 15px;
+}
+
+.stars i {
+  color: #e6e6e6;
+  font-size: 35px;
+  cursor: pointer;
+  transition: color 0.2s ease;
+}
+
+.stars i.active { color: #ff9c1a; }
+
+.comment-group {
+  position: relative;
+  margin-top: 30px;
+  margin-bottom: 20px;
+  width: 100%;
+}
+
+.comment-group textarea {
+  width: 100%;
+  padding: 16px 12px 12px 12px;
+  border-radius: 12px;
+  border: 1px solid #ccc;
+  outline: none;
+  resize: vertical;
+  font-family: 'Poppins', sans-serif;
+  font-size: 14px;
+  background: #fdfdfd;
+  transition: border 0.2s, box-shadow 0.2s;
+}
+
+.comment-group textarea:focus {
+  border-color: #1976d2;
+  box-shadow: 0 4px 12px rgba(25, 118, 210, 0.2);
+}
+
+/* Floating label */
+.comment-group label {
+  position: absolute;
+  top: 16px;
+  left: 12px;
+  color: #999;
+  font-size: 14px;
+  pointer-events: none;
+  transition: all 0.2s ease;
+}
+
+.comment-group textarea:focus + label,
+.comment-group textarea:not(:placeholder-shown) + label {
+  top: -8px;
+  left: 10px;
+  font-size: 12px;
+  color: #1976d2;
+  background: #fff;
+  padding: 0 4px;
+}
+
+.modal-buttons { margin-top: 20px; }
+.modal-buttons button {
+  margin: 0 5px;
+  padding: 8px 20px;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+}
+
+.modal-buttons .submit { background: #1976d2; color: #fff; }
+.modal-buttons .cancel { background: #ccc; color: #333; }
