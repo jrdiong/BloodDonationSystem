@@ -45,7 +45,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST['login'])) {
             $_SESSION['name'] = $row['name'];
             $_SESSION['role'] = $row['role'];
 
-            header("Location: test.html"); 
+            header("Location: profile.html"); 
             exit();
         } else {
             echo "<script>
@@ -62,7 +62,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST['login'])) {
 
     mysqli_stmt_close($stmt);
 } else {
-    header("Location: profile.html");
+    header("Location: login.html");
     exit();
 }
 
