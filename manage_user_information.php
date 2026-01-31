@@ -20,20 +20,13 @@ try {
     exit;
 }
 
-// Get input data in JSON format
-$data = json_decode(file_get_contents("php://input"));
-if (!$data) {
-    echo json_encode(['status' => 'error', 'message' => 'Invalid JSON received']);
-    exit;
-}
-
-// Extract input data
-$name = $data->name;
-$email = $data->email;
-$phoneNumber = $data->phoneNumber;
-$role = $data->role;
-$password = $data->password;
-$location = isset($data->location) ? $data->location : null;  // Only for Hospital role
+// Get data from $_POST (since the form data is sent as multipart/form-data)
+$name = $_POST['name'] ?? null;
+$email = $_POST['email'] ?? null;
+$phoneNumber = $_POST['phoneNumber'] ?? null;
+$role = $_POST['role'] ?? null;
+$password = $_POST['password'] ?? null;
+$location = $_POST['location'] ?? null;  // Only for Hospital role
 
 // Validate input data
 if (empty($name) || empty($email) || empty($phoneNumber) || empty($password) || empty($role)) {

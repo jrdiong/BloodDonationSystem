@@ -32,7 +32,7 @@
     <label for="role">Role</label>
     <select id="role" name="role" required>
         <option value="Hospital">Hospital</option>
-        <option value="Event Organize">Event Organize</option>
+        <option value="Event Organizer">Event Organizer</option>
     </select>
 
     <label for="password">Password</label>
@@ -65,6 +65,11 @@
         e.preventDefault();
 
         var formData = new FormData(this);  // Using FormData
+
+        // Debug: Log form data to check if 'role' is being sent
+        for (var pair of formData.entries()) {
+            console.log(pair[0] + ': ' + pair[1]);  // This will show all the form data
+        }
 
         fetch('manage_user_information.php', {
             method: 'POST',
