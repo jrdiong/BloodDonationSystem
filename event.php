@@ -3,6 +3,8 @@ session_start();
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
 
+header('Content-Type: application/json');
+
 /* =========================
    Authentication Check
 ========================= */
@@ -10,6 +12,7 @@ if (!isset($_SESSION['userID'])) {
     echo json_encode(["status"=>"error","message"=>"Unauthorized"]);
     exit;
 }
+
 $loggedInUserID = $_SESSION['userID'];
 
 /* =========================
@@ -46,14 +49,43 @@ $role = getUserRole($pdo, $loggedInUserID);
 /* =========================
    Helper: Handle Image Upload
 ========================= */
-function handleUpload($file){
-    if(!$file || $file['error']!==UPLOAD_ERR_OK) return null;
-    $ext = pathinfo($file['name'], PATHINFO_EXTENSION);
-    $fileName = uniqid('event_', true).'.'.$ext;
-    if(!is_dir('uploads')) mkdir('uploads',0755,true);
-    $path = 'uploads/'.$fileName;
-    move_uploaded_file($file['tmp_name'],$path);
-    return $path;
+function handleImageUpload($fileInputName){
+    if(!isset($_FILES[$fileInputName]) || $_FILES[$fileInputName]['error'] !== UPLOAD_ERR_OK){
+        return null; // No file uploaded
+    }
+
+    $fileTmp = $_FILES[$fileInputName]['tmp_name'];
+    $fileName = $_FILES[$fileInputName]['name'];
+
+    // Check if file is an image
+    $fileInfo = getimagesize($fileTmp);
+    if($fileInfo === false){
+        throw new Exception("Uploaded file is not a valid image");
+    }
+
+    // Allow only certain extensions
+    $ext = strtolower(pathinfo($fileName, PATHINFO_EXTENSION));
+    $allowed = ['jpg','jpeg','png','gif'];
+    if(!in_array($ext, $allowed)){
+        throw new Exception("Invalid file type. Allowed: jpg, jpeg, png, gif");
+    }
+
+    // Ensure uploads folder exists
+    $uploadDir = __DIR__ . '/uploads/';
+    if(!is_dir($uploadDir)){
+        mkdir($uploadDir, 0755, true);
+    }
+
+    // Unique filename
+    $newName = 'event_' . time() . '_' . uniqid() . '.' . $ext;
+    $destination = $uploadDir . $newName;
+
+    if(!move_uploaded_file($fileTmp, $destination)){
+        throw new Exception("Failed to save uploaded file");
+    }
+
+    // Return relative path for DB
+    return 'uploads/' . $newName;
 }
 
 /* =========================
@@ -75,36 +107,18 @@ if($_SERVER['REQUEST_METHOD']==='GET' && ($_GET['action']??'')==='getHospitals')
 ========================= */
 if($_SERVER['REQUEST_METHOD']==='GET' && !isset($_GET['action'])){
     if($role==='Event Organizer'){
-        $stmt = $pdo->prepare("
-            SELECT e.*, u.name AS hospitalName
-            FROM event e
-            JOIN user u ON e.hospitalID=u.userID
-            WHERE e.organizerID=? AND e.status IN (1,2)
-            ORDER BY e.dateTime DESC
-        ");
+        $stmt = $pdo->prepare("SELECT e.*, u.name AS hospitalName FROM event e JOIN user u ON e.hospitalID=u.userID WHERE e.organizerID=? AND e.status IN (1,2) ORDER BY e.dateTime DESC");
         $stmt->execute([$loggedInUserID]);
     } elseif($role==='Hospital'){
-        $stmt = $pdo->prepare("
-            SELECT e.*, u.name AS organizerName
-            FROM event e
-            JOIN user u ON e.organizerID=u.userID
-            WHERE e.hospitalID=? AND e.status=1
-            ORDER BY e.dateTime DESC
-        ");
+        $stmt = $pdo->prepare("SELECT e.*, u.name AS organizerName FROM event e JOIN user u ON e.organizerID=u.userID WHERE e.hospitalID=? AND e.status=1 ORDER BY e.dateTime DESC");
         $stmt->execute([$loggedInUserID]);
-    } else { // Admin
+    } else {
         $stmt = $pdo->query("SELECT * FROM event WHERE status=1 ORDER BY dateTime DESC");
-    }
-
-    $events = $stmt->fetchAll(PDO::FETCH_ASSOC);
-    // Ensure image URL is valid
-    foreach($events as &$ev){
-        $ev['image_url'] = $ev['image_url'] ? $ev['image_url'] : 'placeholder.jpg';
     }
 
     echo json_encode([
         "status"=>"success",
-        "data"=>$events,
+        "data"=>$stmt->fetchAll(PDO::FETCH_ASSOC),
         "role"=>$role
     ]);
     exit;
@@ -126,7 +140,7 @@ if($_SERVER['REQUEST_METHOD']==='GET' && ($_GET['action']??'')==='getEventByID')
     } elseif($role==='Hospital'){
         $stmt = $pdo->prepare("SELECT * FROM event WHERE eventID=? AND hospitalID=? AND status=1");
         $stmt->execute([$eventID,$loggedInUserID]);
-    } else { // Admin
+    } else {
         $stmt = $pdo->prepare("SELECT * FROM event WHERE eventID=?");
         $stmt->execute([$eventID]);
     }
@@ -137,16 +151,10 @@ if($_SERVER['REQUEST_METHOD']==='GET' && ($_GET['action']??'')==='getEventByID')
         exit;
     }
 
-    // Determine if user can edit
     $canEdit = false;
-    if($role==='Event Organizer' && $event['organizerID']==$loggedInUserID){
+    if(($role==='Event Organizer' && $event['organizerID']==$loggedInUserID) || ($role==='Hospital' && $event['hospitalID']==$loggedInUserID)){
         $canEdit = true;
     }
-    if($role==='Hospital' && $event['hospitalID']==$loggedInUserID){
-        $canEdit = true;
-    }
-
-    $event['image_url'] = $event['image_url'] ? $event['image_url'] : 'placeholder.jpg';
 
     echo json_encode([
         "status"=>"success",
@@ -158,7 +166,7 @@ if($_SERVER['REQUEST_METHOD']==='GET' && ($_GET['action']??'')==='getEventByID')
 }
 
 /* =========================
-   POST: Save Event (Organizer/Hospital)
+   POST: Save Event
 ========================= */
 if($_SERVER['REQUEST_METHOD']==='POST' && ($_POST['action']??'')==='saveEvent'){
     $eventID = $_POST['eventID'] ?? null;
@@ -175,7 +183,6 @@ if($_SERVER['REQUEST_METHOD']==='POST' && ($_POST['action']??'')==='saveEvent'){
         exit;
     }
 
-    // Permission check
     if(!(
         ($role==='Event Organizer' && $event['organizerID']==$loggedInUserID) ||
         ($role==='Hospital' && $event['hospitalID']==$loggedInUserID)
@@ -189,21 +196,25 @@ if($_SERVER['REQUEST_METHOD']==='POST' && ($_POST['action']??'')==='saveEvent'){
     $maxDonors = $_POST['maxDonors'] ?? $event['maxDonors'];
     $description = $_POST['description'] ?? $event['description'];
 
-    $imagePath = handleUpload($_FILES['imageUpload']) ?? $event['image_url'];
+    $imagePath = $event['image_url'];
 
-    $stmt = $pdo->prepare("
-        UPDATE event
-        SET eventName=?, dateTime=?, maxDonors=?, description=?, image_url=?
-        WHERE eventID=?
-    ");
+    try {
+        $uploadedImage = handleImageUpload('imageUpload');
+        if($uploadedImage) $imagePath = $uploadedImage;
+    } catch(Exception $e){
+        echo json_encode(["status"=>"error","message"=>$e->getMessage()]);
+        exit;
+    }
+
+    $stmt = $pdo->prepare("UPDATE event SET eventName=?, dateTime=?, maxDonors=?, description=?, image_url=? WHERE eventID=?");
     $stmt->execute([$eventName,$dateTime,$maxDonors,$description,$imagePath,$eventID]);
 
-    echo json_encode(["status"=>"success","message"=>"Event saved successfully","image_url"=>$imagePath]);
+    echo json_encode(["status"=>"success","message"=>"Event updated successfully"]);
     exit;
 }
 
 /* =========================
-   POST: Send Request to Admin (Create Pending Event)
+   POST: Send Request (Create Pending Event)
 ========================= */
 if($_SERVER['REQUEST_METHOD']==='POST' && ($_POST['action']??'')==='sendRequest'){
     if($role!=='Event Organizer'){
@@ -223,7 +234,14 @@ if($_SERVER['REQUEST_METHOD']==='POST' && ($_POST['action']??'')==='sendRequest'
         exit;
     }
 
-    $imagePath = handleUpload($_FILES['imageUpload']);
+    $imagePath = null;
+    try {
+        $uploadedImage = handleImageUpload('imageUpload');
+        if($uploadedImage) $imagePath = $uploadedImage;
+    } catch(Exception $e){
+        echo json_encode(["status"=>"error","message"=>$e->getMessage()]);
+        exit;
+    }
 
     $stmt = $pdo->prepare("
         INSERT INTO event(eventName,image_url,location,dateTime,maxDonors,description,organizerID,hospitalID,status)
@@ -231,12 +249,12 @@ if($_SERVER['REQUEST_METHOD']==='POST' && ($_POST['action']??'')==='sendRequest'
     ");
     $stmt->execute([$eventName,$imagePath,$location,$dateTime,$maxDonors,$description,$loggedInUserID,$hospitalID]);
 
-    echo json_encode(["status"=>"success","message"=>"Request sent to admin","image_url"=>$imagePath]);
+    echo json_encode(["status"=>"success","message"=>"Request sent to admin"]);
     exit;
 }
 
 /* =========================
-   POST: Donor Book Event
+   POST: Book Event (Donor)
 ========================= */
 if($_SERVER['REQUEST_METHOD']==='POST' && ($_POST['action']??'')==='bookEvent'){
     if($role!=='Donor'){
@@ -258,7 +276,7 @@ if($_SERVER['REQUEST_METHOD']==='POST' && ($_POST['action']??'')==='bookEvent'){
 }
 
 /* =========================
-   POST: Admin Delete Event
+   POST: Delete Event (Admin)
 ========================= */
 if($_SERVER['REQUEST_METHOD']==='POST' && ($_POST['action']??'')==='deleteEvent'){
     if($role!=='Admin'){
@@ -278,4 +296,5 @@ if($_SERVER['REQUEST_METHOD']==='POST' && ($_POST['action']??'')==='deleteEvent'
     echo json_encode(["status"=>"success","message"=>"Event deleted successfully"]);
     exit;
 }
+
 ?>
