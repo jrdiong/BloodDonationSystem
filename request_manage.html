@@ -60,6 +60,16 @@ body { font-family: Arial, sans-serif; margin: 20px; background: #f5f5f5; }
     justify-content: flex-end;
     gap: 10px;
 }
+#eventDescription {
+    max-height: 100px; 
+    overflow-y: auto; 
+    padding: 5px; 
+    border: 1px solid #ccc; 
+    border-radius: 8px;
+    background: #f9f9f9;
+    white-space: pre-wrap;
+    margin-bottom: 10px;
+}
 
 /* Recorded Requests Table */
 #recordedTable {
@@ -81,6 +91,12 @@ body { font-family: Arial, sans-serif; margin: 20px; background: #f5f5f5; }
     object-fit: cover;
     border-radius: 8px;
 }
+
+#loading {
+    display: none;
+    margin-top: 10px;
+    color: green;
+}
 </style>
 </head>
 <body>
@@ -89,6 +105,7 @@ body { font-family: Arial, sans-serif; margin: 20px; background: #f5f5f5; }
 
 <!-- Request Button -->
 <button id="requestBtn">Requests <span id="requestBadge">0</span></button>
+<div id="loading">Loading...</div>
 
 <!-- Modal for Pending Request -->
 <div id="requestModal">
@@ -100,6 +117,8 @@ body { font-family: Arial, sans-serif; margin: 20px; background: #f5f5f5; }
         <p><strong>Date/Time:</strong> <span id="eventDateTime"></span></p>
         <p><strong>Location:</strong> <span id="eventLocation"></span></p>
         <p><strong>Organizer:</strong> <span id="eventOrganizer"></span></p>
+        <p><strong>Description:</strong></p>
+        <div id="eventDescription"></div>
         <div id="modalButtons">
             <button id="approveBtn">Approve</button>
             <button id="rejectBtn">Reject</button>
@@ -119,9 +138,7 @@ body { font-family: Arial, sans-serif; margin: 20px; background: #f5f5f5; }
             <th>Record Status</th>
         </tr>
     </thead>
-    <tbody id="recordedBody">
-        <!-- Filled dynamically -->
-    </tbody>
+    <tbody id="recordedBody"></tbody>
 </table>
 
 <script>
@@ -138,49 +155,67 @@ const eventName = document.getElementById('eventName');
 const eventDateTime = document.getElementById('eventDateTime');
 const eventLocation = document.getElementById('eventLocation');
 const eventOrganizer = document.getElementById('eventOrganizer');
+const eventDescription = document.getElementById('eventDescription');
 const approveBtn = document.getElementById('approveBtn');
 const rejectBtn = document.getElementById('rejectBtn');
 const recordedBody = document.getElementById('recordedBody');
+const loading = document.getElementById('loading');
 
 // ================== Fetch Pending Requests ==================
 async function loadPendingRequests() {
+    loading.style.display = 'inline';
     try {
         const res = await fetch('request_manage.php?action=pending');
         const data = await res.json();
-        if(data.status!=='success') { alert(data.message||'Failed to load requests'); return; }
-
+        if(data.status !== 'success') { 
+            alert(data.message || 'Failed to load requests'); 
+            return; 
+        }
         pendingRequests = data.pending || [];
         requestBadge.textContent = pendingRequests.length;
-    } catch(e) { console.error(e); alert('Failed to load requests'); }
+    } catch(e) { 
+        console.error(e); 
+        alert('Failed to load requests'); 
+    } finally {
+        loading.style.display = 'none';
+    }
 }
 
 // ================== Fetch Recorded Requests ==================
 async function loadRecordedRequests() {
+    loading.style.display = 'inline';
     try {
         const res = await fetch('request_manage.php?action=recorded');
         const data = await res.json();
-        if(data.status!=='success') { alert(data.message||'Failed to load recorded requests'); return; }
-
+        if(data.status !== 'success') { 
+            alert(data.message || 'Failed to load recorded requests'); 
+            return; 
+        }
         recordedBody.innerHTML = '';
-        data.recorded.forEach(r=>{
+        data.recorded.forEach(r => {
             const tr = document.createElement('tr');
             tr.innerHTML = `
-                <td><img src="${r.image_url||'placeholder.jpg'}"></td>
+                <td><img src="${r.image_url || 'placeholder.jpg'}"></td>
                 <td>${r.eventName}</td>
                 <td>${r.dateTime}</td>
                 <td>${r.location}</td>
-                <td>${r.recordStatus==1?'Recorded':'Not Recorded'}</td>
+                <td>${r.recordStatus == 1 ? 'Recorded' : 'Not Recorded'}</td>
             `;
             recordedBody.appendChild(tr);
         });
-    } catch(e){ console.error(e); alert('Failed to load recorded requests'); }
+    } catch(e) { 
+        console.error(e); 
+        alert('Failed to load recorded requests'); 
+    } finally {
+        loading.style.display = 'none';
+    }
 }
 
 // ================== Show Next Pending Request ==================
 function showNextRequest() {
     if(currentRequestIndex >= pendingRequests.length) {
-        requestModal.style.display='none';
-        currentRequestIndex=0;
+        requestModal.style.display = 'none';
+        currentRequestIndex = 0;
         loadPendingRequests(); // refresh badge
         loadRecordedRequests(); // refresh table
         return;
@@ -192,55 +227,73 @@ function showNextRequest() {
     eventDateTime.textContent = req.dateTime;
     eventLocation.textContent = req.location;
     eventOrganizer.textContent = req.organizerName;
+    eventDescription.textContent = req.description || '';
 
-    requestModal.style.display='flex';
+    requestModal.style.display = 'flex';
 }
 
 // ================== Button Clicks ==================
 requestBtn.onclick = () => {
-    if(pendingRequests.length>0) {
+    if(pendingRequests.length > 0) {
         showNextRequest();
     } else {
         alert('No pending requests');
     }
 };
-
-closeModal.onclick = () => requestModal.style.display='none';
+closeModal.onclick = () => requestModal.style.display = 'none';
 
 // --- Approve ---
 approveBtn.onclick = async () => {
+    approveBtn.disabled = rejectBtn.disabled = true;
     const record = confirm('Do you want to record this request? Click OK for Yes, Cancel for No');
     const req = pendingRequests[currentRequestIndex];
-    try{
+    console.log("Approving event:", req);
+    try {
         const formData = new FormData();
-        formData.append('action','approve');
-        formData.append('requestID', req.requestID); // <-- FIXED to requestID
-        formData.append('record', record?1:0);
+        formData.append('action', 'approve');
+        formData.append('eventID', req.eventID);
+        formData.append('record', record ? 1 : 0);
 
         const res = await fetch('request_manage.php', {method:'POST', body:formData});
         const data = await res.json();
-        if(data.status==='success'){
+        if(data.status === 'success') {
             currentRequestIndex++;
             showNextRequest();
-        } else { alert(data.message||'Approve failed'); }
-    }catch(e){ console.error(e); alert('Approve failed'); }
+        } else { 
+            alert(data.message || 'Approve failed'); 
+        }
+    } catch(e) { 
+        console.error(e); 
+        alert('Approve failed'); 
+    } finally {
+        approveBtn.disabled = rejectBtn.disabled = false;
+    }
 };
 
 // --- Reject ---
 rejectBtn.onclick = async () => {
+    approveBtn.disabled = rejectBtn.disabled = true;
     const req = pendingRequests[currentRequestIndex];
-    try{
+    console.log("Rejecting event:", req);
+    try {
         const formData = new FormData();
-        formData.append('action','reject');
-        formData.append('requestID', req.requestID); // <-- FIXED to requestID
+        formData.append('action', 'reject');
+        formData.append('eventID', req.eventID);
 
         const res = await fetch('request_manage.php', {method:'POST', body:formData});
         const data = await res.json();
-        if(data.status==='success'){
+        if(data.status === 'success') {
             currentRequestIndex++;
             showNextRequest();
-        } else { alert(data.message||'Reject failed'); }
-    }catch(e){ console.error(e); alert('Reject failed'); }
+        } else { 
+            alert(data.message || 'Reject failed'); 
+        }
+    } catch(e) { 
+        console.error(e); 
+        alert('Reject failed'); 
+    } finally {
+        approveBtn.disabled = rejectBtn.disabled = false;
+    }
 };
 
 // ================== Initialize ==================

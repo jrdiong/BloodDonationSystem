@@ -11,7 +11,6 @@ if (!isset($_SESSION['userID'])) {
     echo json_encode(["status" => "error", "message" => "Unauthorized"]);
     exit;
 }
-
 $adminID = $_SESSION['userID'];
 
 /* ====================
@@ -38,56 +37,57 @@ try {
 $stmt = $pdo->prepare("SELECT role FROM user WHERE userID=?");
 $stmt->execute([$adminID]);
 $role = $stmt->fetchColumn();
-
-if($role !== 'Admin'){
+if ($role !== 'Admin') {
     echo json_encode(["status" => "error", "message" => "Permission denied"]);
     exit;
 }
 
 /* ====================
-   GET Pending Requests
+   GET Requests
 ==================== */
-if ($_SERVER['REQUEST_METHOD'] === 'GET' && ($_GET['action'] ?? '') === 'pending') {
-    $stmt = $pdo->prepare("
-        SELECT e.eventID, e.eventName, e.dateTime, e.location, e.image_url, e.description,
-               u.name AS organizerName
-        FROM event e
-        JOIN user u ON e.organizerID = u.userID
-        WHERE e.status = 2
-        ORDER BY e.dateTime ASC
-    ");
-    $stmt->execute();
-    $pending = $stmt->fetchAll(PDO::FETCH_ASSOC);
-    echo json_encode(["status" => "success", "pending" => $pending]);
-    exit;
+$action = $_GET['action'] ?? null;
+
+if ($_SERVER['REQUEST_METHOD'] === 'GET') {
+    if ($action === 'pending') {
+        // Pending = event.status = 2
+        $stmt = $pdo->prepare("
+            SELECT e.eventID, e.eventName, e.dateTime, e.location, e.image_url, e.description,
+                   u.name AS organizerName
+            FROM event e
+            JOIN user u ON e.organizerID = u.userID
+            WHERE e.status = 2
+            ORDER BY e.dateTime ASC
+        ");
+        $stmt->execute();
+        $pending = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        echo json_encode(["status" => "success", "pending" => $pending]);
+        exit;
+    }
+
+    if ($action === 'recorded') {
+        // Recorded = request.status = 0 or 1
+        $stmt = $pdo->prepare("
+            SELECT r.requestID, r.eventID, r.status AS recordStatus,
+                   e.eventName, e.dateTime, e.location, e.image_url, e.description
+            FROM request r
+            JOIN event e ON r.eventID = e.eventID
+            ORDER BY r.requestID DESC
+        ");
+        $stmt->execute();
+        $recorded = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        echo json_encode(["status" => "success", "recorded" => $recorded]);
+        exit;
+    }
 }
 
 /* ====================
-   GET Recorded Requests
+   POST Approve / Reject
 ==================== */
-if ($_SERVER['REQUEST_METHOD'] === 'GET' && ($_GET['action'] ?? '') === 'recorded') {
-    $stmt = $pdo->prepare("
-        SELECT r.requestID, r.eventID, r.status AS recordStatus,
-               e.eventName, e.dateTime, e.location, e.image_url, e.description
-        FROM request r
-        JOIN event e ON r.eventID = e.eventID
-        WHERE r.status = 1
-        ORDER BY r.requestID DESC
-    ");
-    $stmt->execute();
-    $recorded = $stmt->fetchAll(PDO::FETCH_ASSOC);
-    echo json_encode(["status" => "success", "recorded" => $recorded]);
-    exit;
-}
-
-/* ====================
-   POST Approve Request
-==================== */
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'approve') {
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $postAction = $_POST['action'] ?? null;
     $eventID = $_POST['eventID'] ?? null;
-    $record = isset($_POST['record']) ? intval($_POST['record']) : 0;
 
-    if (!$eventID || ($record !== 0 && $record !== 1)) {
+    if (!$postAction || !$eventID) {
         echo json_encode(["status" => "error", "message" => "Missing parameters"]);
         exit;
     }
@@ -95,52 +95,50 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'appro
     try {
         $pdo->beginTransaction();
 
-        // Approve event
-        $stmt = $pdo->prepare("UPDATE event SET status = 1 WHERE eventID = ?");
+        // Check if event exists
+        $stmt = $pdo->prepare("SELECT status FROM event WHERE eventID = ?");
         $stmt->execute([$eventID]);
+        $event = $stmt->fetch(PDO::FETCH_ASSOC);
+        if (!$event) {
+            throw new Exception("Event not found");
+        }
 
-        // Insert into request table with record choice
-        $stmt = $pdo->prepare("INSERT INTO request(eventID, status) VALUES(?, ?)");
-        $stmt->execute([$eventID, $record]);
+        if ($postAction === 'approve') {
+            $record = isset($_POST['record']) ? intval($_POST['record']) : 0;
+            if ($record !== 0 && $record !== 1) $record = 0;
 
-        $pdo->commit();
-        echo json_encode(["status" => "success", "message" => "Request approved"]);
+            // Update event.status based on record
+            $newEventStatus = $record === 1 ? 1 : 0;
+            $stmt = $pdo->prepare("UPDATE event SET status = ? WHERE eventID = ?");
+            $stmt->execute([$newEventStatus, $eventID]);
+
+            // Insert into request table
+            $stmt = $pdo->prepare("INSERT INTO request(eventID, status) VALUES (?, ?)");
+            $stmt->execute([$eventID, $record]);
+
+            $pdo->commit();
+            echo json_encode(["status" => "success", "message" => "Request approved"]);
+            exit;
+        }
+
+        if ($postAction === 'reject') {
+            // Reject → event.status stays 2, no need to update
+            $pdo->commit();
+            echo json_encode(["status" => "success", "message" => "Request rejected"]);
+            exit;
+        }
+
+        $pdo->rollBack();
+        echo json_encode(["status" => "error", "message" => "Invalid action"]);
+        exit;
+
     } catch (Exception $e) {
         $pdo->rollBack();
         echo json_encode(["status" => "error", "message" => $e->getMessage()]);
-    }
-    exit;
-}
-
-/* ====================
-   POST Reject Request
-==================== */
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'reject') {
-    $eventID = $_POST['eventID'] ?? null;
-
-    if (!$eventID) {
-        echo json_encode(["status" => "error", "message" => "Event ID required"]);
         exit;
     }
-
-    try {
-        $pdo->beginTransaction();
-
-        // Reject event
-        $stmt = $pdo->prepare("UPDATE event SET status = 0 WHERE eventID = ?");
-        $stmt->execute([$eventID]);
-
-        $pdo->commit();
-        echo json_encode(["status" => "success", "message" => "Request rejected"]);
-    } catch (Exception $e) {
-        $pdo->rollBack();
-        echo json_encode(["status" => "error", "message" => $e->getMessage()]);
-    }
-    exit;
 }
 
-/* ====================
-   Invalid Request
-==================== */
 echo json_encode(["status" => "error", "message" => "Invalid request"]);
+exit;
 ?>
