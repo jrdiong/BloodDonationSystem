@@ -1,250 +1,424 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Event Page</title>
+<meta charset="UTF-8">
+<title>Events</title>
 
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+<style>
+body {
+    font-family: Arial, sans-serif;
+    background: #f5f5f5;
+}
 
-        html, body {
-            height: 100%;
-            display: flex;
-            justify-content: center;
-            align-items: flex-start;
-            font-family: Arial, sans-serif;
-            background-color: #f4f4f9;
-        }
+/* ===== Event Card ===== */
+.event-card {
+    display: flex;
+    background: #fff;
+    border-radius: 20px;
+    padding: 20px;
+    margin: 15px auto;
+    width: 80%;
+    cursor: pointer;
+    position: relative;
+}
 
-        .container {
-            width: 100%;
-            max-width: 1000px;
-            padding: 20px;
-            background-color: white;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-            border-radius: 8px;
-            margin-top: 20px;
-        }
+.event-image {
+    width: 150px;
+    height: 120px;
+    border-radius: 12px;
+    background: #eee;
+    overflow: hidden;
+    flex-shrink: 0;
+}
 
-        .header-info {
-            background-color: #ffe6e6;
-            padding: 20px;
-            border-radius: 8px;
-            margin-bottom: 20px;
-        }
+.event-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
 
-        .table-layout {
-            display: grid;
-            grid-template-columns: repeat(5, 1fr);
-            gap: 10px;
-            margin-top: 20px;
-        }
+.event-info {
+    margin-left: 20px;
+}
 
-        .table-cell {
-            background-color: #f1f1f1;
-            padding: 10px;
-            border-radius: 4px;
-        }
+.event-info h3 {
+    margin: 0;
+    font-size: 22px;
+}
 
-        .create-button {
-            margin-top: 20px;
-            padding: 10px 20px;
-            background-color: #28a745;
-            color: white;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            display: none;
-        }
+.event-info p {
+    margin: 6px 0;
+}
 
-        .modal {
-            display: none;
-            position: fixed;
-            inset: 0;
-            background-color: rgba(0,0,0,0.5);
-            justify-content: center;
-            align-items: center;
-        }
+/* ===== Admin Delete ===== */
+.delete-btn {
+    position: absolute;
+    right: 20px;
+    top: 20px;
+    font-size: 22px;
+    color: red;
+    cursor: pointer;
+}
 
-        .modal-content {
-            background: white;
-            padding: 20px;
-            width: 400px;
-            border-radius: 8px;
-        }
+/* ===== Modal ===== */
+.modal {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.5);
+    z-index: 1000;
+}
 
-        .modal-content label {
-            display: block;
-            margin-bottom: 6px;
-        }
+.modal-content {
+    background: #fff;
+    width: 600px;
+    margin: 60px auto;
+    padding: 25px;
+    border-radius: 15px;
+}
 
-        .modal-content input,
-        .modal-content textarea,
-        .modal-content select,
-        .modal-content button {
-            width: 100%;
-            padding: 8px;
-            margin-bottom: 12px;
-        }
-    </style>
+.modal-content input,
+.modal-content textarea,
+.modal-content select {
+    width: 100%;
+    margin-bottom: 12px;
+    padding: 8px;
+}
+
+.modal-buttons {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+}
+
+#createEventBtn {
+    display: none;
+    margin: 20px auto;
+    padding: 10px 20px;
+    font-size: 16px;
+    cursor: pointer;
+}
+</style>
 </head>
 
 <body>
 
-<div class="container">
-    <div class="header-info">
-        <h2>Event List</h2>
-        <p>Below is the list of events related to your account.</p>
+<h2 style="text-align:center;">Event List</h2>
+
+<!-- Add New Event Button (Event Organizer Only) -->
+<button id="createEventBtn">Add New Event</button>
+
+<div id="eventList"></div>
+
+<!-- ===== Event Modal ===== -->
+<div class="modal" id="eventModal">
+  <div class="modal-content">
+    <h3 id="modalTitle"></h3>
+
+    <div class="event-image" style="margin-bottom:15px;">
+        <img id="previewImage" src="placeholder.jpg">
     </div>
 
-    <div class="table-layout" id="eventList"></div>
+    <input type="file" id="imageUpload">
 
-    <button id="createBtn" class="create-button" onclick="openCreateForm()">
-        Create New Event
-    </button>
-</div>
+    <input type="text" id="eventName" placeholder="Event Name" required>
+    <input type="datetime-local" id="dateTime" required>
+    <input type="number" id="maxDonors" placeholder="Max Donors" required>
+    <textarea id="description" placeholder="Description" required></textarea>
 
-<!-- Create Event Modal -->
-<div class="modal" id="createEventModal">
-    <div class="modal-content">
-        <h3>Create New Event</h3>
+    <!-- Hospital select (Event Organizer) -->
+    <select id="hospitalSelect" style="display:none; margin-bottom:12px;"></select>
 
-        <form id="createEventForm" enctype="multipart/form-data">
-            <label>Event Name</label>
-            <input type="text" name="eventName" required>
-
-            <label>Event Image</label>
-            <input type="file" name="imageUpload" accept="image/*" required>
-
-            <label>Location</label>
-            <input type="text" name="location" required>
-
-            <label>Date & Time</label>
-            <input type="datetime-local" name="dateTime" required>
-
-            <label>Max Donors</label>
-            <input type="number" name="maxDonors" required>
-
-            <label>Hospital</label>
-            <select name="hospitalID" id="hospitalSelect" required>
-                <option value="">Select Hospital</option>
-            </select>
-
-            <label>Description</label>
-            <textarea name="description"></textarea>
-
-            <button type="button" onclick="saveEvent()">Save</button>
-            <button type="button" onclick="closeModal()">Cancel</button>
-        </form>
-    </div>
+    <div class="modal-buttons" id="modalButtons"></div>
+  </div>
 </div>
 
 <script>
-/* =========================
-   Fetch Events
-========================= */
-function fetchEvents() {
-    fetch('event.php')
+let currentEventID = null;
+let currentRole = null;
+let canEdit = false;
+
+/* ===== Load Event List ===== */
+fetch('event.php')
+.then(res => res.json())
+.then(data => {
+    if(data.status !== 'success') {
+        alert(data.message || 'Failed to load events');
+        return;
+    }
+
+    currentRole = data.role; 
+
+    // Show "Add New Event" button for Event Organizer
+    if(currentRole === 'Event Organizer') {
+        document.getElementById('createEventBtn').style.display = 'block';
+        // Fetch hospitals for dropdown
+        fetch('event.php?action=getHospitals')
         .then(res => res.json())
-        .then(res => {
-            if (res.status === 'success') {
-                displayEvents(res.data);
+        .then(hData => {
+            if(hData.status === 'success'){
+                const select = document.getElementById('hospitalSelect');
+                select.innerHTML = '<option value="">Select Hospital</option>';
+                hData.data.forEach(h => {
+                    const opt = document.createElement('option');
+                    opt.value = h.userID;
+                    opt.textContent = h.name;
+                    select.appendChild(opt);
+                });
             }
         });
-}
+    }
 
-/* =========================
-   Display Events
-========================= */
-function displayEvents(events) {
-    const container = document.getElementById('eventList');
-    container.innerHTML = '';
+    // Render event cards
+    data.data.forEach(event => {
+        const card = document.createElement('div');
+        card.className = 'event-card';
 
-    events.forEach(e => {
-        container.innerHTML += `
-            <div class="table-cell">${e.eventName}</div>
-            <div class="table-cell">
-                ${e.image_url ? `<img src="${e.image_url}" width="60">` : ''}
+        const imgSrc = event.image_url ? event.image_url : 'placeholder.jpg';
+
+        card.innerHTML = `
+            <div class="event-image">
+                <img src="${imgSrc}">
             </div>
-            <div class="table-cell">${e.location}</div>
-            <div class="table-cell">${e.dateTime}</div>
-            <div class="table-cell">${e.maxDonors}</div>
+            <div class="event-info">
+                <h3>${event.eventName}</h3>
+                <p>Time: ${event.dateTime}</p>
+                <p>Max Donor: ${event.maxDonors}</p>
+            </div>
         `;
+
+        card.onclick = () => openEvent(event.eventID);
+
+        if(currentRole === 'Admin'){
+            const del = document.createElement('div');
+            del.className = 'delete-btn';
+            del.innerText = '-';
+            del.onclick = (e) => {
+                e.stopPropagation();
+                deleteEvent(event.eventID);
+            };
+            card.appendChild(del);
+        }
+
+        document.getElementById('eventList').appendChild(card);
+    });
+})
+.catch(err => {
+    console.error(err);
+    alert('Error loading events');
+});
+
+/* ===== Open Event Modal ===== */
+function openEvent(eventID) {
+    fetch(`event.php?action=getEventByID&eventID=${eventID}`)
+    .then(res => res.json())
+    .then(res => {
+        if(res.status !== 'success') {
+            alert(res.message || 'Failed to load event');
+            return;
+        }
+
+        const e = res.event;
+        currentEventID = e.eventID;
+        currentRole = res.role;
+        canEdit = res.canEdit;
+
+        document.getElementById('modalTitle').innerText = e.eventName;
+        document.getElementById('eventName').value = e.eventName;
+        document.getElementById('dateTime').value = e.dateTime.replace(' ', 'T').slice(0,16);
+        document.getElementById('maxDonors').value = e.maxDonors;
+        document.getElementById('description').value = e.description;
+        document.getElementById('previewImage').src = e.image_url ? e.image_url : 'placeholder.jpg';
+
+        // Enable/disable inputs based on canEdit
+        const inputs = document.querySelectorAll('#eventModal input, #eventModal textarea');
+        inputs.forEach(i => i.readOnly = !canEdit && currentRole !== 'Donor');
+
+        // Hospital select: only for event organizer managing their own event
+        if(currentRole === 'Event Organizer'){
+            if(canEdit || currentEventID===null){
+                document.getElementById('hospitalSelect').style.display = 'block';
+                document.getElementById('hospitalSelect').value = e.hospitalID || '';
+            } else {
+                document.getElementById('hospitalSelect').style.display = 'none';
+            }
+        } else {
+            document.getElementById('hospitalSelect').style.display = 'none';
+        }
+
+        renderButtons();
+        document.getElementById('eventModal').style.display = 'block';
     });
 }
 
-/* =========================
-   Load Hospitals
-========================= */
-function loadHospitals() {
-    fetch('event.php?action=getHospitals')
-        .then(res => res.json())
-        .then(res => {
-            if (res.status !== 'success') return;
+/* ===== Render Modal Buttons ===== */
+function renderButtons(isNew=false){
+    const box = document.getElementById('modalButtons');
+    box.innerHTML = '';
 
-            const select = document.getElementById('hospitalSelect');
-            select.innerHTML = '<option value="">Select Hospital</option>';
-
-            res.data.forEach(h => {
-                select.innerHTML += `
-                    <option value="${h.userID}">${h.name}</option>
-                `;
-            });
-        });
+    if(currentRole === 'Donor'){
+        box.innerHTML += `<button onclick="closeModal()">Cancel</button>`;
+        box.innerHTML += `<button onclick="bookEvent()">Book</button>`;
+    }
+    else if(currentRole === 'Admin'){
+        box.innerHTML += `<button onclick="closeModal()">Cancel</button>`;
+    }
+    else if(currentRole === 'Event Organizer' || currentRole === 'Hospital'){
+        box.innerHTML += `<button onclick="closeModal()">Cancel</button>`;
+        if(isNew || currentEventID===null){
+            box.innerHTML += `<button onclick="sendRequest()">Send Request</button>`;
+        } else if(canEdit){
+            box.innerHTML += `<button onclick="saveEvent()">Save</button>`;
+        }
+    }
 }
 
-/* =========================
-   Modal Control
-========================= */
-function openCreateForm() {
-    document.getElementById('createEventModal').style.display = 'flex';
-    loadHospitals();
+/* ===== Close Modal ===== */
+function closeModal(){
+    document.getElementById('eventModal').style.display = 'none';
 }
 
-function closeModal() {
-    document.getElementById('createEventModal').style.display = 'none';
+/* ===== Book Event (Donor) ===== */
+function bookEvent(){
+    fetch('event.php',{
+        method:'POST',
+        headers:{'Content-Type':'application/x-www-form-urlencoded'},
+        body:`action=bookEvent&eventID=${currentEventID}`
+    })
+    .then(res=>res.json())
+    .then(data=>{
+        if(data.status==='success') alert('Booked successfully');
+        else alert(data.message || 'Booking failed');
+        closeModal();
+    })
+    .catch(err=>{
+        console.error(err);
+        alert('Booking failed');
+    });
 }
 
-/* =========================
-   Save Event
-========================= */
-function saveEvent() {
-    const formData = new FormData(document.getElementById('createEventForm'));
+/* ===== Delete Event (Admin) ===== */
+function deleteEvent(id){
+    if(!confirm('Delete this event?')) return;
 
-    fetch('event.php', {
-        method: 'POST',
+    fetch('event.php',{
+        method:'POST',
+        headers:{'Content-Type':'application/x-www-form-urlencoded'},
+        body:`action=deleteEvent&eventID=${id}`
+    })
+    .then(res=>res.json())
+    .then(data=>{
+        if(data.status==='success'){
+            alert('Deleted successfully');
+            location.reload();
+        } else alert(data.message || 'Delete failed');
+    })
+    .catch(err=>{
+        console.error(err);
+        alert('Delete failed');
+    });
+}
+
+/* ===== Save Event (Organizer/Hospital) ===== */
+function saveEvent(){
+    const formData = new FormData();
+    formData.append('eventName', document.getElementById('eventName').value);
+    formData.append('dateTime', document.getElementById('dateTime').value);
+    formData.append('maxDonors', document.getElementById('maxDonors').value);
+    formData.append('description', document.getElementById('description').value);
+    formData.append('eventID', currentEventID);
+
+    const file = document.getElementById('imageUpload').files[0];
+    if(file) formData.append('imageUpload', file);
+
+    formData.append('action', 'saveEvent');
+
+    fetch('event.php',{
+        method:'POST',
         body: formData
     })
-    .then(res => res.json())
-    .then(res => {
-        if (res.status === 'success') {
+    .then(res=>res.json())
+    .then(data=>{
+        if(data.status==='success'){
+            alert('Event saved successfully');
             closeModal();
-            fetchEvents();
-            alert('Event created successfully');
-        } else {
-            alert(res.message || 'Failed to create event');
-        }
+            location.reload();
+        } else alert(data.message || 'Save failed');
+    })
+    .catch(err=>{
+        console.error(err);
+        alert('Save failed');
     });
 }
 
-/* =========================
-   Init
-========================= */
-fetchEvents();
+/* ===== Add New Event (Organizer) ===== */
+document.getElementById('createEventBtn').onclick = () => {
+    currentEventID = null;
+    canEdit = true;
+    document.getElementById('modalTitle').innerText = 'New Event Request';
+    document.getElementById('eventName').value = '';
+    document.getElementById('dateTime').value = '';
+    document.getElementById('maxDonors').value = '';
+    document.getElementById('description').value = '';
+    document.getElementById('previewImage').src = 'placeholder.jpg';
+    document.getElementById('hospitalSelect').style.display = 'block';
+    document.getElementById('hospitalSelect').value = '';
+    const inputs = document.querySelectorAll('#eventModal input, #eventModal textarea');
+    inputs.forEach(i=>i.readOnly=false);
 
-/* Show create button only for Event Organizer */
-fetch('event.php')
-    .then(res => res.json())
-    .then(res => {
-        if (res.status === 'success') {
-            document.getElementById('createBtn').style.display = 'inline-block';
-        }
+    renderButtons(true);  // Cancel + Send Request
+    document.getElementById('eventModal').style.display = 'block';
+}
+
+/* ===== Send Request to Admin (Organizer) ===== */
+function sendRequest(){
+    const hospitalID = document.getElementById('hospitalSelect').value;
+    if(!hospitalID){
+        alert('Please select a hospital');
+        return;
+    }
+
+    const formData = new FormData();
+    formData.append('eventName', document.getElementById('eventName').value);
+    formData.append('dateTime', document.getElementById('dateTime').value);
+    formData.append('maxDonors', document.getElementById('maxDonors').value);
+    formData.append('description', document.getElementById('description').value);
+    formData.append('hospitalID', hospitalID);
+
+    const file = document.getElementById('imageUpload').files[0];
+    if(file) formData.append('imageUpload', file);
+
+    formData.append('action', 'sendRequest');
+
+    fetch('event.php',{
+        method:'POST',
+        body: formData
+    })
+    .then(res=>res.json())
+    .then(data=>{
+        if(data.status==='success'){
+            alert('Request sent to admin');
+            closeModal();
+            location.reload();
+        } else alert(data.message || 'Send request failed');
+    })
+    .catch(err=>{
+        console.error(err);
+        alert('Send request failed');
     });
+}
+
+/* ===== Image Preview ===== */
+document.getElementById('imageUpload').addEventListener('change', function(){
+    const file = this.files[0];
+    if(file){
+        const reader = new FileReader();
+        reader.onload = function(e){
+            document.getElementById('previewImage').src = e.target.result;
+        }
+        reader.readAsDataURL(file);
+    }
+});
 </script>
 
 </body>
