@@ -62,7 +62,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST['login'])) {
 
     mysqli_stmt_close($stmt);
 } else {
-    header("Location: login.html");
+    header("Location: profile.html");
     exit();
 }
 
