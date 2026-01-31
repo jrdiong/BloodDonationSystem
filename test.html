@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Create User</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        label { display: block; margin: 10px 0 5px; }
+        input { padding: 8px; width: 100%; margin-bottom: 10px; }
+        select { padding: 8px; width: 100%; margin-bottom: 10px; }
+        button { padding: 10px 20px; background-color: #007BFF; color: white; border: none; cursor: pointer; }
+        .message { margin-top: 15px; padding: 10px; }
+        .success { background-color: #d4edda; color: #155724; }
+        .error { background-color: #f8d7da; color: #721c24; }
+    </style>
+</head>
+<body>
+
+<h2>Create New User (Test)</h2>
+
+<form id="createUserForm">
+    <label for="name">Name</label>
+    <input type="text" id="name" name="name" required>
+
+    <label for="email">Email</label>
+    <input type="email" id="email" name="email" required>
+
+    <label for="phoneNumber">Phone Number</label>
+    <input type="text" id="phoneNumber" name="phoneNumber" required>
+
+    <label for="image_url">Image URL</label>
+    <input type="text" id="image_url" name="image_url">
+
+    <label for="role">Role</label>
+    <select id="role" name="role" required>
+        <option value="Hospital">Hospital</option>
+        <option value="Event Organize">Event Organize</option>
+    </select>
+
+    <label for="password">Password</label>
+    <input type="password" id="password" name="password" required>
+
+    <div id="locationField" style="display:none;">
+        <label for="location">Location (Hospital only)</label>
+        <input type="text" id="location" name="location">
+    </div>
+
+    <button type="submit">Create User</button>
+</form>
+
+<div id="responseMessage" class="message" style="display: none;"></div>
+
+<script>
+    // Dynamically show/hide Location field based on role selection
+    document.getElementById('role').addEventListener('change', function () {
+        var role = this.value;
+        var locationField = document.getElementById('locationField');
+        if (role === 'Hospital') {
+            locationField.style.display = 'block';
+        } else {
+            locationField.style.display = 'none';
+        }
+    });
+
+    // Handle form submission
+    document.getElementById('createUserForm').addEventListener('submit', function (e) {
+        e.preventDefault();
+
+        var formData = new FormData(this);
+
+        fetch('createUser.php', {
+            method: 'POST',
+            body: JSON.stringify({
+                name: formData.get('name'),
+                email: formData.get('email'),
+                phoneNumber: formData.get('phoneNumber'),
+                image_url: formData.get('image_url'),
+                role: formData.get('role'),
+                password: formData.get('password'),
+                location: formData.get('location')  // Only for Hospital role
+            }),
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            var messageElement = document.getElementById('responseMessage');
+            if (data.status === 'success') {
+                messageElement.classList.add('success');
+                messageElement.classList.remove('error');
+                messageElement.textContent = data.message;
+            } else {
+                messageElement.classList.add('error');
+                messageElement.classList.remove('success');
+                messageElement.textContent = data.message;
+            }
+            messageElement.style.display = 'block';
+        })
+        .catch(error => {
+            var messageElement = document.getElementById('responseMessage');
+            messageElement.classList.add('error');
+            messageElement.classList.remove('success');
+            messageElement.textContent = 'Error: ' + error.message;
+            messageElement.style.display = 'block';
+        });
+    });
+</script>
+
+</body>
+</html>

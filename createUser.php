@@ -23,7 +23,6 @@ $data = json_decode(file_get_contents("php://input"));
 $name = $data->name;
 $email = $data->email;
 $phoneNumber = $data->phoneNumber;
-$image_url = $data->image_url;
 $role = $data->role;
 $password = $data->password;
 $location = isset($data->location) ? $data->location : null;  // Only for Hospital role
@@ -47,14 +46,13 @@ if ($stmt->rowCount() > 0) {
 // Hash password
 $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
 
-// Insert user data into the users table
-$sql = "INSERT INTO users (name, email, phoneNumber, image_url, role, password) VALUES (:name, :email, :phoneNumber, :image_url, :role, :password)";
+// Insert user data into the users table (no image_url)
+$sql = "INSERT INTO users (name, email, phoneNumber, role, password) VALUES (:name, :email, :phoneNumber, :role, :password)";
 $stmt = $pdo->prepare($sql);
 $stmt->execute([
     'name' => $name,
     'email' => $email,
     'phoneNumber' => $phoneNumber,
-    'image_url' => $image_url,
     'role' => $role,
     'password' => $hashedPassword
 ]);
