@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Event Management</title>
+    <style>
+        /* Basic styling for the layout */
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            min-height: 100vh;
+            margin: 0;
+            background-color: #f8f8f8;
+        }
+
+        /* Sidebar */
+        .nav {
+            width: 250px;
+            background-color: #333;
+            color: white;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        .nav a {
+            color: white;
+            text-decoration: none;
+            padding: 10px 0;
+            margin: 10px 0;
+            text-align: center;
+            background-color: #444;
+            border-radius: 5px;
+        }
+
+        .nav a:hover {
+            background-color: #555;
+        }
+
+        .nav a.active {
+            background-color: #e74c3c;
+        }
+
+        /* Main content area */
+        .content {
+            flex: 1;
+            padding: 20px;
+            background-color: white;
+        }
+
+        .header {
+            background-color: #f8d7da;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+
+        .header h1 {
+            margin: 0;
+        }
+
+        /* Event list */
+        .event-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .event-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background-color: #f0f0f0;
+            padding: 10px;
+            border-radius: 5px;
+            border: 1px solid #ddd;
+            position: relative;
+        }
+
+        .event-item img {
+            width: 80px;
+            height: 80px;
+            object-fit: cover;
+            border-radius: 5px;
+            margin-right: 15px;
+        }
+
+        .event-item span {
+            margin-right: 10px;
+        }
+
+        .event-status {
+            width: 80px;
+            height: 20px;
+            border-radius: 5px;
+        }
+
+        .status-green {
+            background-color: green;
+            color: white;
+        }
+
+        .status-red {
+            background-color: red;
+            color: white;
+        }
+
+        .status-yellow {
+            background-color: yellow;
+            color: black;
+        }
+
+        /* Event Edit Form */
+        .event-form {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: white;
+            padding: 30px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            width: 80%;
+            max-width: 500px;
+            z-index: 100;
+            border-radius: 5px;
+        }
+
+        .event-form input, .event-form select, .event-form textarea {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 10px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+        }
+
+        .event-form button {
+            padding: 10px 15px;
+            background-color: #3498db;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        .event-form button:hover {
+            background-color: #2980b9;
+        }
+
+        .close-form {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            cursor: pointer;
+            color: #3498db;
+            font-size: 20px;
+        }
+
+    </style>
+</head>
+<body>
+
+    <!-- Sidebar (Nav) -->
+    <div class="nav">
+        <a href="#" class="active">Events</a>
+        <a href="#">Profile</a>
+        <a href="#">Settings</a>
+    </div>
+
+    <!-- Main Content -->
+    <div class="content">
+        <!-- Header Section -->
+        <div class="header">
+            <h1>Events</h1>
+            <p>Manage and organize blood donation events easily.</p>
+        </div>
+
+        <!-- "Create New Event" Button (Only visible for Event Organizers) -->
+        <div id="createNewEventButtonContainer" style="margin-bottom: 20px;">
+            <button id="createNewEventButton" style="display: none;">Create New Event</button>
+        </div>
+
+        <!-- Event List -->
+        <div class="event-list" id="eventList">
+            <!-- Event items will be dynamically inserted here -->
+        </div>
+
+        <!-- Event Edit Form -->
+        <div class="event-form" id="eventForm">
+            <span class="close-form" onclick="closeForm()">×</span>
+            <h2>Create New Event</h2>
+            <form id="eventFormFields" enctype="multipart/form-data" onsubmit="createEvent(event)">
+                <input type="text" id="eventName" placeholder="Event Name" required>
+                <textarea id="eventDescription" placeholder="Description" required></textarea>
+                <input type="datetime-local" id="eventDateTime" required>
+                <input type="text" id="eventLocation" placeholder="Location" required>
+                <input type="number" id="eventMaxDonors" placeholder="Max Donors" required>
+
+                <label for="eventImage">Upload Event Image</label>
+                <input type="file" id="eventImage" name="eventImage" accept="image/*">
+
+                <button type="submit">Create Event</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // Simulate a logged-in user
+        const role = 'Event Organizer'; // This should come from the session or backend
+        const userID = 1; // Also comes from the session or backend
+
+        // Load events and show/hide "Create New Event" button based on role
+        function loadEvents() {
+            const xhr = new XMLHttpRequest();
+            xhr.open('GET', 'event.php', true);
+            xhr.onreadystatechange = function () {
+                if (xhr.readyState == 4 && xhr.status == 200) {
+                    const response = JSON.parse(xhr.responseText);
+                    const events = response.events || [];
+                    const eventListContainer = document.getElementById('eventList');
+                    eventListContainer.innerHTML = '';
+                    events.forEach(event => {
+                        const eventDiv = document.createElement('div');
+                        eventDiv.classList.add('event-item');
+                        eventDiv.innerHTML = `
+                            <img src="${event.image_url}" alt="${event.eventName}">
+                            <span>${event.eventName}</span>
+                            <span class="event-status ${event.status === 1 ? 'status-green' : 'status-red'}">${event.status === 1 ? 'Active' : 'Deleted'}</span>
+                            <button onclick="viewEvent(${event.eventID})">View</button>
+                            ${role === 'Donor' ? `<button onclick="bookEvent(${event.eventID})">Book</button>` : ''}
+                            ${role === 'Donor' ? `<button onclick="cancelEvent()">Cancel</button>` : ''}
+                            ${role === 'Event Organizer' || role === 'Admin' ? `<button onclick="editEvent(${event.eventID})">Edit</button>` : ''}
+                            ${role === 'Admin' ? `<button onclick="deleteEvent(${event.eventID})">Delete</button>` : ''}
+                        `;
+                        eventListContainer.appendChild(eventDiv);
+                    });
+
+                    // Show the "Create New Event" button for Event Organizers
+                    if (response.showCreateButton) {
+                        document.getElementById('createNewEventButton').style.display = 'inline-block';
+                    }
+                }
+            };
+            xhr.send();
+        }
+
+        // Function to view event details
+        function viewEvent(eventID) {
+            console.log(`Viewing event with ID: ${eventID}`);
+        }
+
+        // Function to create a new event
+        function createEvent(event) {
+            event.preventDefault();
+            const formData = new FormData(document.getElementById('eventFormFields'));
+            const xhr = new XMLHttpRequest();
+            xhr.open('POST', 'event.php', true);
+            xhr.onreadystatechange = function () {
+                if (xhr.readyState == 4 && xhr.status == 200) {
+                    alert('Event created successfully!');
+                    closeForm();
+                    loadEvents();  // Reload events
+                }
+            };
+            xhr.send(formData);
+        }
+
+        // Function to delete an event
+        function deleteEvent(eventID) {
+            if (confirm('Are you sure you want to delete this event?')) {
+                const xhr = new XMLHttpRequest();
+                xhr.open('DELETE', `event.php?eventID=${eventID}`, true);
+                xhr.onreadystatechange = function () {
+                    if (xhr.readyState == 4 && xhr.status == 200) {
+                        alert('Event deleted successfully!');
+                        loadEvents();
+                    }
+                };
+                xhr.send();
+            }
+        }
+
+        // Function to open the event form (create event)
+        document.getElementById('createNewEventButton').addEventListener('click', function () {
+            document.getElementById('eventForm').style.display = 'block';
+        });
+
+        // Function to close the event form
+        function closeForm() {
+            document.getElementById('eventForm').style.display = 'none';
+        }
+
+        // Load events on page load
+        loadEvents();
+    </script>
+</body>
+</html>

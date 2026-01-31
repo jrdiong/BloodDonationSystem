@@ -21,105 +21,99 @@ try {
 }
 
 // ==================== Create New User Function ====================
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    // Get data from $_POST (since the form data is sent as multipart/form-data)
+    $name = $_POST['name'] ?? null;
+    $email = $_POST['email'] ?? null;
+    $phoneNumber = $_POST['phoneNumber'] ?? null;
+    $role = $_POST['role'] ?? null;
+    $password = $_POST['password'] ?? null;
 
-// Get data from $_POST (since the form data is sent as multipart/form-data)
-$name = $_POST['name'] ?? null;
-$email = $_POST['email'] ?? null;
-$phoneNumber = $_POST['phoneNumber'] ?? null;
-$role = $_POST['role'] ?? null;
-$password = $_POST['password'] ?? null;
-$location = $_POST['location'] ?? null;  // Only for Hospital role
-
-// Validate input data
-if (empty($name) || empty($email) || empty($phoneNumber) || empty($password) || empty($role)) {
-    echo json_encode(['status' => 'error', 'message' => 'Missing required fields']);
-    exit;
-}
-
-// Check if the email already exists in the database
-$sql = "SELECT * FROM user WHERE email = :email";
-$stmt = $pdo->prepare($sql);
-$stmt->execute(['email' => $email]);
-
-if ($stmt->rowCount() > 0) {
-    echo json_encode(['status' => 'error', 'message' => 'Email already in use']);
-    exit;
-}
-
-// Hash the password
-$hashedPassword = password_hash($password, PASSWORD_DEFAULT);
-
-// Insert user data into the user table
-try {
-    $sql = "INSERT INTO user (name, email, phoneNumber, role, password) VALUES (:name, :email, :phoneNumber, :role, :password)";
-    $stmt = $pdo->prepare($sql);
-    $stmt->execute([
-        'name' => $name,
-        'email' => $email,
-        'phoneNumber' => $phoneNumber,
-        'role' => $role,
-        'password' => $hashedPassword
-    ]);
-
-    // Get the user ID of the newly inserted user
-    $userID = $pdo->lastInsertId();
-
-    // Insert hospital information if the role is 'Hospital'
-    if ($role == 'Hospital' && !empty($location)) {
-        $sqlHospital = "INSERT INTO hospital (userID, location) VALUES (:userID, :location)";
-        $stmtHospital = $pdo->prepare($sqlHospital);
-        $stmtHospital->execute([
-            'userID' => $userID,
-            'location' => $location
-        ]);
+    // Validate input data
+    if (empty($name) || empty($email) || empty($phoneNumber) || empty($password) || empty($role)) {
+        echo json_encode(['status' => 'error', 'message' => 'Missing required fields']);
+        exit;
     }
 
-    // Return success response
-    echo json_encode(['status' => 'success', 'message' => 'User created successfully', 'userID' => $userID]);
+    // Check if the email already exists in the database
+    $sql = "SELECT * FROM user WHERE email = :email";
+    $stmt = $pdo->prepare($sql);
+    $stmt->execute(['email' => $email]);
 
-} catch (PDOException $e) {
-    echo json_encode(['status' => 'error', 'message' => 'Database error: ' . $e->getMessage()]);
+    if ($stmt->rowCount() > 0) {
+        echo json_encode(['status' => 'error', 'message' => 'Email already in use']);
+        exit;
+    }
+
+    // Hash the password
+    $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
+
+    // Insert user data into the user table
+    try {
+        $sql = "INSERT INTO user (name, email, phoneNumber, role, password) VALUES (:name, :email, :phoneNumber, :role, :password)";
+        $stmt = $pdo->prepare($sql);
+        $stmt->execute([
+            'name' => $name,
+            'email' => $email,
+            'phoneNumber' => $phoneNumber,
+            'role' => $role,
+            'password' => $hashedPassword
+        ]);
+
+        // Get the user ID of the newly inserted user
+        $userID = $pdo->lastInsertId();
+
+        // Return success response
+        echo json_encode(['status' => 'success', 'message' => 'User created successfully', 'userID' => $userID]);
+
+    } catch (PDOException $e) {
+        echo json_encode(['status' => 'error', 'message' => 'Database error: ' . $e->getMessage()]);
+        exit;
+    }
+
+    // Ensure no further output is sent
     exit;
 }
 
-// ==================== New Function: Fetch Hospital and Event Organizer Users ====================
+// ==================== Query Existing Users Function ====================
+if ($_SERVER['REQUEST_METHOD'] === 'GET') {
+    try {
+        // Query for Hospital users
+        $sqlHospital = "
+            SELECT u.userID, u.name, u.email, u.phoneNumber, u.role
+            FROM user u
+            WHERE u.role = 'Hospital';
+        ";
+        $stmtHospital = $pdo->prepare($sqlHospital);
+        $stmtHospital->execute();
+        $hospitals = $stmtHospital->fetchAll(PDO::FETCH_ASSOC);
 
-try {
-    // Query for Hospital users (without location)
-    $sqlHospital = "
-        SELECT u.userID, u.name, u.email, u.phoneNumber, u.role
-        FROM user u
-        WHERE u.role = 'Hospital';
-    ";
-    $stmtHospital = $pdo->prepare($sqlHospital);
-    $stmtHospital->execute();
-    $hospitals = $stmtHospital->fetchAll(PDO::FETCH_ASSOC);
+        // Query for Event Organizer users
+        $sqlEventOrganizer = "
+            SELECT userID, name, email, phoneNumber, role
+            FROM user
+            WHERE role = 'Event Organizer';
+        ";
+        $stmtEventOrganizer = $pdo->prepare($sqlEventOrganizer);
+        $stmtEventOrganizer->execute();
+        $eventOrganizers = $stmtEventOrganizer->fetchAll(PDO::FETCH_ASSOC);
 
-    // Query for Event Organizer users
-    $sqlEventOrganizer = "
-        SELECT userID, name, email, phoneNumber, role
-        FROM user
-        WHERE role = 'Event Organizer';
-    ";
-    $stmtEventOrganizer = $pdo->prepare($sqlEventOrganizer);
-    $stmtEventOrganizer->execute();
-    $eventOrganizers = $stmtEventOrganizer->fetchAll(PDO::FETCH_ASSOC);
+        // Prepare the final data
+        $data = [
+            'status' => 'success',
+            'hospitals' => $hospitals,
+            'event_organizers' => $eventOrganizers
+        ];
 
-    // Prepare the final data
-    $data = [
-        'status' => 'success',
-        'hospitals' => $hospitals,
-        'event_organizers' => $eventOrganizers
-    ];
+        // Return the JSON response with the data
+        echo json_encode($data);
 
-    // Return the JSON response with the data
-    echo json_encode($data);
+    } catch (PDOException $e) {
+        echo json_encode(['status' => 'error', 'message' => 'Database error: ' . $e->getMessage()]);
+        exit;
+    }
 
-} catch (PDOException $e) {
-    echo json_encode(['status' => 'error', 'message' => 'Database error: ' . $e->getMessage()]);
+    // Ensure no further output is sent
     exit;
 }
-
-// Ensure no further output is sent
-exit;
 ?>
