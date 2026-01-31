@@ -1,91 +1,184 @@
 <?php
-// Enable error reporting for debugging
+session_start();
+
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
 
-// Database connection settings
-$host = 'localhost';      
-$dbname = 'cbdc_system';   // Your database name
-$username = 'root';        // Database username
-$password = '';            // Database password (change as needed)
-
-try {
-    // Establishing a PDO connection to the MySQL database
-    $pdo = new PDO("mysql:host=$host;dbname=$dbname", $username, $password);
-    $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION); // Enable exception mode
-} catch (PDOException $e) {
-    echo 'Connection failed: ' . $e->getMessage();
+/* =========================
+   Authentication Check
+========================= */
+if (!isset($_SESSION['userID'])) {
+    echo json_encode([
+        "status" => "error",
+        "message" => "Unauthorized"
+    ]);
     exit;
 }
 
-// Handle GET request to fetch events
-if ($_SERVER['REQUEST_METHOD'] === 'GET') {
-    $sql = "SELECT * FROM event"; // Fetch all events from the 'event' table
-    $stmt = $pdo->prepare($sql);
-    $stmt->execute();
-    $events = $stmt->fetchAll(PDO::FETCH_ASSOC);
+$loggedInUserID = $_SESSION['userID'];
 
-    // Return events as JSON
-    echo json_encode($events);
+/* =========================
+   Database Connection
+========================= */
+$host = 'localhost';
+$dbname = 'cbdc_system';
+$username = 'root';
+$password = '';
+
+try {
+    $pdo = new PDO(
+        "mysql:host=$host;dbname=$dbname;charset=utf8mb4",
+        $username,
+        $password,
+        [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]
+    );
+} catch (PDOException $e) {
+    echo json_encode([
+        "status" => "error",
+        "message" => "Database connection failed"
+    ]);
+    exit;
 }
 
-// Handle POST request to create a new event (including file upload)
+/* =========================
+   GET: Fetch Hospitals
+   ?action=getHospitals
+========================= */
+if (
+    $_SERVER['REQUEST_METHOD'] === 'GET' &&
+    isset($_GET['action']) &&
+    $_GET['action'] === 'getHospitals'
+) {
+    $stmt = $pdo->prepare("
+        SELECT userID, name
+        FROM user
+        WHERE role = 'Hospital'
+        ORDER BY name
+    ");
+    $stmt->execute();
+
+    echo json_encode([
+        "status" => "success",
+        "data" => $stmt->fetchAll(PDO::FETCH_ASSOC)
+    ]);
+    exit;
+}
+
+/* =========================
+   GET: Fetch Events
+========================= */
+if ($_SERVER['REQUEST_METHOD'] === 'GET') {
+
+    $stmt = $pdo->prepare("SELECT role FROM user WHERE userID = ?");
+    $stmt->execute([$loggedInUserID]);
+    $role = $stmt->fetchColumn();
+
+    if ($role === 'Event Organizer') {
+        $stmt = $pdo->prepare("
+            SELECT e.*, u.name AS hospitalName
+            FROM event e
+            JOIN user u ON e.hospitalID = u.userID
+            WHERE e.organizerID = ?
+            ORDER BY e.dateTime DESC
+        ");
+        $stmt->execute([$loggedInUserID]);
+    } elseif ($role === 'Hospital') {
+        $stmt = $pdo->prepare("
+            SELECT e.*, u.name AS organizerName
+            FROM event e
+            JOIN user u ON e.organizerID = u.userID
+            WHERE e.hospitalID = ?
+            ORDER BY e.dateTime DESC
+        ");
+        $stmt->execute([$loggedInUserID]);
+    } else {
+        $stmt = $pdo->query("
+            SELECT *
+            FROM event
+            ORDER BY dateTime DESC
+        ");
+    }
+
+    echo json_encode([
+        "status" => "success",
+        "data" => $stmt->fetchAll(PDO::FETCH_ASSOC)
+    ]);
+    exit;
+}
+
+/* =========================
+   POST: Create Event
+========================= */
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    // Get POST data
-    $eventName = $_POST['eventName'];
-    $location = $_POST['location'];
-    $dateTime = $_POST['dateTime'];
-    $maxDonors = $_POST['maxDonors'];
-    $description = $_POST['description'];
-    $organizerID = $_POST['organizerID'];  // Ensure these fields are correctly handled
-    $hospitalID = $_POST['hospitalID'];
 
-    // Handle image upload
-    if (isset($_FILES['imageUpload'])) {
-        $imageTmp = $_FILES['imageUpload']['tmp_name'];
-        $imageName = $_FILES['imageUpload']['name'];
-        $imagePath = 'uploads/' . basename($imageName);
+    $stmt = $pdo->prepare("SELECT role FROM user WHERE userID = ?");
+    $stmt->execute([$loggedInUserID]);
+    $role = $stmt->fetchColumn();
 
-        // Ensure the 'uploads' directory exists
+    if ($role !== 'Event Organizer') {
+        echo json_encode([
+            "status" => "error",
+            "message" => "Permission denied"
+        ]);
+        exit;
+    }
+
+    $eventName   = $_POST['eventName'] ?? '';
+    $location    = $_POST['location'] ?? '';
+    $dateTime    = $_POST['dateTime'] ?? '';
+    $maxDonors   = $_POST['maxDonors'] ?? 0;
+    $description = $_POST['description'] ?? '';
+    $hospitalID  = $_POST['hospitalID'] ?? '';
+
+    if (!$eventName || !$location || !$dateTime || !$hospitalID) {
+        echo json_encode([
+            "status" => "error",
+            "message" => "Missing required fields"
+        ]);
+        exit;
+    }
+
+    /* ---------- Image Upload ---------- */
+    $imagePath = null;
+
+    if (
+        isset($_FILES['imageUpload']) &&
+        $_FILES['imageUpload']['error'] === UPLOAD_ERR_OK
+    ) {
+        $extension = pathinfo($_FILES['imageUpload']['name'], PATHINFO_EXTENSION);
+        $fileName = uniqid('event_', true) . '.' . $extension;
+
         if (!is_dir('uploads')) {
             mkdir('uploads', 0755, true);
         }
 
-        // Move the uploaded file to the 'uploads' directory
-        if (move_uploaded_file($imageTmp, $imagePath)) {
-            // Image uploaded successfully
-        } else {
-            // Error uploading the image
-            echo json_encode(["status" => "error", "message" => "Failed to upload image."]);
-            exit;
-        }
-    } else {
-        $imagePath = null; // Set to null if no image is uploaded
+        $imagePath = 'uploads/' . $fileName;
+        move_uploaded_file($_FILES['imageUpload']['tmp_name'], $imagePath);
     }
 
-    // Insert event data into the 'event' table (updated table name)
-    try {
-        $sql = "INSERT INTO event (eventName, image_url, location, dateTime, maxDonors, description, organizerID, hospitalID, status)
-                VALUES (:eventName, :image_url, :location, :dateTime, :maxDonors, :description, :organizerID, :hospitalID, 1)";
-        
-        $stmt = $pdo->prepare($sql);
-        $stmt->bindParam(':eventName', $eventName);
-        $stmt->bindParam(':image_url', $imagePath);
-        $stmt->bindParam(':location', $location);
-        $stmt->bindParam(':dateTime', $dateTime);
-        $stmt->bindParam(':maxDonors', $maxDonors);
-        $stmt->bindParam(':description', $description);
-        $stmt->bindParam(':organizerID', $organizerID);
-        $stmt->bindParam(':hospitalID', $hospitalID);
-        
-        if ($stmt->execute()) {
-            echo json_encode(["status" => "success", "message" => "Event created successfully"]);
-        } else {
-            echo json_encode(["status" => "error", "message" => "Failed to create event"]);
-        }
-    } catch (PDOException $e) {
-        // If there is a database error, catch and display it
-        echo json_encode(["status" => "error", "message" => "Database error: " . $e->getMessage()]);
-    }
+    /* ---------- Insert Event ---------- */
+    $sql = "
+        INSERT INTO event
+        (eventName, image_url, location, dateTime, maxDonors, description, organizerID, hospitalID, status)
+        VALUES
+        (:eventName, :image_url, :location, :dateTime, :maxDonors, :description, :organizerID, :hospitalID, 1)
+    ";
+
+    $stmt = $pdo->prepare($sql);
+    $stmt->execute([
+        ':eventName'   => $eventName,
+        ':image_url'   => $imagePath,
+        ':location'    => $location,
+        ':dateTime'    => $dateTime,
+        ':maxDonors'   => $maxDonors,
+        ':description' => $description,
+        ':organizerID' => $loggedInUserID,
+        ':hospitalID'  => $hospitalID
+    ]);
+
+    echo json_encode([
+        "status" => "success",
+        "message" => "Event created successfully"
+    ]);
+    exit;
 }
-?>

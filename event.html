@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Event Page</title>
+
     <style>
         * {
             margin: 0;
@@ -30,29 +31,11 @@
             margin-top: 20px;
         }
 
-        h1 {
-            color: #ff4d4d;
-            font-size: 36px;
-            text-align: left;
-            margin: 0;
-            padding: 10px 0;
-        }
-
         .header-info {
             background-color: #ffe6e6;
             padding: 20px;
             border-radius: 8px;
             margin-bottom: 20px;
-        }
-
-        .header-info h2 {
-            margin: 0;
-            font-size: 24px;
-        }
-
-        .header-info p {
-            font-size: 16px;
-            color: #555;
         }
 
         .table-layout {
@@ -69,171 +52,199 @@
         }
 
         .create-button {
-            display: inline-block;
+            margin-top: 20px;
             padding: 10px 20px;
             background-color: #28a745;
             color: white;
             border: none;
             border-radius: 4px;
-            font-size: 16px;
             cursor: pointer;
-            margin-top: 20px;
-        }
-
-        .create-button:hover {
-            background-color: #218838;
+            display: none;
         }
 
         .modal {
             display: none;
             position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0, 0, 0, 0.5);
+            inset: 0;
+            background-color: rgba(0,0,0,0.5);
             justify-content: center;
             align-items: center;
         }
 
         .modal-content {
-            background-color: white;
+            background: white;
             padding: 20px;
-            border-radius: 8px;
             width: 400px;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+            border-radius: 8px;
         }
 
         .modal-content label {
             display: block;
-            margin-bottom: 8px;
+            margin-bottom: 6px;
         }
 
-        .modal-content input, .modal-content textarea, .modal-content button {
-            width: 100%;
-            padding: 10px;
-            margin-bottom: 15px;
-            border: 1px solid #ccc;
-            border-radius: 4px;
-        }
-
+        .modal-content input,
+        .modal-content textarea,
+        .modal-content select,
         .modal-content button {
-            background-color: #28a745;
-            color: white;
-            border: none;
-            cursor: pointer;
-        }
-
-        .modal-content button:hover {
-            background-color: #218838;
+            width: 100%;
+            padding: 8px;
+            margin-bottom: 12px;
         }
     </style>
 </head>
+
 <body>
 
 <div class="container">
     <div class="header-info">
         <h2>Event List</h2>
-        <p>Below is the list of all upcoming blood donation events. You can also create a new event by clicking the "Create New Event" button.</p>
+        <p>Below is the list of events related to your account.</p>
     </div>
 
-    <!-- Table-like layout for event data -->
-    <div id="eventList" class="table-layout">
-        <!-- Event list will be dynamically populated here -->
-    </div>
+    <div class="table-layout" id="eventList"></div>
 
-    <button class="create-button" onclick="openCreateForm()">Create New Event</button>
+    <button id="createBtn" class="create-button" onclick="openCreateForm()">
+        Create New Event
+    </button>
 </div>
 
-<!-- Modal for creating a new event -->
-<div id="createEventModal" class="modal">
+<!-- Create Event Modal -->
+<div class="modal" id="createEventModal">
     <div class="modal-content">
-        <h2>Create New Event</h2>
+        <h3>Create New Event</h3>
+
         <form id="createEventForm" enctype="multipart/form-data">
-            <label for="eventName">Event Name:</label>
-            <input type="text" id="eventName" name="eventName" required>
-            
-            <label for="imageUpload">Upload Event Image:</label>
-            <input type="file" id="imageUpload" name="imageUpload" accept="image/*" required>
-            
-            <label for="location">Location:</label>
-            <input type="text" id="location" name="location" required>
-            
-            <label for="dateTime">Date & Time:</label>
-            <input type="datetime-local" id="dateTime" name="dateTime" required>
-            
-            <label for="maxDonors">Max Donors:</label>
-            <input type="number" id="maxDonors" name="maxDonors" required>
-            
-            <label for="description">Description (Optional):</label>
-            <textarea id="description" name="description"></textarea>
+            <label>Event Name</label>
+            <input type="text" name="eventName" required>
+
+            <label>Event Image</label>
+            <input type="file" name="imageUpload" accept="image/*" required>
+
+            <label>Location</label>
+            <input type="text" name="location" required>
+
+            <label>Date & Time</label>
+            <input type="datetime-local" name="dateTime" required>
+
+            <label>Max Donors</label>
+            <input type="number" name="maxDonors" required>
+
+            <label>Hospital</label>
+            <select name="hospitalID" id="hospitalSelect" required>
+                <option value="">Select Hospital</option>
+            </select>
+
+            <label>Description</label>
+            <textarea name="description"></textarea>
 
             <button type="button" onclick="saveEvent()">Save</button>
-            <button type="button" onclick="cancelCreate()">Cancel</button>
+            <button type="button" onclick="closeModal()">Cancel</button>
         </form>
     </div>
 </div>
 
 <script>
-    function fetchEvents() {
-        fetch('event.php')
-            .then(response => response.json())
-            .then(events => {
-                displayEvents(events);
-            })
-            .catch(error => console.error('Error fetching events:', error));
-    }
-
-    function displayEvents(events) {
-        const eventList = document.getElementById('eventList');
-        eventList.innerHTML = '';
-
-        events.forEach(event => {
-            const eventItem = document.createElement('div');
-            eventItem.className = 'table-layout';
-            eventItem.innerHTML = `
-                <div class="table-cell">${event.eventName}</div>
-                <div class="table-cell"><img src="${event.image_url}" alt="Event Image" width="50"></div>
-                <div class="table-cell">${event.eventName}</div>
-                <div class="table-cell">${event.dateTime}</div>
-                <div class="table-cell">${event.maxDonors}</div>
-            `;
-            eventList.appendChild(eventItem);
-        });
-    }
-
-    function openCreateForm() {
-        document.getElementById('createEventModal').style.display = 'flex';
-    }
-
-    function cancelCreate() {
-        document.getElementById('createEventModal').style.display = 'none';
-    }
-
-    function saveEvent() {
-        const formData = new FormData(document.getElementById('createEventForm'));
-
-        fetch('event.php', {
-            method: 'POST',
-            body: formData,
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.status === 'success') {
-                alert('Event created successfully!');
-                fetchEvents();  // Refresh the event list
-                cancelCreate(); // Close the form
-            } else {
-                alert('Failed to create event.');
+/* =========================
+   Fetch Events
+========================= */
+function fetchEvents() {
+    fetch('event.php')
+        .then(res => res.json())
+        .then(res => {
+            if (res.status === 'success') {
+                displayEvents(res.data);
             }
-        })
-        .catch(error => {
-            console.error('Error saving event:', error);
-            alert('An error occurred while saving the event.');
         });
-    }
+}
 
-    fetchEvents();
+/* =========================
+   Display Events
+========================= */
+function displayEvents(events) {
+    const container = document.getElementById('eventList');
+    container.innerHTML = '';
+
+    events.forEach(e => {
+        container.innerHTML += `
+            <div class="table-cell">${e.eventName}</div>
+            <div class="table-cell">
+                ${e.image_url ? `<img src="${e.image_url}" width="60">` : ''}
+            </div>
+            <div class="table-cell">${e.location}</div>
+            <div class="table-cell">${e.dateTime}</div>
+            <div class="table-cell">${e.maxDonors}</div>
+        `;
+    });
+}
+
+/* =========================
+   Load Hospitals
+========================= */
+function loadHospitals() {
+    fetch('event.php?action=getHospitals')
+        .then(res => res.json())
+        .then(res => {
+            if (res.status !== 'success') return;
+
+            const select = document.getElementById('hospitalSelect');
+            select.innerHTML = '<option value="">Select Hospital</option>';
+
+            res.data.forEach(h => {
+                select.innerHTML += `
+                    <option value="${h.userID}">${h.name}</option>
+                `;
+            });
+        });
+}
+
+/* =========================
+   Modal Control
+========================= */
+function openCreateForm() {
+    document.getElementById('createEventModal').style.display = 'flex';
+    loadHospitals();
+}
+
+function closeModal() {
+    document.getElementById('createEventModal').style.display = 'none';
+}
+
+/* =========================
+   Save Event
+========================= */
+function saveEvent() {
+    const formData = new FormData(document.getElementById('createEventForm'));
+
+    fetch('event.php', {
+        method: 'POST',
+        body: formData
+    })
+    .then(res => res.json())
+    .then(res => {
+        if (res.status === 'success') {
+            closeModal();
+            fetchEvents();
+            alert('Event created successfully');
+        } else {
+            alert(res.message || 'Failed to create event');
+        }
+    });
+}
+
+/* =========================
+   Init
+========================= */
+fetchEvents();
+
+/* Show create button only for Event Organizer */
+fetch('event.php')
+    .then(res => res.json())
+    .then(res => {
+        if (res.status === 'success') {
+            document.getElementById('createBtn').style.display = 'inline-block';
+        }
+    });
 </script>
 
 </body>
