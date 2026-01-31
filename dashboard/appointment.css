@@ -30,7 +30,7 @@
   align-items: center;
   background: #fff;
   border-radius: 14px;
-  padding: 16px;
+  padding: 18px;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
 }
 
@@ -42,7 +42,7 @@
   border-radius: 14px;
   color: #fff;
   text-align: center;
-  padding: 12px;
+  padding: 15px;
   font-weight: 600;
 }
 
@@ -51,12 +51,12 @@
 }
 
 .date-badge .day {
-  font-size: 32px;
+  font-size: 36px;
   line-height: 1;
 }
 
 .date-badge .year {
-  font-size: 14px;
+  font-size: 16px;
 }
 
 .date-badge.upcoming {
@@ -119,20 +119,14 @@
 }
 
 .btn.primary {
-  background: #1976d2;
+  background: #d21919;
   color: #fff;
-}
-
-.btn.danger {
-  background: #fff;
-  color: #d32f2f;
-  border: 1px solid #d32f2f;
 }
 
 .btn.secondary {
   background: #ffffff;
-  border: 1px solid #1976d2;
-  color: #1976d2;
+  border: 1px solid #d21919;
+  color: #d21919;
 }
 
 .btn.disabled {
@@ -205,7 +199,7 @@
 }
 
 .comment-group textarea:focus {
-  border-color: #1976d2;
+  border-color: #d21919;
   box-shadow: 0 4px 12px rgba(25, 118, 210, 0.2);
 }
 
@@ -225,7 +219,7 @@
   top: -8px;
   left: 10px;
   font-size: 12px;
-  color: #1976d2;
+  color: #d21919;
   background: #fff;
   padding: 0 4px;
 }
@@ -239,5 +233,5 @@
   cursor: pointer;
 }
 
-.modal-buttons .submit { background: #1976d2; color: #fff; }
+.modal-buttons .submit { background: #d21919; color: #fff; }
 .modal-buttons .cancel { background: #ccc; color: #333; }
