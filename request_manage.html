@@ -207,13 +207,14 @@ requestBtn.onclick = () => {
 
 closeModal.onclick = () => requestModal.style.display='none';
 
+// --- Approve ---
 approveBtn.onclick = async () => {
     const record = confirm('Do you want to record this request? Click OK for Yes, Cancel for No');
     const req = pendingRequests[currentRequestIndex];
     try{
         const formData = new FormData();
         formData.append('action','approve');
-        formData.append('eventID', req.eventID);
+        formData.append('requestID', req.requestID); // <-- FIXED to requestID
         formData.append('record', record?1:0);
 
         const res = await fetch('request_manage.php', {method:'POST', body:formData});
@@ -225,12 +226,13 @@ approveBtn.onclick = async () => {
     }catch(e){ console.error(e); alert('Approve failed'); }
 };
 
+// --- Reject ---
 rejectBtn.onclick = async () => {
     const req = pendingRequests[currentRequestIndex];
     try{
         const formData = new FormData();
         formData.append('action','reject');
-        formData.append('eventID', req.eventID);
+        formData.append('requestID', req.requestID); // <-- FIXED to requestID
 
         const res = await fetch('request_manage.php', {method:'POST', body:formData});
         const data = await res.json();

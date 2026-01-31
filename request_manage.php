@@ -49,7 +49,8 @@ if($role !== 'Admin'){
 ==================== */
 if ($_SERVER['REQUEST_METHOD'] === 'GET' && ($_GET['action'] ?? '') === 'pending') {
     $stmt = $pdo->prepare("
-        SELECT e.eventID, e.eventName, e.dateTime, e.location, e.image_url, u.name AS organizerName
+        SELECT e.eventID, e.eventName, e.dateTime, e.location, e.image_url, e.description,
+               u.name AS organizerName
         FROM event e
         JOIN user u ON e.organizerID = u.userID
         WHERE e.status = 2
@@ -67,7 +68,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && ($_GET['action'] ?? '') === 'pending
 if ($_SERVER['REQUEST_METHOD'] === 'GET' && ($_GET['action'] ?? '') === 'recorded') {
     $stmt = $pdo->prepare("
         SELECT r.requestID, r.eventID, r.status AS recordStatus,
-               e.eventName, e.dateTime, e.location, e.image_url
+               e.eventName, e.dateTime, e.location, e.image_url, e.description
         FROM request r
         JOIN event e ON r.eventID = e.eventID
         WHERE r.status = 1
