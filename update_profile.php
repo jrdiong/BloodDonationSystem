@@ -38,6 +38,9 @@ $updateFields = [];
 $values = [];
 $types = '';
 
+$updateUserFields = []; // Store fields for the `user` table update
+$updateHospitalFields = []; // Store fields for the `hospital` table update
+
 foreach ($allowedFields as $field) {
     if (isset($_POST[$field])) {
         $value = trim($_POST[$field]);
@@ -50,39 +53,72 @@ foreach ($allowedFields as $field) {
             exit;
         }
 
-        $updateFields[] = "$field = ?";
+        if ($field === 'location') {
+            // Handle location field differently for hospital table
+            $updateHospitalFields[] = "$field = ?";
+        } else {
+            $updateUserFields[] = "$field = ?";
+        }
+
         $values[] = $value;
         $types .= 's'; // all fields are strings
     }
 }
 
-if (empty($updateFields)) {
+if (empty($updateUserFields) && empty($updateHospitalFields)) {
     echo json_encode(["success" => false, "error" => "No fields to update"]);
     exit;
 }
 
 // -------------------
 // Prepare query
-$sql = "UPDATE user SET " . implode(', ', $updateFields) . " WHERE userID = ?";
-$values[] = $userID;
-$types .= 'i';
+// Update user table first
+if (!empty($updateUserFields)) {
+    $sqlUser = "UPDATE user SET " . implode(', ', $updateUserFields) . " WHERE userID = ?";
+    $values[] = $userID;
+    $types .= 'i';
 
-$stmt = $conn->prepare($sql);
-if (!$stmt) {
-    echo json_encode(["success" => false, "error" => "Prepare failed: " . $conn->error]);
-    exit;
+    $stmtUser = $conn->prepare($sqlUser);
+    if (!$stmtUser) {
+        echo json_encode(["success" => false, "error" => "Prepare failed for user update: " . $conn->error]);
+        exit;
+    }
+
+    // Bind parameters dynamically for user table
+    $stmtUser->bind_param($types, ...$values);
+
+    // Execute user update
+    if (!$stmtUser->execute()) {
+        echo json_encode(["success" => false, "error" => $stmtUser->error]);
+        exit;
+    }
+
+    $stmtUser->close();
 }
 
-// Bind parameters dynamically
-$stmt->bind_param($types, ...$values);
+// Now handle the hospital table update
+if (!empty($updateHospitalFields)) {
+    $sqlHospital = "UPDATE hospital SET " . implode(', ', $updateHospitalFields) . " WHERE userID = ?";
+    $stmtHospital = $conn->prepare($sqlHospital);
+    if (!$stmtHospital) {
+        echo json_encode(["success" => false, "error" => "Prepare failed for hospital update: " . $conn->error]);
+        exit;
+    }
 
-// Execute
-if ($stmt->execute()) {
-    echo json_encode(["success" => true]);
-} else {
-    echo json_encode(["success" => false, "error" => $stmt->error]);
+    // Bind parameters dynamically for hospital table
+    $stmtHospital->bind_param('si', $_POST['location'], $userID);
+
+    // Execute hospital update
+    if (!$stmtHospital->execute()) {
+        echo json_encode(["success" => false, "error" => $stmtHospital->error]);
+        exit;
+    }
+
+    $stmtHospital->close();
 }
 
-$stmt->close();
+// -------------------
+// Success response
 $conn->close();
+echo json_encode(["success" => true]);
 ?>
