@@ -34,7 +34,7 @@ if (empty($name) || empty($email) || empty($phoneNumber) || empty($password) || 
 }
 
 // Check if email already exists
-$sql = "SELECT * FROM users WHERE email = :email";
+$sql = "SELECT * FROM user WHERE email = :email";
 $stmt = $pdo->prepare($sql);
 $stmt->execute(['email' => $email]);
 
@@ -46,8 +46,8 @@ if ($stmt->rowCount() > 0) {
 // Hash password
 $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
 
-// Insert user data into the users table (no image_url)
-$sql = "INSERT INTO users (name, email, phoneNumber, role, password) VALUES (:name, :email, :phoneNumber, :role, :password)";
+// Insert user data into the user table (no image_url)
+$sql = "INSERT INTO user (name, email, phoneNumber, role, password) VALUES (:name, :email, :phoneNumber, :role, :password)";
 $stmt = $pdo->prepare($sql);
 $stmt->execute([
     'name' => $name,
