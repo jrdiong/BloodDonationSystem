@@ -28,7 +28,7 @@ body { font-family: Arial, sans-serif; margin: 20px; background: #f5f5f5; }
 #requestModal {
     display: none;
     position: fixed;
-    inset:0;
+    inset: 0;
     background: rgba(0,0,0,0.5);
     justify-content: center;
     align-items: center;
@@ -74,6 +74,12 @@ body { font-family: Arial, sans-serif; margin: 20px; background: #f5f5f5; }
 }
 #recordedTable th {
     background: #eee;
+}
+#recordedTable img {
+    width: 100px;
+    height: 80px;
+    object-fit: cover;
+    border-radius: 8px;
 }
 </style>
 </head>
@@ -159,11 +165,11 @@ async function loadRecordedRequests() {
         data.recorded.forEach(r=>{
             const tr = document.createElement('tr');
             tr.innerHTML = `
-                <td><img src="${r.image_url||'placeholder.jpg'}" style="width:100px;height:80px;object-fit:cover;border-radius:8px;"></td>
+                <td><img src="${r.image_url||'placeholder.jpg'}"></td>
                 <td>${r.eventName}</td>
                 <td>${r.dateTime}</td>
                 <td>${r.location}</td>
-                <td>${r.status==1?'Recorded':'Not Recorded'}</td>
+                <td>${r.recordStatus==1?'Recorded':'Not Recorded'}</td>
             `;
             recordedBody.appendChild(tr);
         });
@@ -207,7 +213,7 @@ approveBtn.onclick = async () => {
     try{
         const formData = new FormData();
         formData.append('action','approve');
-        formData.append('requestID', req.requestID);
+        formData.append('eventID', req.eventID);
         formData.append('record', record?1:0);
 
         const res = await fetch('request_manage.php', {method:'POST', body:formData});
@@ -224,7 +230,7 @@ rejectBtn.onclick = async () => {
     try{
         const formData = new FormData();
         formData.append('action','reject');
-        formData.append('requestID', req.requestID);
+        formData.append('eventID', req.eventID);
 
         const res = await fetch('request_manage.php', {method:'POST', body:formData});
         const data = await res.json();
