@@ -29,9 +29,6 @@
     <label for="phoneNumber">Phone Number</label>
     <input type="text" id="phoneNumber" name="phoneNumber" required>
 
-    <label for="image_url">Image URL</label>
-    <input type="text" id="image_url" name="image_url">
-
     <label for="role">Role</label>
     <select id="role" name="role" required>
         <option value="Hospital">Hospital</option>
@@ -75,7 +72,6 @@
                 name: formData.get('name'),
                 email: formData.get('email'),
                 phoneNumber: formData.get('phoneNumber'),
-                image_url: formData.get('image_url'),
                 role: formData.get('role'),
                 password: formData.get('password'),
                 location: formData.get('location')  // Only for Hospital role
