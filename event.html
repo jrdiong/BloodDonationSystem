@@ -1,255 +1,259 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Event Creation</title>
+    <title>Event Page</title>
     <style>
         body {
             font-family: Arial, sans-serif;
-            background-color: #f4f4f9;
             margin: 0;
             padding: 0;
-        }
-
-        .container {
+            background-color: #f4f4f9;
             display: flex;
-            justify-content: space-between;
+            justify-content: center;
+            align-items: flex-start;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+        .container {
+            width: 100%;
+            max-width: 1000px;
             padding: 20px;
-        }
-
-        /* Sidebar */
-        .sidebar {
-            width: 60px;
-            background-color: #2a3d5f;
-            padding-top: 50px;
-            text-align: center;
-        }
-
-        .sidebar button {
-            display: block;
-            background-color: #555;
-            border: none;
-            width: 40px;
-            height: 40px;
-            margin: 10px 0;
-            color: white;
-            border-radius: 50%;
-            cursor: pointer;
-        }
-
-        .sidebar button:hover {
-            background-color: #777;
-        }
-
-        /* Main Content */
-        .main-content {
-            width: 80%;
-            background-color: #fff;
-            padding: 20px;
-            border-radius: 8px;
+            background-color: white;
             box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
+            margin-top: 20px;
         }
-
         h1 {
-            color: red;
-            margin-bottom: 10px;
+            color: #ff4d4d;
+            font-size: 36px;
+            text-align: left;
+            margin: 0;
+            padding: 10px 0;
         }
-
-        .heading {
-            background-color: #f9d8d8;
-            padding: 15px;
+        .header-info {
+            background-color: #ffe6e6;
+            padding: 20px;
             border-radius: 8px;
             margin-bottom: 20px;
         }
-
-        .form-group {
-            margin-bottom: 15px;
+        .header-info h2 {
+            margin: 0;
+            font-size: 24px;
         }
-
-        .form-group label {
-            display: block;
-            font-weight: bold;
-            margin-bottom: 5px;
+        .header-info p {
+            font-size: 16px;
+            color: #555;
         }
-
-        .form-group input,
-        .form-group textarea,
-        .form-group select {
-            width: 100%;
-            padding: 8px;
-            border-radius: 4px;
-            border: 1px solid #ccc;
-        }
-
-        .form-group button {
-            padding: 10px 20px;
-            background-color: #FF8C00;
-            color: white;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-        }
-
-        .form-group button:hover {
-            background-color: #e07b00;
-        }
-
-        /* Status Bar */
-        .status-bar {
+        .table-layout {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr); /* 5 equal columns */
+            gap: 10px;
             margin-top: 20px;
-            display: flex;
-            flex-direction: column;
         }
-
-        .status-bar .status {
+        .table-cell {
+            background-color: #f1f1f1;
+            padding: 10px;
+            border-radius: 4px;
+        }
+        .table-header {
+            background-color: #ff6600;
+            color: white;
+            font-weight: bold;
+        }
+        .status {
+            display: inline-block;
+            width: 30px;
             height: 10px;
-            margin: 5px 0;
-            border-radius: 5px;
+            border-radius: 4px;
         }
-
-        .status-bar .status.green {
+        .status.green {
             background-color: green;
         }
-
-        .status-bar .status.red {
+        .status.red {
             background-color: red;
         }
-
-        .status-bar .status.gray {
-            background-color: gray;
+        .status.grey {
+            background-color: grey;
         }
-
-        /* Alert Icon */
-        .alert-icon {
-            position: absolute;
-            top: 20px;
-            right: 20px;
-            background-color: red;
-            color: white;
+        .create-button {
+            display: block;
+            width: 100%;
             padding: 10px;
-            border-radius: 50%;
+            background-color: #28a745;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            font-size: 16px;
             cursor: pointer;
+        }
+        .create-button:hover {
+            background-color: #218838;
+        }
+        /* Modal (create event form) */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            justify-content: center;
+            align-items: center;
+        }
+        .modal-content {
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            width: 400px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+        }
+        .modal-content label {
+            display: block;
+            margin-bottom: 8px;
+        }
+        .modal-content input, .modal-content textarea, .modal-content button {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 15px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        .modal-content button {
+            background-color: #28a745;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+        .modal-content button:hover {
+            background-color: #218838;
         }
     </style>
 </head>
-
 <body>
-    <div class="container">
-        <!-- Sidebar -->
-        <div class="sidebar">
-            <button>1</button>
-            <button>2</button>
-            <button>3</button>
-            <button>4</button>
-            <button>5</button>
-        </div>
 
-        <!-- Main Content -->
-        <div class="main-content">
-            <div class="alert-icon">
-                !
-            </div>
-            <h1>Event</h1>
-
-            <div class="heading">
-                <h2>Heading</h2>
-                <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.</p>
-            </div>
-
-            <form id="eventForm">
-                <!-- Event Name -->
-                <div class="form-group">
-                    <label for="eventName">Event Name</label>
-                    <input type="text" id="eventName" name="eventName" required>
-                </div>
-
-                <!-- Event Image URL -->
-                <div class="form-group">
-                    <label for="image_url">Image URL</label>
-                    <input type="text" id="image_url" name="image_url" required>
-                </div>
-
-                <!-- Location -->
-                <div class="form-group">
-                    <label for="location">Location</label>
-                    <input type="text" id="location" name="location" required>
-                </div>
-
-                <!-- Date and Time -->
-                <div class="form-group">
-                    <label for="dateTime">Date & Time</label>
-                    <input type="datetime-local" id="dateTime" name="dateTime" required>
-                </div>
-
-                <!-- Max Donors -->
-                <div class="form-group">
-                    <label for="maxDonors">Max Donors</label>
-                    <input type="number" id="maxDonors" name="maxDonors" required>
-                </div>
-
-                <!-- Description -->
-                <div class="form-group">
-                    <label for="description">Description</label>
-                    <textarea id="description" name="description" required></textarea>
-                </div>
-
-                <!-- Submit Button -->
-                <div class="form-group">
-                    <button type="submit">Create Event</button>
-                </div>
-            </form>
-
-            <!-- Status Bar -->
-            <div class="status-bar">
-                <div class="status green"></div>
-                <div class="status gray"></div>
-                <div class="status green"></div>
-                <div class="status red"></div>
-                <div class="status green"></div>
-                <div class="status green"></div>
-            </div>
-        </div>
+<div class="container">
+    <div class="header-info">
+        <h2>Event List</h2>
+        <p>Below is the list of all upcoming blood donation events. You can also create a new event by clicking the "Create New Event" button.</p>
     </div>
 
-    <script>
-        // Form submission with AJAX
-        document.getElementById('eventForm').addEventListener('submit', function(event) {
-            event.preventDefault();
+    <!-- Table-like layout for event data -->
+    <div id="eventList" class="table-layout">
+        <!-- Event list will be dynamically populated here -->
+    </div>
 
-            const formData = new FormData(this);
-            const data = {};
-            formData.forEach((value, key) => {
-                data[key] = value;
-            });
+    <button class="create-button" onclick="openCreateForm()">Create New Event</button>
+</div>
 
-            // Get the JWT token (assuming it's stored in localStorage)
-            const token = localStorage.getItem('auth_token');
+<!-- Modal for creating a new event -->
+<div id="createEventModal" class="modal">
+    <div class="modal-content">
+        <h2>Create New Event</h2>
+        <form id="createEventForm">
+            <label for="eventName">Event Name:</label>
+            <input type="text" id="eventName" name="eventName" required>
+            
+            <label for="imageUrl">Image URL:</label>
+            <input type="text" id="imageUrl" name="imageUrl">
+            
+            <label for="location">Location:</label>
+            <input type="text" id="location" name="location" required>
+            
+            <label for="dateTime">Date & Time:</label>
+            <input type="datetime-local" id="dateTime" name="dateTime" required>
+            
+            <label for="maxDonors">Max Donors:</label>
+            <input type="number" id="maxDonors" name="maxDonors" required>
+            
+            <label for="description">Description (Optional):</label>
+            <textarea id="description" name="description"></textarea>
 
-            fetch('event.php', {
-                method: 'POST',
-                headers: {
-                    'Authorization': token,
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(data)
-            })
+            <button type="button" onclick="saveEvent()">Save</button>
+            <button type="button" onclick="cancelCreate()">Cancel</button>
+        </form>
+    </div>
+</div>
+
+<script>
+    // Fetch events from the backend (event.php)
+    function fetchEvents() {
+        fetch('event.php')
             .then(response => response.json())
-            .then(result => {
-                if (result.status === 'success') {
-                    alert('Event created successfully!');
-                    console.log(result); // Handle success (you can redirect or update UI)
-                } else {
-                    alert('Error: ' + result.message); // Handle error
-                }
+            .then(events => {
+                displayEvents(events);
             })
-            .catch(error => {
-                console.error('Error:', error);
-                alert('Something went wrong!');
-            });
-        });
-    </script>
-</body>
+            .catch(error => console.error('Error fetching events:', error));
+    }
 
+    // Display the events on the page
+    function displayEvents(events) {
+        const eventList = document.getElementById('eventList');
+        eventList.innerHTML = ''; // Clear the existing content
+
+        events.forEach(event => {
+            const eventItem = document.createElement('div');
+            eventItem.className = 'table-layout';
+            eventItem.innerHTML = `
+                <div class="table-cell">${event.eventName}</div>
+                <div class="table-cell"><img src="${event.image_url}" alt="Event Image"></div>
+                <div class="table-cell">${event.eventName}</div>
+                <div class="table-cell">${event.dateTime}</div>
+                <div class="table-cell"><span class="status green"></span></div>
+            `;
+            eventList.appendChild(eventItem);
+        });
+    }
+
+    // Open the create event form (modal)
+    function openCreateForm() {
+        document.getElementById('createEventModal').style.display = 'flex';
+    }
+
+    // Close the modal without saving
+    function cancelCreate() {
+        document.getElementById('createEventModal').style.display = 'none';
+    }
+
+    // Save the new event and update the event list
+    function saveEvent() {
+        const eventName = document.getElementById('eventName').value;
+        const imageUrl = document.getElementById('imageUrl').value;
+        const location = document.getElementById('location').value;
+        const dateTime = document.getElementById('dateTime').value;
+        const maxDonors = document.getElementById('maxDonors').value;
+        const description = document.getElementById('description').value;
+
+        // Send POST request to the server (event.php) to save the event
+        fetch('event.php', {
+            method: 'POST',
+            body: new URLSearchParams({
+                eventName,
+                imageUrl,
+                location,
+                dateTime,
+                maxDonors,
+                description
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                alert('Event created successfully!');
+                fetchEvents();  // Refresh the event list
+                cancelCreate(); // Close the form
+            } else {
+                alert('Failed to create event.');
+            }
+        })
+        .catch(error => console.error('Error saving event:', error));
+    }
+
+    // Initialize by fetching and displaying events
+    fetchEvents();
+</script>
+
+</body>
 </html>

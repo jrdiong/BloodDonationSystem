@@ -1,99 +1,70 @@
 <?php
-// Set the content type to JSON
-header('Content-Type: application/json');
+// Database connection settings
+$host = 'localhost';      // Database host
+$dbname = 'cbdc_system';   // Your database name
+$username = 'root';        // Database username
+$password = '';            // Database password (change as needed)
 
-// Enable error reporting for debugging (you can remove this in production)
-error_reporting(E_ALL);
-ini_set('display_errors', 1);
-
-// Database connection details
-$servername = "localhost";
-$username = "root";
-$password = "";
-$dbname = "cbdc_system";
-
-// Create a new MySQLi connection
-$conn = new mysqli($servername, $username, $password, $dbname);
-
-// Check if the connection was successful
-if ($conn->connect_error) {
-    die(json_encode(['status' => 'error', 'message' => 'Connection failed: ' . $conn->connect_error]));
-}
-
-// Get the token from the request header
-$token = isset($_SERVER['HTTP_AUTHORIZATION']) ? $_SERVER['HTTP_AUTHORIZATION'] : null;
-
-// If no token is provided, return 401 Unauthorized error
-if (!$token) {
-    echo json_encode(['status' => 'error', 'message' => 'No token provided']);
+try {
+    // Establishing a PDO connection to the MySQL database
+    $pdo = new PDO("mysql:host=$host;dbname=$dbname", $username, $password);
+    $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION); // Enable exception mode
+} catch (PDOException $e) {
+    // If connection fails, output error message
+    echo 'Connection failed: ' . $e->getMessage();
     exit;
 }
 
-// Function to verify the JWT token (you can replace this with your own JWT verification logic)
-function verify_token($token) {
-    // Sample JWT verification (replace this with actual logic)
-    // This function should return a decoded token or false if invalid
-    // Example:
-    // return ['userID' => 1, 'role' => 'Event Organize']; // Mocked for demo purposes
-    return true;  // Mocked success for demo purposes
+// Handle GET request to fetch events
+if ($_SERVER['REQUEST_METHOD'] === 'GET') {
+    // SQL to fetch all events from the database
+    $sql = "SELECT * FROM events"; // Fetch all events
+    $stmt = $pdo->prepare($sql);
+    $stmt->execute();
+    $events = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+    // Return events as JSON
+    echo json_encode($events);
 }
 
-// Verify the token
-$decoded = verify_token($token);
+// Handle POST request to create a new event
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    // Get POST data from the form
+    $eventName = $_POST['eventName'];
+    $imageUrl = $_POST['imageUrl'];
+    $location = $_POST['location'];
+    $dateTime = $_POST['dateTime'];
+    $maxDonors = $_POST['maxDonors'];
+    $description = $_POST['description'];
+    $organizerID = $_POST['organizerID'];
+    $hospitalID = $_POST['hospitalID'];
 
-// If token verification fails, return 403 Forbidden error
-if (!$decoded) {
-    echo json_encode(['status' => 'error', 'message' => 'Invalid token']);
-    exit;
-}
+    // Validate required fields
+    if (empty($eventName) || empty($location) || empty($dateTime) || empty($maxDonors) || empty($organizerID) || empty($hospitalID)) {
+        echo json_encode(["status" => "error", "message" => "All fields are required."]);
+        exit;
+    }
 
-// Get user ID and role from decoded token
-$userID = $decoded['userID'];
-$role = $decoded['role'];
-
-// If the user is not an event organizer, return a 403 Forbidden error
-if ($role !== 'Event Organize') {
-    echo json_encode(['status' => 'error', 'message' => 'You are not authorized to create an event.']);
-    exit;
-}
-
-// Get the event data from the POST request
-$data = json_decode(file_get_contents('php://input'), true);
-
-// Assign variables for event data
-$eventName = $data['eventName'];
-$image_url = $data['image_url'];
-$location = $data['location'];
-$dateTime = $data['dateTime'];
-$maxDonors = $data['maxDonors'];
-$description = $data['description'];
-
-// Check if required fields are missing
-if (!$eventName || !$image_url || !$location || !$dateTime || !$maxDonors || !$description) {
-    echo json_encode(['status' => 'error', 'message' => 'Required fields are missing.']);
-    exit;
-}
-
-// Insert the event data into the database
-$query = "INSERT INTO event (eventName, image_url, location, dateTime, maxDonors, description, organizerID) 
-          VALUES (?, ?, ?, ?, ?, ?, ?)";
-
-$stmt = $conn->prepare($query);  // Use $conn to prepare the query
-$stmt->bind_param("ssssisi", $eventName, $image_url, $location, $dateTime, $maxDonors, $description, $userID);
-
-// Execute the query and check if the event was created successfully
-if ($stmt->execute()) {
-    echo json_encode([
-        'status' => 'success',
-        'eventID' => $stmt->insert_id,
-        'eventName' => $eventName,
-        'location' => $location,
-        'dateTime' => $dateTime,
-        'maxDonors' => $maxDonors,
-        'description' => $description,
-        'organizerID' => $userID
-    ]);
-} else {
-    echo json_encode(['status' => 'error', 'message' => 'Failed to create event.']);
+    // SQL query to insert the new event into the database
+    $sql = "INSERT INTO events (eventName, image_url, location, dateTime, maxDonors, description, organizerID, hospitalID, status)
+            VALUES (:eventName, :imageUrl, :location, :dateTime, :maxDonors, :description, :organizerID, :hospitalID, 1)";
+    
+    // Prepare the SQL statement
+    $stmt = $pdo->prepare($sql);
+    $stmt->bindParam(':eventName', $eventName);
+    $stmt->bindParam(':imageUrl', $imageUrl);
+    $stmt->bindParam(':location', $location);
+    $stmt->bindParam(':dateTime', $dateTime);
+    $stmt->bindParam(':maxDonors', $maxDonors);
+    $stmt->bindParam(':description', $description);
+    $stmt->bindParam(':organizerID', $organizerID);
+    $stmt->bindParam(':hospitalID', $hospitalID);
+    
+    // Execute the query and check for success
+    if ($stmt->execute()) {
+        echo json_encode(["status" => "success", "message" => "Event created successfully"]);
+    } else {
+        echo json_encode(["status" => "error", "message" => "Failed to create event"]);
+    }
 }
 ?>
