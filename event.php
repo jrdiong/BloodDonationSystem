@@ -10,11 +10,10 @@ if (!isset($_SESSION['userID'])) {
     die('Please log in first');
 }
 $userID = $_SESSION['userID'];
-$role = $_SESSION['role'];
+$role = $_SESSION['role'];  // Get the role from session
 
 // Handle actions based on user roles
 if ($_SERVER['REQUEST_METHOD'] == 'GET') {
-
     // Fetch all events that are not deleted
     if ($role == 'Donor') {
         // Donors can see all events, regardless of hospital or organizer
