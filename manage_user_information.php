@@ -20,6 +20,8 @@ try {
     exit;
 }
 
+// ==================== Create New User Function ====================
+
 // Get data from $_POST (since the form data is sent as multipart/form-data)
 $name = $_POST['name'] ?? null;
 $email = $_POST['email'] ?? null;
@@ -74,6 +76,44 @@ try {
 
     // Return success response
     echo json_encode(['status' => 'success', 'message' => 'User created successfully', 'userID' => $userID]);
+
+} catch (PDOException $e) {
+    echo json_encode(['status' => 'error', 'message' => 'Database error: ' . $e->getMessage()]);
+    exit;
+}
+
+// ==================== New Function: Fetch Hospital and Event Organizer Users ====================
+
+try {
+    // Query for Hospital users (without location)
+    $sqlHospital = "
+        SELECT u.userID, u.name, u.email, u.phoneNumber, u.role
+        FROM user u
+        WHERE u.role = 'Hospital';
+    ";
+    $stmtHospital = $pdo->prepare($sqlHospital);
+    $stmtHospital->execute();
+    $hospitals = $stmtHospital->fetchAll(PDO::FETCH_ASSOC);
+
+    // Query for Event Organizer users
+    $sqlEventOrganizer = "
+        SELECT userID, name, email, phoneNumber, role
+        FROM user
+        WHERE role = 'Event Organizer';
+    ";
+    $stmtEventOrganizer = $pdo->prepare($sqlEventOrganizer);
+    $stmtEventOrganizer->execute();
+    $eventOrganizers = $stmtEventOrganizer->fetchAll(PDO::FETCH_ASSOC);
+
+    // Prepare the final data
+    $data = [
+        'status' => 'success',
+        'hospitals' => $hospitals,
+        'event_organizers' => $eventOrganizers
+    ];
+
+    // Return the JSON response with the data
+    echo json_encode($data);
 
 } catch (PDOException $e) {
     echo json_encode(['status' => 'error', 'message' => 'Database error: ' . $e->getMessage()]);
