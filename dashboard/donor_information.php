@@ -103,6 +103,11 @@
     transform: scale(1.003);
     cursor: pointer;
     }
+
+    #donorTable td, #donorTable th {
+        text-align: center;       /* horizontal alignment */
+        vertical-align: middle;   /* vertical alignment */
+    }
     .status {
     padding: 6px 14px;
     border-radius: 999px;

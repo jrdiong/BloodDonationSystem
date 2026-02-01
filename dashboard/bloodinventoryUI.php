@@ -59,9 +59,9 @@ body { font-family:'Poppins',sans-serif; background:#fde7e7; margin:0; }
 .btn.danger { border:1px solid #d32f2f; color:#d32f2f; background:#fff; }
 
 /* Modal */
-.modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.5); display:flex; justify-content:center; align-items:center; opacity:0; pointer-events:none; transition:opacity 0.3s; }
+.modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.5); top: 45px; display:flex; justify-content:center; align-items:center; opacity:0; pointer-events:none; transition:opacity 0.3s; }
 .modal-overlay.show { opacity:1; pointer-events:auto; }
-.modal-card { background:#fff; border-radius:20px; width:90%; max-width:500px; padding:25px 30px; box-shadow:0 15px 40px rgba(0,0,0,0.2); position:relative; max-height:90vh; overflow-y:auto; }
+.modal-card { background:#fff; border-radius:20px; width:90%; max-width:500px; max-height: 85vh; padding:25px 30px; box-shadow:0 15px 40px rgba(0,0,0,0.2); position:relative; overflow-y:auto; }
 .modal-card h3 { margin-top:0; text-align:center; }
 .close-modal { position:absolute; top:15px; right:20px; font-size:30px; cursor:pointer; color:#999; }
 .close-modal:hover { color:#1976d2; }
@@ -72,7 +72,7 @@ body { font-family:'Poppins',sans-serif; background:#fde7e7; margin:0; }
 /* Inventory table */
 /* Table container with scrollable body */
 .inventory-table-container {
-  max-height: 250px;
+  max-height: 190px;
   overflow-y: auto;
   margin-top: 10px;
   border-radius: 12px;
@@ -109,21 +109,23 @@ body { font-family:'Poppins',sans-serif; background:#fde7e7; margin:0; }
 /* Hover effect for rows */
 .inventory-table tbody tr:hover { background: #f9f9f9; }
 
-/* Modern pill badges centered perfectly */
+/* Modern pill-style status */
 .inventory-table td.status {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  height: 35px; /* consistent row height */
-  border-radius: 999px; /* pill shape */
-  padding: 4px 12px;
-  font-size: 12px;
-  font-weight: 500;
-  text-transform: capitalize;
-  color: #fff;
-  min-width: 80px;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.15);
-  transition: transform 0.2s, box-shadow 0.2s;
+    display: flex;                  /* make the cell a flex container */
+    justify-content: center;        /* center horizontally */
+    align-items: center; 
+    padding: 6px 14px;
+    border-radius: 999px;            /* fully rounded */
+    font-size: 0.75rem;
+    font-weight: 500;
+    text-transform: capitalize;
+    color: #fff;
+    text-align: center;
+    min-width: 80px;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+.inventory-table td {
+    vertical-align: middle;
 }
 
 /* Status colors */
@@ -132,11 +134,33 @@ body { font-family:'Poppins',sans-serif; background:#fde7e7; margin:0; }
 .inventory-table td.status.delivered { background: #ffb039; }
 .inventory-table td.status.expired { background: #f9473a; }
 
-/* Hover effect for badges */
+/* Optional hover effect */
 .inventory-table td.status:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 3px 6px rgba(0,0,0,0.2);
+    transform: translateY(-2px);
+    box-shadow: 0 3px 6px rgba(0,0,0,0.2);
 }
+/* Donor pill style reused for inventory */
+.status-pill {
+    display: inline-block;
+    padding: 6px 14px;
+    border-radius: 999px;
+    font-size: 0.75rem;
+    font-weight: 500;
+    text-transform: capitalize;
+    white-space: nowrap;
+}
+
+/* Colors */
+.status-pill.available { background: #3fc944; color: #fff; }
+.status-pill.used { background: #38a2fa; color: #fff; }
+.status-pill.delivered { background: #ffb039; color: #fff; }
+.status-pill.expired { background: #f9473a; color: #fff; }
+
+.status-pill:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
 </style>
 </head>
 
@@ -254,7 +278,9 @@ document.addEventListener("click", e=>{
     tr.innerHTML = `
         <td>${item.collection}</td>
         <td>${item.expiry}</td>
-        <td class="status ${item.status.toLowerCase()}">${item.status}</td>
+        <td>
+        <span class="status-pill ${item.status.toLowerCase()}">${item.status}</span>
+        </td>
     `;
     tbody.appendChild(tr);
 });
