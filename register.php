@@ -31,8 +31,6 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     $email = trim($_POST['email']);
     $plainPassword = $_POST['password'];
     $phone = trim($_POST['phone']);
-    $dob = $_POST['dob'] ?? '';
-    $bloodtype = trim($_POST['bloodtype'] ?? '');
 
     // Default role
     $role = "Donor";

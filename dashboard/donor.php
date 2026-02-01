@@ -1,42 +1,3 @@
-<?php
-session_start();
-
-$conn = mysqli_connect("localhost", "root", "", "cbdc_system");
-if (!$conn) { die("DB error: " . mysqli_connect_error()); }
-
-$userID = $_SESSION['userID'] ?? null;
-
-$name = "Guest";
-$role = "Donor";
-$bloodtype = "-";
-$age = "-";
-$totalDonations = 0;
-$eventsJoined = 0;
-$nextEligible = "-";
-
-if ($userID) {
-    $stmt = mysqli_prepare($conn, "SELECT name, role, phoneNumber, bloodtype, dob FROM user WHERE userID = ?");
-    mysqli_stmt_bind_param($stmt, "i", $userID);
-    mysqli_stmt_execute($stmt);
-    $res = mysqli_stmt_get_result($stmt);
-    if ($row = mysqli_fetch_assoc($res)) {
-        $name = $row['name'] ?? $name;
-        $role = $row['role'] ?? $role;
-        $bloodtype = $row['bloodtype'] ?? $bloodtype;
-        $dob = $row['dob'] ?? null;
-        if (!empty($dob)) {
-            $birth = new DateTime($dob);
-            $today = new DateTime();
-            $age = $today->diff($birth)->y;
-        }
-    }
-    mysqli_stmt_close($stmt);
-
-}
-
-mysqli_close($conn);
-?>
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -185,7 +146,7 @@ body { background: #fcf4f4; padding: 20px; color: #333; }
     <div class="left-section">
     <!-- Welcome box above the three cards -->
     <div class="welcome-box">
-        <h4>Hello, <?php echo htmlspecialchars($name); ?> 👋</h4>
+        <h4>Hello, John 👋</h4>
         <p>Welcome back!</p>
     </div>
 
@@ -224,17 +185,17 @@ body { background: #fcf4f4; padding: 20px; color: #333; }
         <div class="profile-card">
             <img src="images/profile.png" alt="Profile Picture">
             <h5>Donor</h5>
-            <h6><?php echo ($age === "-" ? "-" : htmlspecialchars($age)); ?></h6>
+            <h6>30 years old</h6>
             <div class="mini-cards">
                 <div class="mini-card">
                     <i class='bx bx-droplet'></i>
                     <div class="mini-card-label">Blood Type</div>
-                    <div class="mini-card-value"><?php echo htmlspecialchars($bloodtype); ?></div>
+                    <div class="mini-card-value">O+</div>
                 </div>
                 <div class="mini-card">
                     <i class='bx bx-body'></i>
                     <div class="mini-card-label">BMI</div>
-                    <div class="mini-card-value">0</div>
+                    <div class="mini-card-value">22.5</div>
                 </div>
                 <div class="mini-card" onclick="logout()">
                     <i class='bx bx-log-out'></i>
