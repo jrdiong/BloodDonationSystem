@@ -47,12 +47,14 @@
                         </div>
                         <div class="input-field">
                             <label><i class='bx bx-cake icon'></i>Date of Birth</label>
-                            <input type="date" id="dob" placeholder="Enter birth date" required>
+                            <!-- added name attribute -->
+                            <input name="dob" type="date" id="dob" placeholder="Enter birth date" required>
                             <small id="ageMsg" class="live-msg"></small>
                         </div>
                         <div class="input-field">
                             <label><i class='bx bx-droplet icon'></i>Blood Type</label>
-                            <select required>
+                            <!-- added name attribute -->
+                            <select name="bloodtype" required>
                                 <option disabled selected>Select blood type</option>
                                 <option>A+</option>
                                 <option>A-</option>
