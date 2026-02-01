@@ -9,17 +9,14 @@ body {
     background: #f5f5f5;
     padding: 20px;
 }
-
 h1 {
     text-align: center;
 }
-
 .appointment-container {
     display: flex;
     flex-wrap: wrap;
     justify-content: center;
 }
-
 .appointment-card {
     background: #fff;
     border-radius: 15px;
@@ -28,26 +25,24 @@ h1 {
     width: 300px;
     position: relative;
     box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    cursor: pointer;
     transition: transform 0.2s;
 }
-
 .appointment-card:hover {
     transform: translateY(-5px);
 }
-
 .appointment-card img {
     width: 100%;
-    border-radius: 10px;
+    height: 150px;
+    object-fit: cover;
+    border-radius: 12px;
 }
-
 .appointment-card h3 {
     margin: 10px 0 5px;
 }
-
 .appointment-card p {
     margin: 5px 0;
 }
-
 .appointment-card button {
     margin-top: 10px;
     padding: 8px 12px;
@@ -57,12 +52,45 @@ h1 {
     border-radius: 8px;
     cursor: pointer;
 }
-
 .appointment-card button:hover {
     background: #c0392b;
 }
+.greyed { filter: grayscale(100%); opacity:0.6; }
 
-/* Modal */
+/* Event Details Modal */
+.modal {
+    display: none;
+    position: fixed;
+    top:0; left:0;
+    width:100%; height:100%;
+    background: rgba(0,0,0,0.6);
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+.modal-content {
+    background: #fff;
+    padding: 20px;
+    border-radius: 15px;
+    width: 400px;
+    position: relative;
+}
+.modal-content img {
+    width: 100%;
+    height: 200px;
+    object-fit: cover;
+    border-radius: 12px;
+    margin-bottom: 15px;
+}
+.close-modal {
+    position: absolute;
+    top: 10px;
+    right: 15px;
+    cursor: pointer;
+    font-weight: bold;
+}
+
+/* Health Report Modal (optional for booking new events) */
 #healthReportModal {
     display: none;
     position: fixed;
@@ -71,8 +99,8 @@ h1 {
     background: rgba(0,0,0,0.6);
     justify-content: center;
     align-items: center;
+    z-index: 1001;
 }
-
 #healthReportModal .modal-content {
     background: #fff;
     padding: 20px;
@@ -80,12 +108,10 @@ h1 {
     width: 400px;
     position: relative;
 }
-
 #healthReportModal .modal-content h3 {
     margin-top: 0;
 }
-
-#closeModal {
+#closeHealthModal {
     position: absolute;
     top: 10px;
     right: 15px;
@@ -99,13 +125,26 @@ h1 {
 <h1>My Appointments</h1>
 
 <div class="appointment-container" id="appointmentContainer">
-    <!-- Appointment cards will be injected here -->
+    <!-- Cards will be injected here -->
 </div>
 
-<!-- Health Report Modal -->
+<!-- Event Details Modal -->
+<div class="modal" id="appointmentModal">
+    <div class="modal-content">
+        <span class="close-modal" id="closeModal">X</span>
+        <img id="modalImage" src="">
+        <h3 id="modalTitle"></h3>
+        <p><strong>Date & Time:</strong> <span id="modalDate"></span></p>
+        <p><strong>Location:</strong> <span id="modalLocation"></span></p>
+        <p><strong>Description:</strong></p>
+        <p id="modalDescription"></p>
+    </div>
+</div>
+
+<!-- Health Report Modal (Optional) -->
 <div id="healthReportModal">
     <div class="modal-content">
-        <span id="closeModal">X</span>
+        <span id="closeHealthModal">X</span>
         <h3>Health Report Form</h3>
         <form id="healthReportForm">
             <label>Medical History:</label><br>
@@ -123,157 +162,109 @@ h1 {
 document.addEventListener('DOMContentLoaded', function() {
 
     const container = document.getElementById('appointmentContainer');
-    const modal = document.getElementById('healthReportModal');
+    const modal = document.getElementById('appointmentModal');
     const closeModal = document.getElementById('closeModal');
+
+    const healthModal = document.getElementById('healthReportModal');
+    const closeHealthModal = document.getElementById('closeHealthModal');
     const healthForm = document.getElementById('healthReportForm');
 
     let currentEventID = null;
 
-    // Close modal
-    closeModal.addEventListener('click', function() {
-        modal.style.display = 'none';
-        healthForm.reset();
-    });
+    closeModal.addEventListener('click', () => modal.style.display = 'none');
+    closeHealthModal.addEventListener('click', () => { healthModal.style.display='none'; healthForm.reset(); });
 
-    // Load all donor appointments
-    function loadAppointments(){
-        fetch('donor_appointments.php')
-        .then(res => res.json())
-        .then(data => {
-            if(data.status === 'success'){
-                container.innerHTML = '';
-                data.appointments.forEach(app => {
-                    const card = document.createElement('div');
-                    card.classList.add('appointment-card');
+    async function loadAppointments() {
+        try {
+            const res = await fetch('donor_appointments.php');
+            const data = await res.json();
+            if(data.status !== 'success') { alert(data.message || 'Failed'); return; }
 
-                    // Event image
-                    const img = document.createElement('img');
-                    img.src = app.image_url || 'placeholder.jpg';
-                    if(app.status === 'completed' || app.status === 'cancelled'){
-                        img.style.filter = 'grayscale(100%)';
-                    }
-                    card.appendChild(img);
+            container.innerHTML = '';
 
-                    // Event name
-                    const title = document.createElement('h3');
-                    title.textContent = app.eventName;
-                    card.appendChild(title);
+            data.appointments.forEach(app => {
+                const card = document.createElement('div');
+                card.classList.add('appointment-card');
+                if(['completed','cancelled','rejected'].includes(app.status)){
+                    card.classList.add('greyed');
+                }
 
-                    // Event date and location
-                    const date = document.createElement('p');
-                    date.textContent = 'Date: ' + app.eventDateTime;
-                    card.appendChild(date);
+                const img = document.createElement('img');
+                img.src = app.image_url || 'placeholder.jpg';
+                card.appendChild(img);
 
-                    const location = document.createElement('p');
-                    location.textContent = 'Location: ' + app.location;
-                    card.appendChild(location);
+                const title = document.createElement('h3');
+                title.textContent = app.eventName;
+                card.appendChild(title);
 
-                    // Booking count
-                    const count = document.createElement('p');
-                    count.textContent = 'Booking: ' + app.currentBookings + '/' + app.maxDonors;
-                    card.appendChild(count);
+                const date = document.createElement('p');
+                date.textContent = 'Date: ' + app.eventDateTime;
+                card.appendChild(date);
 
-                    // Status
-                    const status = document.createElement('p');
-                    status.textContent = 'Status: ' + app.status;
-                    card.appendChild(status);
+                const location = document.createElement('p');
+                location.textContent = 'Location: ' + (app.location || 'TBD');
+                card.appendChild(location);
 
-                    // Cancel button for pending appointments
-                    if(app.status === 'pending'){
-                        const btn = document.createElement('button');
-                        btn.textContent = 'Cancel Appointment';
-                        btn.addEventListener('click', function(){
-                            if(confirm('Are you sure you want to cancel this appointment?')){
-                                cancelAppointment(app.appointmentID);
-                            }
-                        });
-                        card.appendChild(btn);
-                    }
+                const count = document.createElement('p');
+                count.textContent = `Booking: ${app.currentBookings}/${app.maxDonors}`;
+                card.appendChild(count);
 
-                    container.appendChild(card);
+                const status = document.createElement('p');
+                status.textContent = 'Status: ' + app.status;
+                card.appendChild(status);
+
+                // Cancel button for pending
+                if(app.status === 'pending'){
+                    const btn = document.createElement('button');
+                    btn.textContent = 'Cancel Appointment';
+                    btn.addEventListener('click', function(e){
+                        e.stopPropagation();
+                        cancelAppointment(app.appointmentID);
+                    });
+                    card.appendChild(btn);
+                }
+
+                // Click card to show event details
+                card.addEventListener('click', function(){
+                    openModal(app);
                 });
-            }
-        })
-        .catch(err => console.error(err));
+
+                container.appendChild(card);
+            });
+        } catch(err) {
+            console.error(err);
+            alert('Error loading appointments');
+        }
     }
 
-    // Cancel appointment
-    function cancelAppointment(appointmentID){
-        fetch('cancel_appointment.php',{
-            method: 'POST',
-            headers: {'Content-Type':'application/x-www-form-urlencoded'},
-            body: 'appointmentID=' + appointmentID
-        })
-        .then(res => res.json())
-        .then(data => {
+    function openModal(app) {
+        document.getElementById('modalImage').src = app.image_url || 'placeholder.jpg';
+        document.getElementById('modalTitle').innerText = app.eventName;
+        document.getElementById('modalDate').innerText = app.eventDateTime;
+        document.getElementById('modalLocation').innerText = app.location || 'TBD';
+        document.getElementById('modalDescription').innerText = app.description || 'No description';
+        modal.style.display = 'flex';
+    }
+
+    async function cancelAppointment(appointmentID){
+        if(!confirm('Cancel this appointment?')) return;
+        const form = new FormData();
+        form.append('action','cancelAppointment');
+        form.append('appointmentID', appointmentID);
+        try{
+            const res = await fetch('donor_appointments.php', { method:'POST', body: form });
+            const data = await res.json();
             if(data.status === 'success'){
                 alert('Appointment cancelled successfully');
                 loadAppointments();
             } else {
-                alert(data.message);
+                alert(data.message || 'Failed');
             }
-        });
+        } catch(err) {
+            console.error(err);
+            alert('Failed to cancel appointment');
+        }
     }
-
-    // Book Event (with Health Report if required)
-    document.querySelectorAll('.book-btn').forEach(function(btn){
-        btn.addEventListener('click', function(){
-            const eventID = btn.closest('.event-card').dataset.eventid;
-            currentEventID = eventID;
-            fetch('book_event.php',{
-                method:'POST',
-                headers:{'Content-Type':'application/x-www-form-urlencoded'},
-                body:'action=bookEvent&eventID=' + eventID
-            })
-            .then(res => res.json())
-            .then(data => {
-                if(data.status === 'requireHealthReport'){
-                    // Show modal
-                    modal.style.display = 'flex';
-                } else if(data.status === 'success'){
-                    alert(data.message);
-                    loadAppointments();
-                } else if(data.status === 'error'){
-                    alert(data.message);
-                }
-            });
-        });
-    });
-
-    // Health Report form submit
-    healthForm.addEventListener('submit', function(e){
-        e.preventDefault();
-        if(!currentEventID) return;
-
-        const formData = new FormData(healthForm);
-        const healthReport = {
-            medicalHistory: formData.get('medicalHistory'),
-            weight: formData.get('weight'),
-            height: formData.get('height')
-        };
-
-        const params = new URLSearchParams();
-        params.append('action','bookEvent');
-        params.append('eventID', currentEventID);
-        params.append('healthReport', JSON.stringify(healthReport));
-
-        fetch('book_event.php',{
-            method:'POST',
-            headers:{'Content-Type':'application/x-www-form-urlencoded'},
-            body: params.toString()
-        })
-        .then(res=>res.json())
-        .then(data=>{
-            if(data.status==='success'){
-                alert(data.message);
-                modal.style.display = 'none';
-                healthForm.reset();
-                loadAppointments();
-            } else if(data.status==='error'){
-                alert(data.message);
-            }
-        });
-    });
 
     loadAppointments();
 });
