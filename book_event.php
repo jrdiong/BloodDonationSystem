@@ -35,7 +35,7 @@ try {
 }
 
 /* =========================
-   Get User Role
+   Check User Role
 ========================= */
 $stmt = $pdo->prepare("SELECT role FROM user WHERE userID=?");
 $stmt->execute([$loggedInUserID]);
@@ -47,7 +47,7 @@ if ($role !== 'Donor') {
 }
 
 /* =========================
-   POST: Book Event with Health Report Check
+   Handle Booking
 ========================= */
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'bookEvent') {
 
@@ -57,30 +57,66 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'bookE
         exit;
     }
 
-    // 1️⃣ Get donor info
+    //  Ensure donor record exists (auto-create if missing)
     $stmt = $pdo->prepare("SELECT * FROM donor WHERE userID=?");
     $stmt->execute([$loggedInUserID]);
     $donor = $stmt->fetch(PDO::FETCH_ASSOC);
 
     if (!$donor) {
-        echo json_encode(["status" => "error", "message" => "Donor record not found"]);
+        $stmt = $pdo->prepare("INSERT INTO donor(userID) VALUES (?)");
+        $stmt->execute([$loggedInUserID]);
+
+        // Fetch the new donor record
+        $stmt = $pdo->prepare("SELECT * FROM donor WHERE userID=?");
+        $stmt->execute([$loggedInUserID]);
+        $donor = $stmt->fetch(PDO::FETCH_ASSOC);
+    }
+
+    //  Check if already booked (pending/approved)
+    $stmt = $pdo->prepare("SELECT COUNT(*) FROM appointment WHERE userID=? AND eventID=? AND status IN ('pending','approved')");
+    $stmt->execute([$loggedInUserID, $eventID]);
+    if ($stmt->fetchColumn() > 0) {
+        echo json_encode(["status" => "error", "message" => "You have already booked this event."]);
         exit;
     }
 
-    // 2️⃣ Check if health report submitted
+    //  Check if previously cancelled
+    $stmt = $pdo->prepare("SELECT COUNT(*) FROM appointment WHERE userID=? AND eventID=? AND status='cancelled'");
+    $stmt->execute([$loggedInUserID, $eventID]);
+    if ($stmt->fetchColumn() > 0) {
+        echo json_encode(["status" => "error", "message" => "You cannot rebook a cancelled event."]);
+        exit;
+    }
+
+    //  Check event capacity
+    $stmt = $pdo->prepare("
+        SELECT maxDonors,
+               (SELECT COUNT(*) FROM appointment WHERE eventID=? AND status IN ('pending','approved')) AS currentBookings
+        FROM event WHERE eventID=?
+    ");
+    $stmt->execute([$eventID, $eventID]);
+    $event = $stmt->fetch(PDO::FETCH_ASSOC);
+
+    if (!$event) {
+        echo json_encode(["status" => "error", "message" => "Event not found."]);
+        exit;
+    }
+
+    if ($event['currentBookings'] >= $event['maxDonors']) {
+        echo json_encode(["status" => "error", "message" => "Event is fully booked."]);
+        exit;
+    }
+
+    // 5️⃣ Check health report
     $healthReportData = $_POST['healthReport'] ?? null;
     $needHealthReport = empty($donor['medicalHistory']) || !$donor['weight'] || !$donor['height'];
 
     if ($needHealthReport && !$healthReportData) {
-        // Health report required, front-end should show modal
-        echo json_encode([
-            "status" => "requireHealthReport",
-            "message" => "Please complete your health report before booking."
-        ]);
+        echo json_encode(["status"=>"requireHealthReport","message"=>"Please complete your health report before booking."]);
         exit;
     }
 
-    // 3️⃣ Save health report if submitted
+    //  Save health report if provided
     if ($healthReportData) {
         $decoded = json_decode($healthReportData, true);
         if (!$decoded) {
@@ -103,37 +139,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'bookE
         ]);
     }
 
-    // 4️⃣ Check if already booked this event
-    $stmt = $pdo->prepare("SELECT COUNT(*) FROM appointment WHERE eventID=? AND userID=?");
-    $stmt->execute([$eventID, $loggedInUserID]);
-    if ($stmt->fetchColumn() > 0) {
-        echo json_encode(["status" => "error", "message" => "You have already booked this event."]);
-        exit;
-    }
+    //  Create appointment
+    $stmt = $pdo->prepare("INSERT INTO appointment(userID, eventID, dateTime, status) VALUES (?, ?, NOW(), 'approved')");
+    $stmt->execute([$loggedInUserID, $eventID]);
 
-    // 5️⃣ Check if event exists and is not full
-    $stmt = $pdo->prepare("
-        SELECT maxDonors,
-               (SELECT COUNT(*) FROM appointment WHERE eventID=? AND status IN ('pending','approved')) AS currentBookings
-        FROM event WHERE eventID=? AND status=1
-    ");
-    $stmt->execute([$eventID, $eventID]);
-    $event = $stmt->fetch(PDO::FETCH_ASSOC);
-
-    if (!$event) {
-        echo json_encode(["status" => "error", "message" => "Event not found or not active."]);
-        exit;
-    }
-
-    if ($event['currentBookings'] >= $event['maxDonors']) {
-        echo json_encode(["status" => "error", "message" => "Event is fully booked."]);
-        exit;
-    }
-
-    // 6️⃣ Create appointment
-    $stmt = $pdo->prepare("INSERT INTO appointment(eventID, userID, dateTime, status) VALUES (?, ?, NOW(), 'approved')");
-    $stmt->execute([$eventID, $loggedInUserID]);
-
+    //  Return success with updated booking count
     $current = $event['currentBookings'] + 1;
     $max = $event['maxDonors'];
 
@@ -144,5 +154,4 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'bookE
     ]);
     exit;
 }
-
 ?>
