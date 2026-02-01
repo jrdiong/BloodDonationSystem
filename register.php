@@ -68,8 +68,8 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 
         echo "<script>
                 alert('Registration successful!');
-                window.location.href='login.html';
-              </script>";
+                window.location.href='loginUI.php';
+              </script>"; // Redirect to login page
 
     } catch (PDOException $e) {
         // Catch DB errors
