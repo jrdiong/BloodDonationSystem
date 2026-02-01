@@ -7,7 +7,8 @@
 body { font-family: Arial, sans-serif; background: #f5f5f5; }
 
 /* Event Card */
-.event-card { display:flex; background:#fff; border-radius:20px; padding:20px; margin:15px auto; width:80%; cursor:pointer; position:relative; }
+.event-card { display:flex; background:#fff; border-radius:20px; padding:20px; margin:15px auto; width:80%; cursor:pointer; position:relative; transition: 0.2s; }
+.event-card:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
 .event-image { width:150px; height:120px; border-radius:12px; background:#eee; overflow:hidden; flex-shrink:0; }
 .event-image img { width:100%; height:100%; object-fit:cover; }
 .event-info { margin-left:20px; }
@@ -15,11 +16,11 @@ body { font-family: Arial, sans-serif; background: #f5f5f5; }
 .event-info p { margin:6px 0; }
 
 /* Admin Delete */
-.delete-btn { position:absolute; right:20px; top:20px; font-size:22px; color:red; cursor:pointer; }
+.delete-btn { position:absolute; right:20px; top:20px; font-size:22px; color:red; cursor:pointer; user-select:none; }
 
 /* Modal */
 .modal { display:none; position:fixed; inset:0; background: rgba(0,0,0,0.5); z-index:1000; }
-.modal-content { background:#fff; width:600px; margin:60px auto; padding:25px; border-radius:15px; }
+.modal-content { background:#fff; width:600px; max-width:90%; margin:60px auto; padding:25px; border-radius:15px; }
 .modal-content input, .modal-content textarea, .modal-content select { width:100%; margin-bottom:12px; padding:8px; }
 .modal-buttons { display:flex; justify-content:flex-end; gap:10px; }
 #createEventBtn { display:none; margin:20px auto; padding:10px 20px; font-size:16px; cursor:pointer; }
@@ -53,6 +54,7 @@ body { font-family: Arial, sans-serif; background: #f5f5f5; }
 let currentEventID = null;
 let currentRole = null;
 let canEdit = false;
+let hospitalsLoaded = false;
 
 /* ===== Load Events ===== */
 async function loadEvents(){
@@ -62,9 +64,8 @@ async function loadEvents(){
         if(data.status!=='success'){ alert(data.message||'Failed to load events'); return; }
         currentRole = data.role;
 
-        if(currentRole==='Event Organizer'){
-            document.getElementById('createEventBtn').style.display='block';
-            loadHospitals();
+        if(currentRole==='Event Organizer' && !hospitalsLoaded){
+            await loadHospitals();
         }
 
         renderEventCards(data.data);
@@ -84,6 +85,8 @@ async function loadHospitals(){
                 opt.value=h.userID; opt.textContent=h.name;
                 select.appendChild(opt);
             });
+            hospitalsLoaded = true;
+            document.getElementById('createEventBtn').style.display='block';
         }
     }catch(e){ console.error(e); }
 }
@@ -105,11 +108,12 @@ function renderEventCards(events){
                 <p>Location: ${event.location || 'TBD'}</p>
             </div>
         `;
+
         card.onclick=()=>openEvent(event.eventID);
 
         if(currentRole==='Admin'){
             const del=document.createElement('div');
-            del.className='delete-btn'; del.innerText='-';
+            del.className='delete-btn'; del.innerText='×';
             del.onclick=(e)=>{ e.stopPropagation(); deleteEvent(event.eventID); }
             card.appendChild(del);
         }
@@ -129,10 +133,10 @@ async function openEvent(eventID){
 
         document.getElementById('modalTitle').innerText=e.eventName;
         document.getElementById('eventName').value=e.eventName;
-        document.getElementById('dateTime').value=e.dateTime.replace(' ','T').slice(0,16);
+        document.getElementById('dateTime').value=formatDateTimeLocal(e.dateTime);
         document.getElementById('maxDonors').value=e.maxDonors;
-        document.getElementById('eventLocation').value=e.location || '';
-        document.getElementById('description').value=e.description;
+        document.getElementById('eventLocation').value=e.location||'';
+        document.getElementById('description').value=e.description||'';
         document.getElementById('previewImage').src=e.image_url||'placeholder.jpg';
 
         const inputs=document.querySelectorAll('#eventModal input,#eventModal textarea');
@@ -141,12 +145,19 @@ async function openEvent(eventID){
         // Hospital select for Organizer
         const select=document.getElementById('hospitalSelect');
         if(currentRole==='Event Organizer'){
-            select.style.display='block'; select.value=e.hospitalID||'';
+            select.style.display='block';
+            select.value=e.hospitalID||'';
         }else select.style.display='none';
 
         renderButtons();
         document.getElementById('eventModal').style.display='block';
     }catch(e){ console.error(e); alert('Failed to open event'); }
+}
+
+/* ===== Format datetime-local ===== */
+function formatDateTimeLocal(dt){
+    if(!dt) return '';
+    return dt.replace(' ','T').slice(0,16);
 }
 
 /* ===== Render Modal Buttons ===== */
@@ -157,7 +168,7 @@ function renderButtons(isNew=false){
         box.innerHTML=`<button onclick="closeModal()">Cancel</button>
                        <button onclick="bookEvent()">Book</button>`;
     } else if(currentRole==='Admin'){
-        box.innerHTML=`<button onclick="closeModal()">Cancel</button>`;
+        box.innerHTML=`<button onclick="closeModal()">Close</button>`;
     } else if(currentRole==='Event Organizer'){
         box.innerHTML=`<button onclick="closeModal()">Cancel</button>`;
         if(isNew || !currentEventID) box.innerHTML+=`<button onclick="sendRequest()">Send Request</button>`;
@@ -180,18 +191,8 @@ document.getElementById('imageUpload').addEventListener('change',function(){
 
 /* ===== Save Event ===== */
 async function saveEvent(){
-    const formData=new FormData();
-    formData.append('eventName',document.getElementById('eventName').value);
-    formData.append('dateTime',document.getElementById('dateTime').value);
-    formData.append('maxDonors',document.getElementById('maxDonors').value);
-    formData.append('description',document.getElementById('description').value);
-    formData.append('location',document.getElementById('eventLocation').value);
-    formData.append('eventID',currentEventID);
-
-    const file=document.getElementById('imageUpload').files[0];
-    if(file) formData.append('imageUpload',file);
-    formData.append('action','saveEvent');
-
+    if(!validateForm()) return;
+    const formData = getFormData('saveEvent');
     try{
         const res=await fetch('event.php',{ method:'POST', body:formData });
         const data=await res.json();
@@ -202,20 +203,12 @@ async function saveEvent(){
 
 /* ===== Send Request ===== */
 async function sendRequest(){
+    if(!validateForm()) return;
     const hospitalID=document.getElementById('hospitalSelect').value;
     if(!hospitalID){ alert('Select hospital'); return; }
 
-    const formData=new FormData();
-    formData.append('eventName',document.getElementById('eventName').value);
-    formData.append('dateTime',document.getElementById('dateTime').value);
-    formData.append('maxDonors',document.getElementById('maxDonors').value);
-    formData.append('description',document.getElementById('description').value);
-    formData.append('location',document.getElementById('eventLocation').value);
+    const formData = getFormData('sendRequest');
     formData.append('hospitalID',hospitalID);
-
-    const file=document.getElementById('imageUpload').files[0];
-    if(file) formData.append('imageUpload',file);
-    formData.append('action','sendRequest');
 
     try{
         const res=await fetch('event.php',{ method:'POST', body:formData });
@@ -227,6 +220,7 @@ async function sendRequest(){
 
 /* ===== Book Event ===== */
 async function bookEvent(){
+    if(!currentEventID){ alert('No event selected'); return; }
     try{
         const res=await fetch('event.php',{ method:'POST', headers:{'Content-Type':'application/x-www-form-urlencoded'}, body:`action=bookEvent&eventID=${currentEventID}`});
         const data=await res.json();
@@ -264,6 +258,31 @@ document.getElementById('createEventBtn').onclick=()=>{
     document.getElementById('eventModal').style.display='block';
 }
 
+/* ===== Helper: Get FormData ===== */
+function getFormData(action){
+    const formData = new FormData();
+    formData.append('eventName', document.getElementById('eventName').value);
+    formData.append('dateTime', document.getElementById('dateTime').value);
+    formData.append('maxDonors', document.getElementById('maxDonors').value);
+    formData.append('description', document.getElementById('description').value);
+    formData.append('location', document.getElementById('eventLocation').value);
+    if(currentEventID) formData.append('eventID', currentEventID);
+    const file=document.getElementById('imageUpload').files[0];
+    if(file) formData.append('imageUpload',file);
+    formData.append('action', action);
+    return formData;
+}
+
+/* ===== Helper: Validate Form ===== */
+function validateForm(){
+    const name=document.getElementById('eventName').value.trim();
+    const date=document.getElementById('dateTime').value;
+    const max=document.getElementById('maxDonors').value;
+    if(!name || !date || !max){ alert('Please fill required fields'); return false; }
+    return true;
+}
+
+/* ===== Init ===== */
 loadEvents();
 </script>
 </body>

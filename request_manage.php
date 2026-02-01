@@ -35,88 +35,103 @@ try {
 }
 
 /* ====================
+   Helper: Get current user info
+==================== */
+function getCurrentUserInfo($pdo, $userID) {
+    $stmt = $pdo->prepare("SELECT userID, role, name FROM `user` WHERE userID = ?");
+    $stmt->execute([$userID]);
+    $user = $stmt->fetch(PDO::FETCH_ASSOC);
+    return $user ?: ["userID" => $userID, "role" => "Unknown", "name" => "Unknown"];
+}
+
+$currentUser = getCurrentUserInfo($pdo, $adminID);
+
+/* ====================
    Verify Admin Role
 ==================== */
-$stmt = $pdo->prepare("SELECT role FROM `user` WHERE userID = ?");
-$stmt->execute([$adminID]);
-$role = $stmt->fetchColumn();
-
-if ($role !== 'Admin') {
-    echo json_encode(["status" => "error", "message" => "Permission denied"]);
+if ($currentUser['role'] !== 'Admin') {
+    echo json_encode([
+        "status" => "error",
+        "message" => "Permission denied",
+        "currentUser" => $currentUser
+    ]);
     exit;
 }
 
 /* ====================
    GET Requests
 ==================== */
-$action = $_GET['action'] ?? null;
+$action = $_GET['action'] ?? 'pending'; // 默认返回 pending
 
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {
 
-    /* --------------------
-       Get Pending Requests
-       request.status = 2
-    -------------------- */
-    if ($action === 'pending') {
+    switch($action) {
 
-        $stmt = $pdo->prepare("
-            SELECT 
-                r.requestID,
-                r.status AS requestStatus,
-                e.eventID,
-                e.eventName,
-                e.dateTime,
-                e.location,
-                e.image_url,
-                e.description,
-                u.name AS organizerName
-            FROM request r
-            JOIN event e ON r.eventID = e.eventID
-            JOIN `user` u ON e.organizerID = u.userID
-            WHERE r.status = 2
-            ORDER BY r.requestID DESC
-        ");
-        $stmt->execute();
-        $pending = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        /* ----- Pending Requests (status=2) ----- */
+        case 'pending':
+            $stmt = $pdo->prepare("
+                SELECT 
+                    r.requestID,
+                    r.status AS requestStatus,
+                    e.eventID,
+                    e.eventName,
+                    e.dateTime,
+                    e.location,
+                    e.image_url,
+                    e.description,
+                    u.name AS organizerName
+                FROM request r
+                LEFT JOIN event e ON r.eventID = e.eventID
+                LEFT JOIN `user` u ON e.organizerID = u.userID
+                WHERE r.status = 2
+                ORDER BY r.requestID DESC
+            ");
+            $stmt->execute();
+            $pending = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-        echo json_encode([
-            "status" => "success",
-            "pending" => $pending
-        ]);
-        exit;
-    }
+            echo json_encode([
+                "status" => "success",
+                "data" => $pending,
+                "currentUser" => $currentUser
+            ]);
+            exit;
 
-    /* --------------------
-       Get All Recorded Requests
-       request.status = 0,1,3
-    -------------------- */
-    if ($action === 'recorded') {
+        /* ----- Recorded Requests (status=1) ----- */
+        case 'recorded':
+            $stmt = $pdo->prepare("
+                SELECT 
+                    r.requestID,
+                    r.eventID,
+                    r.status AS requestStatus,
+                    e.eventName,
+                    e.dateTime,
+                    e.location,
+                    e.image_url,
+                    e.description,
+                    u.name AS organizerName
+                FROM request r
+                LEFT JOIN event e ON r.eventID = e.eventID
+                LEFT JOIN `user` u ON e.organizerID = u.userID
+                WHERE r.status = 1
+                ORDER BY r.requestID DESC
+            ");
+            $stmt->execute();
+            $recorded = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-        $stmt = $pdo->prepare("
-            SELECT 
-                r.requestID,
-                r.eventID,
-                r.status AS requestStatus,
-                e.eventName,
-                e.dateTime,
-                e.location,
-                e.image_url,
-                e.description,
-                u.name AS organizerName
-            FROM request r
-            JOIN event e ON r.eventID = e.eventID
-            JOIN `user` u ON e.organizerID = u.userID
-            WHERE r.status IN (0, 1, 3)
-            ORDER BY r.requestID DESC
-        ");
-        $stmt->execute();
-        $recorded = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            echo json_encode([
+                "status" => "success",
+                "data" => $recorded,
+                "currentUser" => $currentUser
+            ]);
+            exit;
 
-        echo json_encode([
-            "status" => "success",
-            "recorded" => $recorded
-        ]);
-        exit;
+        default:
+            echo json_encode([
+                "status" => "error",
+                "message" => "Invalid GET action",
+                "currentUser" => $currentUser
+            ]);
+            exit;
     }
 }
 
@@ -133,11 +148,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         echo json_encode([
             "status" => "error",
             "message" => "Missing parameters",
-            "debug" => [
-                "action" => $postAction,
-                "requestID" => $requestID,
-                "eventID" => $eventID
-            ]
+            "currentUser" => $currentUser
         ]);
         exit;
     }
@@ -145,7 +156,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     try {
         $pdo->beginTransaction();
 
-        /* Validate request */
+        // Validate request
         $stmt = $pdo->prepare("SELECT status FROM request WHERE requestID = ?");
         $stmt->execute([$requestID]);
         $request = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -154,57 +165,69 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             throw new Exception("Invalid or already processed request");
         }
 
-        /* ---------- Approve ---------- */
+        /* ----- Approve ----- */
         if ($postAction === 'approve') {
-
             $record = isset($_POST['record']) ? intval($_POST['record']) : 0;
-            if ($record !== 0 && $record !== 1) {
-                $record = 0;
-            }
+            $record = ($record === 1) ? 1 : 0;
 
-            // event.status -> approved
-            $stmt = $pdo->prepare("UPDATE event SET status = 1 WHERE eventID = ?");
-            $stmt->execute([$eventID]);
+            // Update event status
+            $pdo->prepare("UPDATE event SET status = 1 WHERE eventID = ?")->execute([$eventID]);
 
-            // request.status -> 1 (recorded) OR 0 (not recorded)
-            $stmt = $pdo->prepare("UPDATE request SET status = ? WHERE requestID = ?");
-            $stmt->execute([$record, $requestID]);
+            // Update request status
+            $pdo->prepare("UPDATE request SET status = ? WHERE requestID = ?")->execute([$record, $requestID]);
 
             $pdo->commit();
-            echo json_encode(["status" => "success", "message" => "Request approved"]);
+            echo json_encode([
+                "status" => "success",
+                "message" => "Request approved",
+                "currentUser" => $currentUser
+            ]);
             exit;
         }
 
-        /* ---------- Reject ---------- */
+        /* ----- Reject ----- */
         if ($postAction === 'reject') {
+            // Update event status
+            $pdo->prepare("UPDATE event SET status = 0 WHERE eventID = ?")->execute([$eventID]);
 
-            // event.status -> rejected / deleted
-            $stmt = $pdo->prepare("UPDATE event SET status = 0 WHERE eventID = ?");
-            $stmt->execute([$eventID]);
-
-            // request.status -> rejected
-            $stmt = $pdo->prepare("UPDATE request SET status = 3 WHERE requestID = ?");
-            $stmt->execute([$requestID]);
+            // Update request status
+            $pdo->prepare("UPDATE request SET status = 3 WHERE requestID = ?")->execute([$requestID]);
 
             $pdo->commit();
-            echo json_encode(["status" => "success", "message" => "Request rejected"]);
+            echo json_encode([
+                "status" => "success",
+                "message" => "Request rejected",
+                "currentUser" => $currentUser
+            ]);
             exit;
         }
 
         $pdo->rollBack();
-        echo json_encode(["status" => "error", "message" => "Invalid action"]);
+        echo json_encode([
+            "status" => "error",
+            "message" => "Invalid POST action",
+            "currentUser" => $currentUser
+        ]);
         exit;
 
     } catch (Exception $e) {
         $pdo->rollBack();
-        echo json_encode(["status" => "error", "message" => $e->getMessage()]);
+        echo json_encode([
+            "status" => "error",
+            "message" => $e->getMessage(),
+            "currentUser" => $currentUser
+        ]);
         exit;
     }
 }
 
 /* ====================
-   Invalid Request Fallback
+   Fallback
 ==================== */
-echo json_encode(["status" => "error", "message" => "Invalid request"]);
+echo json_encode([
+    "status" => "error",
+    "message" => "Invalid request method",
+    "currentUser" => $currentUser
+]);
 exit;
 ?>
