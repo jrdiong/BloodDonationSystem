@@ -25,21 +25,27 @@
     box-shadow: 0 8px 25px rgba(0,0,0,0.08);
     }
 
-    .page-intro {
-    margin-bottom: 24px;
+    /* Page intro card like Blood Inventory */
+    .page-intro-card {
+        background: #f44040;          /* red gradient or solid color */
+        color: #fff;
+        border-radius: 15px;
+        padding: 25px 30px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        margin-bottom: 30px;
     }
 
-    .page-intro h2 {
-    font-size: 1.6rem;
-    font-weight: 600;
-    margin: 0;
+    .page-intro-card h2 {
+        margin: 0 0 10px 0;
+        font-size: 24px;
+        font-weight: 600;
     }
 
-    .page-intro p {
-    color: #6b7280;
-    margin-top: 6px;
-    font-size: 0.95rem;
+    .page-intro-card p {
+        margin: 0;
+        font-size: 16px;
     }
+
     .table-header {
     display: flex;
     justify-content: space-between;
@@ -396,10 +402,11 @@
 <div class="page-container">
 
   <!-- Page Heading -->
-  <div class="page-intro">
+  <div class="page-intro-card">
     <h2>Manage Donor Information</h2>
     <p>Here you can review, approve, reject, or edit donors’ submitted health reports.</p>
   </div>
+
 
   <!-- Search -->
   <div class="table-header">
