@@ -3,6 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <title>Admin Request Manage</title>
+
 <style>
 body { font-family: Arial, sans-serif; margin: 20px; background: #f5f5f5; }
 
@@ -61,17 +62,17 @@ body { font-family: Arial, sans-serif; margin: 20px; background: #f5f5f5; }
     gap: 10px;
 }
 #eventDescription {
-    max-height: 100px; 
-    overflow-y: auto; 
-    padding: 5px; 
-    border: 1px solid #ccc; 
+    max-height: 100px;
+    overflow-y: auto;
+    padding: 5px;
+    border: 1px solid #ccc;
     border-radius: 8px;
     background: #f9f9f9;
     white-space: pre-wrap;
     margin-bottom: 10px;
 }
 
-/* Recorded Requests Table */
+/* Recorded Table */
 #recordedTable {
     width: 100%;
     border-collapse: collapse;
@@ -99,26 +100,33 @@ body { font-family: Arial, sans-serif; margin: 20px; background: #f5f5f5; }
 }
 </style>
 </head>
+
 <body>
 
 <h2>Admin Request Manage</h2>
 
 <!-- Request Button -->
-<button id="requestBtn">Requests <span id="requestBadge">0</span></button>
+<button id="requestBtn">
+    Requests <span id="requestBadge">0</span>
+</button>
 <div id="loading">Loading...</div>
 
-<!-- Modal for Pending Request -->
+<!-- Modal -->
 <div id="requestModal">
     <div id="modalContent">
         <span id="closeModal">&#10005;</span>
-        <h3 id="modalTitle">Event Request</h3>
-        <img id="eventImage" src="placeholder.jpg" alt="Event Image">
+
+        <h3>Event Request</h3>
+
+        <img id="eventImage" src="placeholder.jpg">
         <p><strong>Name:</strong> <span id="eventName"></span></p>
         <p><strong>Date/Time:</strong> <span id="eventDateTime"></span></p>
         <p><strong>Location:</strong> <span id="eventLocation"></span></p>
         <p><strong>Organizer:</strong> <span id="eventOrganizer"></span></p>
+
         <p><strong>Description:</strong></p>
         <div id="eventDescription"></div>
+
         <div id="modalButtons">
             <button id="approveBtn">Approve</button>
             <button id="rejectBtn">Reject</button>
@@ -126,14 +134,14 @@ body { font-family: Arial, sans-serif; margin: 20px; background: #f5f5f5; }
     </div>
 </div>
 
-<!-- Recorded Requests Table -->
+<!-- Recorded -->
 <h3>Recorded Requests</h3>
 <table id="recordedTable">
     <thead>
         <tr>
             <th>Event Image</th>
             <th>Event Name</th>
-            <th>Date/Time</th>
+            <th>Date / Time</th>
             <th>Location</th>
             <th>Record Status</th>
         </tr>
@@ -143,164 +151,149 @@ body { font-family: Arial, sans-serif; margin: 20px; background: #f5f5f5; }
 
 <script>
 let pendingRequests = [];
-let currentRequestIndex = 0;
+let currentIndex = 0;
 
-// Elements
-const requestBtn = document.getElementById('requestBtn');
 const requestBadge = document.getElementById('requestBadge');
+const requestBtn = document.getElementById('requestBtn');
 const requestModal = document.getElementById('requestModal');
 const closeModal = document.getElementById('closeModal');
+
 const eventImage = document.getElementById('eventImage');
 const eventName = document.getElementById('eventName');
 const eventDateTime = document.getElementById('eventDateTime');
 const eventLocation = document.getElementById('eventLocation');
 const eventOrganizer = document.getElementById('eventOrganizer');
 const eventDescription = document.getElementById('eventDescription');
+
 const approveBtn = document.getElementById('approveBtn');
 const rejectBtn = document.getElementById('rejectBtn');
 const recordedBody = document.getElementById('recordedBody');
 const loading = document.getElementById('loading');
 
-// ================== Fetch Pending Requests ==================
-async function loadPendingRequests() {
-    loading.style.display = 'inline';
+/* ================= Pending ================= */
+async function loadPending() {
     try {
         const res = await fetch('request_manage.php?action=pending');
         const data = await res.json();
-        if(data.status !== 'success') { 
-            alert(data.message || 'Failed to load requests'); 
-            return; 
+        if (data.status === 'success') {
+            pendingRequests = data.pending || [];
+            requestBadge.textContent = pendingRequests.length; // 永远显示 badge，即使 0
+        } else {
+            console.error('Failed to load pending:', data.message);
         }
-        pendingRequests = data.pending || [];
-        requestBadge.textContent = pendingRequests.length;
-    } catch(e) { 
-        console.error(e); 
-        alert('Failed to load requests'); 
-    } finally {
-        loading.style.display = 'none';
+    } catch (e) {
+        console.error('Failed to load pending requests', e);
     }
 }
 
-// ================== Fetch Recorded Requests ==================
-async function loadRecordedRequests() {
-    loading.style.display = 'inline';
+/* ================= Recorded ================= */
+async function loadRecorded() {
     try {
         const res = await fetch('request_manage.php?action=recorded');
         const data = await res.json();
-        if(data.status !== 'success') { 
-            alert(data.message || 'Failed to load recorded requests'); 
-            return; 
+        if (data.status === 'success') {
+            recordedBody.innerHTML = '';
+            data.recorded.forEach(r => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td><img src="${r.image_url || 'placeholder.jpg'}"></td>
+                    <td>${r.eventName}</td>
+                    <td>${r.dateTime}</td>
+                    <td>${r.location || ''}</td>
+                    <td>${r.requestStatus == 1 ? 'Recorded' : r.requestStatus == 0 ? 'Not Recorded' : 'Rejected'}</td>
+                `;
+                recordedBody.appendChild(tr);
+            });
         }
-        recordedBody.innerHTML = '';
-        data.recorded.forEach(r => {
-            const tr = document.createElement('tr');
-            tr.innerHTML = `
-                <td><img src="${r.image_url || 'placeholder.jpg'}"></td>
-                <td>${r.eventName}</td>
-                <td>${r.dateTime}</td>
-                <td>${r.location}</td>
-                <td>${r.recordStatus == 1 ? 'Recorded' : 'Not Recorded'}</td>
-            `;
-            recordedBody.appendChild(tr);
-        });
-    } catch(e) { 
-        console.error(e); 
-        alert('Failed to load recorded requests'); 
-    } finally {
-        loading.style.display = 'none';
+    } catch (e) {
+        console.error('Failed to load recorded requests', e);
     }
 }
 
-// ================== Show Next Pending Request ==================
-function showNextRequest() {
-    if(currentRequestIndex >= pendingRequests.length) {
+/* ================= Modal ================= */
+function showCurrent() {
+    if (currentIndex >= pendingRequests.length) {
         requestModal.style.display = 'none';
-        currentRequestIndex = 0;
-        loadPendingRequests(); // refresh badge
-        loadRecordedRequests(); // refresh table
+        currentIndex = 0;
+        loadPending();
+        loadRecorded();
         return;
     }
 
-    const req = pendingRequests[currentRequestIndex];
-    eventImage.src = req.image_url || 'placeholder.jpg';
-    eventName.textContent = req.eventName;
-    eventDateTime.textContent = req.dateTime;
-    eventLocation.textContent = req.location;
-    eventOrganizer.textContent = req.organizerName;
-    eventDescription.textContent = req.description || '';
+    const r = pendingRequests[currentIndex];
+    if (!r) return; // 防止 undefined
+
+    eventImage.src = r.image_url || 'placeholder.jpg';
+    eventName.textContent = r.eventName;
+    eventDateTime.textContent = r.dateTime;
+    eventLocation.textContent = r.location || '';
+    eventOrganizer.textContent = r.organizerName;
+    eventDescription.textContent = r.description || '';
 
     requestModal.style.display = 'flex';
 }
 
-// ================== Button Clicks ==================
+/* ================= Buttons ================= */
 requestBtn.onclick = () => {
-    if(pendingRequests.length > 0) {
-        showNextRequest();
-    } else {
-        alert('No pending requests');
-    }
+    loadPending().then(() => {
+        if (pendingRequests.length === 0) {
+            alert('No pending requests');
+            return;
+        }
+        showCurrent();
+    });
 };
+
 closeModal.onclick = () => requestModal.style.display = 'none';
 
-// --- Approve ---
-approveBtn.onclick = async () => {
-    approveBtn.disabled = rejectBtn.disabled = true;
-    const record = confirm('Do you want to record this request? Click OK for Yes, Cancel for No');
-    const req = pendingRequests[currentRequestIndex];
-    console.log("Approving event:", req);
-    try {
-        const formData = new FormData();
-        formData.append('action', 'approve');
-        formData.append('eventID', req.eventID);
-        formData.append('record', record ? 1 : 0);
-
-        const res = await fetch('request_manage.php', {method:'POST', body:formData});
-        const data = await res.json();
-        if(data.status === 'success') {
-            currentRequestIndex++;
-            showNextRequest();
-        } else { 
-            alert(data.message || 'Approve failed'); 
-        }
-    } catch(e) { 
-        console.error(e); 
-        alert('Approve failed'); 
-    } finally {
-        approveBtn.disabled = rejectBtn.disabled = false;
+async function handleAction(action) {
+    if (!pendingRequests[currentIndex]) {
+        alert('No pending request selected');
+        return;
     }
-};
 
-// --- Reject ---
-rejectBtn.onclick = async () => {
-    approveBtn.disabled = rejectBtn.disabled = true;
-    const req = pendingRequests[currentRequestIndex];
-    console.log("Rejecting event:", req);
-    try {
-        const formData = new FormData();
-        formData.append('action', 'reject');
-        formData.append('eventID', req.eventID);
+    const r = pendingRequests[currentIndex];
+    const fd = new FormData();
+    fd.append('action', action);
+    fd.append('requestID', r.requestID);
+    fd.append('eventID', r.eventID);
 
-        const res = await fetch('request_manage.php', {method:'POST', body:formData});
-        const data = await res.json();
-        if(data.status === 'success') {
-            currentRequestIndex++;
-            showNextRequest();
-        } else { 
-            alert(data.message || 'Reject failed'); 
-        }
-    } catch(e) { 
-        console.error(e); 
-        alert('Reject failed'); 
-    } finally {
-        approveBtn.disabled = rejectBtn.disabled = false;
+    if (action === 'approve') {
+        const record = confirm('Record this event?');
+        fd.append('record', record ? 1 : 0);
     }
-};
 
-// ================== Initialize ==================
-window.addEventListener('DOMContentLoaded', () => {
-    loadPendingRequests();
-    loadRecordedRequests();
-});
+    try {
+        const res = await fetch('request_manage.php', { method:'POST', body: fd });
+        const data = await res.json();
+        if (data.status === 'success') {
+            currentIndex++;
+            showCurrent();
+            loadPending();   // 处理完自动刷新 badge
+            loadRecorded();  // 自动刷新 recorded table
+        } else {
+            alert(data.message || 'Action failed');
+            loadPending();
+            loadRecorded();
+        }
+    } catch(e) {
+        console.error(e);
+        alert('Action failed');
+    }
+}
+
+approveBtn.onclick = () => handleAction('approve');
+rejectBtn.onclick = () => handleAction('reject');
+
+/* ================= Init ================= */
+window.onload = () => {
+    loadPending();
+    loadRecorded();
+
+    // 每 10 秒自动刷新 pending badge
+    setInterval(loadPending, 10000);
+};
 </script>
+
 </body>
 </html>

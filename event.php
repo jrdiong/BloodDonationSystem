@@ -214,7 +214,8 @@ if($_SERVER['REQUEST_METHOD']==='POST' && ($_POST['action']??'')==='saveEvent'){
 }
 
 /* =========================
-   POST: Send Request (Create Pending Event)
+   POST: Send Request (Create Pending Event + Request)
+   ⚡️ Only this block modified
 ========================= */
 if($_SERVER['REQUEST_METHOD']==='POST' && ($_POST['action']??'')==='sendRequest'){
     if($role!=='Event Organizer'){
@@ -243,14 +244,30 @@ if($_SERVER['REQUEST_METHOD']==='POST' && ($_POST['action']??'')==='sendRequest'
         exit;
     }
 
-    $stmt = $pdo->prepare("
-        INSERT INTO event(eventName,image_url,location,dateTime,maxDonors,description,organizerID,hospitalID,status)
-        VALUES(?,?,?,?,?,?,?,? ,2)
-    ");
-    $stmt->execute([$eventName,$imagePath,$location,$dateTime,$maxDonors,$description,$loggedInUserID,$hospitalID]);
+    try {
+        $pdo->beginTransaction();
 
-    echo json_encode(["status"=>"success","message"=>"Request sent to admin"]);
-    exit;
+        /* Insert event (pending) */
+        $stmt = $pdo->prepare("
+            INSERT INTO event(eventName,image_url,location,dateTime,maxDonors,description,organizerID,hospitalID,status)
+            VALUES(?,?,?,?,?,?,?,?,2)
+        ");
+        $stmt->execute([$eventName,$imagePath,$location,$dateTime,$maxDonors,$description,$loggedInUserID,$hospitalID]);
+        $eventID = $pdo->lastInsertId();
+
+        /* Insert request (pending) */
+        $stmt = $pdo->prepare("INSERT INTO request(eventID,status) VALUES(?,2)");
+        $stmt->execute([$eventID]);
+
+        $pdo->commit();
+        echo json_encode(["status"=>"success","message"=>"Request sent to admin"]);
+        exit;
+
+    } catch(Exception $e){
+        $pdo->rollBack();
+        echo json_encode(["status"=>"error","message"=>$e->getMessage()]);
+        exit;
+    }
 }
 
 /* =========================

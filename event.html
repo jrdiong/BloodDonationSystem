@@ -42,6 +42,7 @@ body { font-family: Arial, sans-serif; background: #f5f5f5; }
     <input type="text" id="eventName" placeholder="Event Name" required>
     <input type="datetime-local" id="dateTime" required>
     <input type="number" id="maxDonors" placeholder="Max Donors" required>
+    <input type="text" id="eventLocation" placeholder="Location" required>
     <textarea id="description" placeholder="Description" required></textarea>
     <select id="hospitalSelect" style="display:none; margin-bottom:12px;"></select>
     <div class="modal-buttons" id="modalButtons"></div>
@@ -101,6 +102,7 @@ function renderEventCards(events){
                 <h3>${event.eventName}</h3>
                 <p>Time: ${event.dateTime}</p>
                 <p>Max Donor: ${event.maxDonors}</p>
+                <p>Location: ${event.location || 'TBD'}</p>
             </div>
         `;
         card.onclick=()=>openEvent(event.eventID);
@@ -129,6 +131,7 @@ async function openEvent(eventID){
         document.getElementById('eventName').value=e.eventName;
         document.getElementById('dateTime').value=e.dateTime.replace(' ','T').slice(0,16);
         document.getElementById('maxDonors').value=e.maxDonors;
+        document.getElementById('eventLocation').value=e.location || '';
         document.getElementById('description').value=e.description;
         document.getElementById('previewImage').src=e.image_url||'placeholder.jpg';
 
@@ -182,6 +185,7 @@ async function saveEvent(){
     formData.append('dateTime',document.getElementById('dateTime').value);
     formData.append('maxDonors',document.getElementById('maxDonors').value);
     formData.append('description',document.getElementById('description').value);
+    formData.append('location',document.getElementById('eventLocation').value);
     formData.append('eventID',currentEventID);
 
     const file=document.getElementById('imageUpload').files[0];
@@ -206,6 +210,7 @@ async function sendRequest(){
     formData.append('dateTime',document.getElementById('dateTime').value);
     formData.append('maxDonors',document.getElementById('maxDonors').value);
     formData.append('description',document.getElementById('description').value);
+    formData.append('location',document.getElementById('eventLocation').value);
     formData.append('hospitalID',hospitalID);
 
     const file=document.getElementById('imageUpload').files[0];
@@ -248,6 +253,7 @@ document.getElementById('createEventBtn').onclick=()=>{
     document.getElementById('eventName').value='';
     document.getElementById('dateTime').value='';
     document.getElementById('maxDonors').value='';
+    document.getElementById('eventLocation').value='';
     document.getElementById('description').value='';
     document.getElementById('previewImage').src='placeholder.jpg';
     document.getElementById('hospitalSelect').style.display='block';
