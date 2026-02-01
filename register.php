@@ -30,6 +30,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     $name = trim($_POST['name']);
     $email = trim($_POST['email']);
     $plainPassword = $_POST['password'];
+    $phone = trim($_POST['phone']);
 
     // Default role
     $role = "Donor";
@@ -63,13 +64,13 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
             $email,
             $hashedPassword,
             $role,
-            "" // phoneNumber empty
+            $phone,
         ]);
 
         echo "<script>
                 alert('Registration successful!');
-                window.location.href='login.html';
-              </script>";
+                window.location.href='loginUI.php';
+              </script>"; // Redirect to login page
 
     } catch (PDOException $e) {
         // Catch DB errors

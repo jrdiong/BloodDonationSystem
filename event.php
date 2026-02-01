@@ -107,13 +107,34 @@ if($_SERVER['REQUEST_METHOD']==='GET' && ($_GET['action']??'')==='getHospitals')
 ========================= */
 if($_SERVER['REQUEST_METHOD']==='GET' && !isset($_GET['action'])){
     if($role==='Event Organizer'){
-        $stmt = $pdo->prepare("SELECT e.*, u.name AS hospitalName FROM event e JOIN user u ON e.hospitalID=u.userID WHERE e.organizerID=? AND e.status IN (1,2) ORDER BY e.dateTime DESC");
+        $stmt = $pdo->prepare("
+            SELECT e.*, u.name AS hospitalName,
+            (SELECT COUNT(*) FROM appointment WHERE eventID=e.eventID AND status IN ('Pending','Approved')) AS currentBookings
+            FROM event e
+            JOIN user u ON e.hospitalID=u.userID
+            WHERE e.organizerID=? AND e.status IN (1,2)
+            ORDER BY e.dateTime DESC
+        ");
         $stmt->execute([$loggedInUserID]);
     } elseif($role==='Hospital'){
-        $stmt = $pdo->prepare("SELECT e.*, u.name AS organizerName FROM event e JOIN user u ON e.organizerID=u.userID WHERE e.hospitalID=? AND e.status=1 ORDER BY e.dateTime DESC");
+        $stmt = $pdo->prepare("
+            SELECT e.*, u.name AS organizerName,
+            (SELECT COUNT(*) FROM appointment WHERE eventID=e.eventID AND status IN ('Pending','Approved')) AS currentBookings
+            FROM event e
+            JOIN user u ON e.organizerID=u.userID
+            WHERE e.hospitalID=? AND e.status=1
+            ORDER BY e.dateTime DESC
+        ");
         $stmt->execute([$loggedInUserID]);
     } else {
-        $stmt = $pdo->query("SELECT * FROM event WHERE status=1 ORDER BY dateTime DESC");
+        $stmt = $pdo->prepare("
+            SELECT e.*, 
+            (SELECT COUNT(*) FROM appointment WHERE eventID=e.eventID AND status IN ('Pending','Approved')) AS currentBookings
+            FROM event e
+            WHERE e.status=1
+            ORDER BY e.dateTime DESC
+        ");
+        $stmt->execute();
     }
 
     echo json_encode([
@@ -135,13 +156,28 @@ if($_SERVER['REQUEST_METHOD']==='GET' && ($_GET['action']??'')==='getEventByID')
     }
 
     if($role==='Event Organizer'){
-        $stmt = $pdo->prepare("SELECT * FROM event WHERE eventID=? AND organizerID=? AND status IN (1,2)");
+        $stmt = $pdo->prepare("
+            SELECT e.*, 
+            (SELECT COUNT(*) FROM appointment WHERE eventID=e.eventID AND status IN ('Pending','Approved')) AS currentBookings
+            FROM event e
+            WHERE e.eventID=? AND organizerID=? AND e.status IN (1,2)
+        ");
         $stmt->execute([$eventID,$loggedInUserID]);
     } elseif($role==='Hospital'){
-        $stmt = $pdo->prepare("SELECT * FROM event WHERE eventID=? AND hospitalID=? AND status=1");
+        $stmt = $pdo->prepare("
+            SELECT e.*, 
+            (SELECT COUNT(*) FROM appointment WHERE eventID=e.eventID AND status IN ('Pending','Approved')) AS currentBookings
+            FROM event e
+            WHERE e.eventID=? AND hospitalID=? AND e.status=1
+        ");
         $stmt->execute([$eventID,$loggedInUserID]);
     } else {
-        $stmt = $pdo->prepare("SELECT * FROM event WHERE eventID=?");
+        $stmt = $pdo->prepare("
+            SELECT e.*, 
+            (SELECT COUNT(*) FROM appointment WHERE eventID=e.eventID AND status IN ('Pending','Approved')) AS currentBookings
+            FROM event e
+            WHERE e.eventID=?
+        ");
         $stmt->execute([$eventID]);
     }
 
@@ -215,7 +251,6 @@ if($_SERVER['REQUEST_METHOD']==='POST' && ($_POST['action']??'')==='saveEvent'){
 
 /* =========================
    POST: Send Request (Create Pending Event + Request)
-   ⚡️ Only this block modified
 ========================= */
 if($_SERVER['REQUEST_METHOD']==='POST' && ($_POST['action']??'')==='sendRequest'){
     if($role!=='Event Organizer'){

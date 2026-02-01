@@ -18,22 +18,22 @@ if (!$conn) {
 }
 
 // Only process login if POST method
-if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST['login'])) {
-    $username = $_POST['name'] ?? '';
+if ($_SERVER["REQUEST_METHOD"] === "POST") {
+    $email = trim($_POST['email'] ?? '');
     $password = $_POST['password'] ?? '';
 
-    if (empty($username) || empty($password)) {
+    if (empty($email) || empty($password)) {
         echo "<script>
-                alert('Please enter both name and password.');
+                alert('Please enter both email and password.');
                 window.history.back();
               </script>";
         exit();
     }
 
     // Check if the user exists
-    $sql = "SELECT * FROM user WHERE name = ?";
+    $sql = "SELECT * FROM user WHERE email = ?";
     $stmt = mysqli_prepare($conn, $sql);
-    mysqli_stmt_bind_param($stmt, "s", $username);
+    mysqli_stmt_bind_param($stmt, "s", $email);
     mysqli_stmt_execute($stmt);
     $result = mysqli_stmt_get_result($stmt);
 
@@ -45,7 +45,17 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST['login'])) {
             $_SESSION['name'] = $row['name'];
             $_SESSION['role'] = $row['role'];
 
-            header("Location: event.html"); 
+            if ($row['role'] === 'Admin') {
+                header("Location: dashboard/admin.php");
+            }elseif ($row['role'] === 'Event Organizer') {
+                header("Location: dashboard/organizer.php");
+            }elseif ($row['role'] === 'Hospital') {
+                header("Location: dashboard/hospital.php");
+            }elseif ($row['role'] === 'Donor') { 
+                header("Location: dashboard/donor.php");
+            }else{
+                header("Location: event.php"); 
+            }
             exit();
         } else {
             echo "<script>
@@ -62,7 +72,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST['login'])) {
 
     mysqli_stmt_close($stmt);
 } else {
-    header("Location: login.html");
+    header("Location: loginUI.php");
     exit();
 }
 

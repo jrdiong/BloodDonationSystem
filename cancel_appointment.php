@@ -35,7 +35,7 @@ try {
 } catch(PDOException $e) {
     echo json_encode([
         "status"=>"error",
-        "message"=>"Database connection failed"
+        "message"=>"Database connection failed: ".$e->getMessage()
     ]);
     exit;
 }
@@ -55,8 +55,8 @@ if(!$appointmentID){
 /* =========================
    Verify appointment belongs to donor
 ========================= */
-$stmt = $pdo->prepare("SELECT * FROM appointment WHERE appointmentID=? AND userID=?");
-$stmt->execute([$appointmentID,$donorID]);
+$stmt = $pdo->prepare("SELECT a.*, e.dateTime AS eventDateTime FROM appointment a JOIN event e ON a.eventID=e.eventID WHERE a.appointmentID=? AND a.userID=?");
+$stmt->execute([$appointmentID, $donorID]);
 $appointment = $stmt->fetch(PDO::FETCH_ASSOC);
 
 if(!$appointment){
@@ -66,15 +66,27 @@ if(!$appointment){
     ]);
     exit;
 }
-/*dcdcdcd */
 
 /* =========================
-   Only pending appointments can be cancelled
+   Only pending or approved appointments can be cancelled
 ========================= */
-if($appointment['status']!=='pending'){
+if(!in_array($appointment['status'], ['pending', 'approved'])){
     echo json_encode([
         "status"=>"error",
-        "message"=>"Only pending appointments can be cancelled"
+        "message"=>"Cannot cancel non-pending/approved appointment"
+    ]);
+    exit;
+}
+
+/* =========================
+   Optionally check if event is in the past
+========================= */
+$now = new DateTime();
+$eventTime = new DateTime($appointment['eventDateTime']);
+if($eventTime < $now){
+    echo json_encode([
+        "status"=>"error",
+        "message"=>"Cannot cancel past appointment"
     ]);
     exit;
 }
@@ -89,5 +101,5 @@ echo json_encode([
     "status"=>"success",
     "message"=>"Appointment cancelled successfully"
 ]);
+exit;
 ?>
-

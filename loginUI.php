@@ -10,13 +10,13 @@
 <body>
     <div class="login-container">
         <header>Donor Login</header>
-        <form class="login-form">
+        <form class="login-form" action="login.php" method="POST">
             <div class="input-field">
                 <label>
                     <i class='bx bx-envelope icon'></i>
                     Email
                 </label>
-                <input type="email" class="email-input" placeholder="Enter your email" required>
+                <input name="email" type="email" class="email-input" placeholder="Enter your email" required>
                 <small class="live-msg"></small>
             </div>
 
@@ -25,7 +25,7 @@
                     <i class='bx bx-lock icon'></i>
                     Password
                 </label>
-                <input type="password" class="password-input" placeholder="Enter your password" required>
+                <input name="password" type="password" class="password-input" placeholder="Enter your password" required>
                 <small class="live-msg"></small>
             </div>
 
@@ -34,15 +34,15 @@
                     <input type="checkbox" class="remember-me"> Remember Me
                 </label>
             </div>
-
-            <button type="submit" class="login-btn" disabled>
+            <input type="hidden" name="login" value="1">
+            <button type="submit" class="login-btn">
                 <span class="btnText">Login</span>
             </button>
 
             <div class="login-links">
-                <a href="forgot-password.html">Forgot Password?</a>
+                <a href="forgotpasswUI.php">Forgot Password?</a>
                 <span>|</span>
-                Don’t have an account? <a href="register.html">Register</a>
+                Don’t have an account? <a href="registerUI.php">Register</a>
             </div>
         </form>
     </div>

@@ -42,9 +42,3 @@ passwordInput.addEventListener('input', () => {
     }
     updateButton();
 });
-
-// Optional: prevent default submit for demo
-form.addEventListener('submit', (e) => {
-    e.preventDefault();
-    alert('Login submitted!');
-});
