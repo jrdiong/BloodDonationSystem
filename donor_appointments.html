@@ -12,6 +12,8 @@ body {
 h1 {
     text-align: center;
 }
+
+/* Appointment Cards */
 .appointment-container {
     display: flex;
     flex-wrap: wrap;
@@ -171,9 +173,11 @@ document.addEventListener('DOMContentLoaded', function() {
 
     let currentEventID = null;
 
+    // Close modals
     closeModal.addEventListener('click', () => modal.style.display = 'none');
     closeHealthModal.addEventListener('click', () => { healthModal.style.display='none'; healthForm.reset(); });
 
+    // Load appointments
     async function loadAppointments() {
         try {
             const res = await fetch('donor_appointments.php');
