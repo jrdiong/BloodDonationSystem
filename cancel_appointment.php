@@ -66,7 +66,6 @@ if(!$appointment){
     ]);
     exit;
 }
-/*dcdcdcd */
 
 /* =========================
    Only pending appointments can be cancelled
