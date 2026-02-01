@@ -217,8 +217,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 status.textContent = 'Status: ' + app.status;
                 card.appendChild(status);
 
-                // Cancel button for pending
-                if(app.status === 'pending'){
+                // Cancel button for pending or approved
+                if(['pending','approved'].includes(app.status)){
                     const btn = document.createElement('button');
                     btn.textContent = 'Cancel Appointment';
                     btn.addEventListener('click', function(e){
@@ -250,13 +250,14 @@ document.addEventListener('DOMContentLoaded', function() {
         modal.style.display = 'flex';
     }
 
+    // Cancel appointment
     async function cancelAppointment(appointmentID){
         if(!confirm('Cancel this appointment?')) return;
         const form = new FormData();
-        form.append('action','cancelAppointment');
         form.append('appointmentID', appointmentID);
+
         try{
-            const res = await fetch('donor_appointments.php', { method:'POST', body: form });
+            const res = await fetch('cancel_appointment.php', { method:'POST', body: form });
             const data = await res.json();
             if(data.status === 'success'){
                 alert('Appointment cancelled successfully');
