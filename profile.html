@@ -222,7 +222,16 @@ function bindEditIcons() {
 // Create input field for editing
 function createInputField(field, currentValue) {
     const input = document.createElement('input');
-    input.type = (field === 'email') ? 'email' : 'text';
+   if (field === 'email') {
+        input.type = 'email';
+    } else if (field === 'phoneNumber') {
+        input.type = 'text';              // keep text (important)
+        input.inputMode = 'numeric';      // mobile numeric keypad
+        input.pattern = '[0-9]*';         // only digits
+    } else {
+        input.type = 'text';
+    }
+
     input.value = currentValue;
     input.className = 'edit-input';
     return input;
@@ -272,6 +281,10 @@ function startEdit(field) {
         if (!newValue) { alert('Field cannot be empty'); return; }
         if (field === 'email' && !/^\S+@\S+\.\S+$/.test(newValue)) {
             alert('Invalid email format'); return;
+        }
+        if (field === 'phone' && !/^\d+$/.test(newValue)) {
+        alert('Phone number must contain only numbers');
+        return;
         }
 
         const formData = new FormData();
