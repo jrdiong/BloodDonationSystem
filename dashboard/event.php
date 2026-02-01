@@ -1,7 +1,7 @@
 <?php
 session_start();
 // For testing
-$_SESSION['role'] = 'admin';
+$_SESSION['role'] = 'organizer';
 $role = $_SESSION['role'];
 ?>
 
@@ -53,7 +53,7 @@ body { font-family:'Poppins',sans-serif; background:#fde7e7; margin:0; }
 .modal-overlay.show { opacity:1; pointer-events:auto; }
 .modal-card { background:#fff; border-radius:20px; width:90%; max-width:420px; padding:25px 30px; box-shadow:0 15px 40px rgba(0,0,0,0.2); position:relative; }
 .modal-card h3 { margin-top:0; }
-.close-modal { position:absolute; top:15px; right:20px; font-size:20px; cursor:pointer; color:#999; }
+.close-modal { position:absolute; top:15px; right:20px; font-size:30px; cursor:pointer; color:#999; }
 .close-modal:hover { color:#1976d2; }
 .modal-card input { width:100%; padding:10px; margin:8px 0; border-radius:6px; border:1px solid #ccc; }
 .modal-footer { display:flex; justify-content:flex-end; gap:10px; margin-top:10px; }
