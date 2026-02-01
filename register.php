@@ -30,6 +30,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     $name = trim($_POST['name']);
     $email = trim($_POST['email']);
     $plainPassword = $_POST['password'];
+    $phone = trim($_POST['phone']);
 
     // Default role
     $role = "Donor";
@@ -63,7 +64,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
             $email,
             $hashedPassword,
             $role,
-            "" // phoneNumber empty
+            $phone,
         ]);
 
         echo "<script>

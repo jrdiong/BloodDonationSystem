@@ -41,7 +41,8 @@
                         </div>
                         <div class="input-field">
                             <label><i class='bx bx-phone icon'></i>Mobile Number</label>
-                            <input type="number" placeholder="Enter mobile number" required>
+                            <!-- added name attribute -->
+                            <input name="phone" type="number" placeholder="Enter mobile number" required>
                             <small class="live-msg"></small>
                         </div>
                         <div class="input-field">
