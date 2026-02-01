@@ -24,6 +24,9 @@ body { font-family: Arial, sans-serif; background: #f5f5f5; }
 .modal-content input, .modal-content textarea, .modal-content select { width:100%; margin-bottom:12px; padding:8px; }
 .modal-buttons { display:flex; justify-content:flex-end; gap:10px; }
 #createEventBtn { display:none; margin:20px auto; padding:10px 20px; font-size:16px; cursor:pointer; }
+
+/* Health Report Modal */
+#healthModal .modal-content { max-width:500px; }
 </style>
 </head>
 <body>
@@ -32,7 +35,7 @@ body { font-family: Arial, sans-serif; background: #f5f5f5; }
 <button id="createEventBtn">Add New Event</button>
 <div id="eventList"></div>
 
-<!-- Modal -->
+<!-- Event Modal -->
 <div class="modal" id="eventModal">
   <div class="modal-content">
     <h3 id="modalTitle"></h3>
@@ -47,6 +50,20 @@ body { font-family: Arial, sans-serif; background: #f5f5f5; }
     <textarea id="description" placeholder="Description" required></textarea>
     <select id="hospitalSelect" style="display:none; margin-bottom:12px;"></select>
     <div class="modal-buttons" id="modalButtons"></div>
+  </div>
+</div>
+
+<!-- Health Report Modal -->
+<div class="modal" id="healthModal">
+  <div class="modal-content">
+    <h3>Complete Your Health Report</h3>
+    <textarea id="medicalHistory" placeholder="Medical History" required></textarea>
+    <input type="number" id="weight" placeholder="Weight (kg)" required>
+    <input type="number" id="height" placeholder="Height (cm)" required>
+    <div class="modal-buttons">
+      <button onclick="closeHealthModal()">Cancel</button>
+      <button onclick="submitHealthReport()">Save & Book</button>
+    </div>
   </div>
 </div>
 
@@ -108,7 +125,6 @@ function renderEventCards(events){
                 <p>Location: ${event.location || 'TBD'}</p>
             </div>
         `;
-
         card.onclick=()=>openEvent(event.eventID);
 
         if(currentRole==='Admin'){
@@ -121,7 +137,7 @@ function renderEventCards(events){
     });
 }
 
-/* ===== Open Modal ===== */
+/* ===== Open Event Modal ===== */
 async function openEvent(eventID){
     try{
         const res = await fetch(`event.php?action=getEventByID&eventID=${eventID}`);
@@ -142,12 +158,11 @@ async function openEvent(eventID){
         const inputs=document.querySelectorAll('#eventModal input,#eventModal textarea');
         inputs.forEach(i=>i.readOnly=!canEdit && currentRole!=='Donor');
 
-        // Hospital select for Organizer
         const select=document.getElementById('hospitalSelect');
         if(currentRole==='Event Organizer'){
             select.style.display='block';
             select.value=e.hospitalID||'';
-        }else select.style.display='none';
+        } else select.style.display='none';
 
         renderButtons();
         document.getElementById('eventModal').style.display='block';
@@ -155,10 +170,7 @@ async function openEvent(eventID){
 }
 
 /* ===== Format datetime-local ===== */
-function formatDateTimeLocal(dt){
-    if(!dt) return '';
-    return dt.replace(' ','T').slice(0,16);
-}
+function formatDateTimeLocal(dt){ return dt ? dt.replace(' ','T').slice(0,16) : ''; }
 
 /* ===== Render Modal Buttons ===== */
 function renderButtons(isNew=false){
@@ -176,8 +188,9 @@ function renderButtons(isNew=false){
     }
 }
 
-/* ===== Close Modal ===== */
+/* ===== Close Modals ===== */
 function closeModal(){ document.getElementById('eventModal').style.display='none'; }
+function closeHealthModal(){ document.getElementById('healthModal').style.display='none'; }
 
 /* ===== Image Preview ===== */
 document.getElementById('imageUpload').addEventListener('change',function(){
@@ -189,58 +202,61 @@ document.getElementById('imageUpload').addEventListener('change',function(){
     }
 });
 
-/* ===== Save Event ===== */
-async function saveEvent(){
-    if(!validateForm()) return;
-    const formData = getFormData('saveEvent');
-    try{
-        const res=await fetch('event.php',{ method:'POST', body:formData });
-        const data=await res.json();
-        if(data.status==='success'){ alert('Saved'); closeModal(); loadEvents(); }
-        else alert(data.message||'Save failed');
-    }catch(e){ console.error(e); alert('Save failed'); }
-}
+/* ===== Save Event / Send Request (unchanged) ===== */
+async function saveEvent(){ if(!validateForm()) return; const formData=getFormData('saveEvent'); try{ const res=await fetch('event.php',{method:'POST',body:formData}); const data=await res.json(); if(data.status==='success'){ alert('Saved'); closeModal(); loadEvents(); } else alert(data.message||'Save failed'); }catch(e){console.error(e); alert('Save failed');} }
+async function sendRequest(){ if(!validateForm()) return; const hospitalID=document.getElementById('hospitalSelect').value; if(!hospitalID){ alert('Select hospital'); return; } const formData=getFormData('sendRequest'); formData.append('hospitalID',hospitalID); try{ const res=await fetch('event.php',{method:'POST',body:formData}); const data=await res.json(); if(data.status==='success'){ alert('Request sent'); closeModal(); loadEvents(); } else alert(data.message||'Send request failed'); }catch(e){console.error(e); alert('Send request failed');} }
 
-/* ===== Send Request ===== */
-async function sendRequest(){
-    if(!validateForm()) return;
-    const hospitalID=document.getElementById('hospitalSelect').value;
-    if(!hospitalID){ alert('Select hospital'); return; }
-
-    const formData = getFormData('sendRequest');
-    formData.append('hospitalID',hospitalID);
-
-    try{
-        const res=await fetch('event.php',{ method:'POST', body:formData });
-        const data=await res.json();
-        if(data.status==='success'){ alert('Request sent'); closeModal(); loadEvents(); }
-        else alert(data.message||'Send request failed');
-    }catch(e){ console.error(e); alert('Send request failed'); }
-}
-
-/* ===== Book Event ===== */
+/* ===== Book Event (with Health Report) ===== */
 async function bookEvent(){
     if(!currentEventID){ alert('No event selected'); return; }
     try{
-        const res=await fetch('event.php',{ method:'POST', headers:{'Content-Type':'application/x-www-form-urlencoded'}, body:`action=bookEvent&eventID=${currentEventID}`});
-        const data=await res.json();
-        if(data.status==='success'){ alert('Booked'); closeModal(); }
-        else alert(data.message||'Booking failed');
-    }catch(e){ console.error(e); alert('Booking failed'); }
+        const res = await fetch('book_event.php',{ 
+            method:'POST',
+            headers:{'Content-Type':'application/x-www-form-urlencoded'},
+            body:`action=bookEvent&eventID=${currentEventID}`
+        });
+        const data = await res.json();
+        if(data.status==='success'){
+            alert('Event booked successfully!'); 
+            closeModal();
+            loadEvents();
+        } else if(data.status==='requireHealthReport'){
+            document.getElementById('healthModal').style.display='block';
+        } else{
+            alert(data.message||'Booking failed');
+        }
+    } catch(e){ console.error(e); alert('Booking failed'); }
 }
 
-/* ===== Delete Event ===== */
-async function deleteEvent(id){
-    if(!confirm('Delete this event?')) return;
+/* ===== Submit Health Report & Book ===== */
+async function submitHealthReport(){
+    const medicalHistory = document.getElementById('medicalHistory').value.trim();
+    const weight = document.getElementById('weight').value;
+    const height = document.getElementById('height').value;
+    if(!medicalHistory || !weight || !height){ alert('Please fill all fields'); return; }
+
+    const report = JSON.stringify({medicalHistory, weight, height});
+
     try{
-        const res=await fetch('event.php',{ method:'POST', headers:{'Content-Type':'application/x-www-form-urlencoded'}, body:`action=deleteEvent&eventID=${id}`});
-        const data=await res.json();
-        if(data.status==='success'){ alert('Deleted'); loadEvents(); }
-        else alert(data.message||'Delete failed');
-    }catch(e){ console.error(e); alert('Delete failed'); }
+        const res = await fetch('book_event.php',{
+            method:'POST',
+            headers:{'Content-Type':'application/x-www-form-urlencoded'},
+            body:`action=bookEvent&eventID=${currentEventID}&healthReport=${encodeURIComponent(report)}`
+        });
+        const data = await res.json();
+        if(data.status==='success'){
+            alert('Health report saved & event booked!');
+            closeHealthModal();
+            closeModal();
+            loadEvents();
+        } else{
+            alert(data.message||'Booking failed');
+        }
+    } catch(e){ console.error(e); alert('Booking failed'); }
 }
 
-/* ===== Add New Event ===== */
+/* ===== Delete / Add New Event ===== */
+async function deleteEvent(id){ if(!confirm('Delete this event?')) return; try{ const res=await fetch('event.php',{ method:'POST', headers:{'Content-Type':'application/x-www-form-urlencoded'}, body:`action=deleteEvent&eventID=${id}`}); const data=await res.json(); if(data.status==='success'){ alert('Deleted'); loadEvents(); } else alert(data.message||'Delete failed'); }catch(e){ console.error(e); alert('Delete failed');} }
 document.getElementById('createEventBtn').onclick=()=>{
     currentEventID=null; canEdit=true;
     document.getElementById('modalTitle').innerText='New Event';
@@ -258,7 +274,7 @@ document.getElementById('createEventBtn').onclick=()=>{
     document.getElementById('eventModal').style.display='block';
 }
 
-/* ===== Helper: Get FormData ===== */
+/* ===== Helper: Get FormData & Validate ===== */
 function getFormData(action){
     const formData = new FormData();
     formData.append('eventName', document.getElementById('eventName').value);
@@ -272,8 +288,6 @@ function getFormData(action){
     formData.append('action', action);
     return formData;
 }
-
-/* ===== Helper: Validate Form ===== */
 function validateForm(){
     const name=document.getElementById('eventName').value.trim();
     const date=document.getElementById('dateTime').value;

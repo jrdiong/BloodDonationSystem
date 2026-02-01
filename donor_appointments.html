@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Donor Appointments</title>
+<style>
+body {
+    font-family: Arial, sans-serif;
+    background: #f5f5f5;
+    padding: 20px;
+}
+
+h1 {
+    text-align: center;
+}
+
+.appointment-container {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+.appointment-card {
+    background: #fff;
+    border-radius: 15px;
+    padding: 15px;
+    margin: 10px;
+    width: 300px;
+    position: relative;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    transition: transform 0.2s;
+}
+
+.appointment-card:hover {
+    transform: translateY(-5px);
+}
+
+.appointment-card img {
+    width: 100%;
+    border-radius: 10px;
+}
+
+.appointment-card h3 {
+    margin: 10px 0 5px;
+}
+
+.appointment-card p {
+    margin: 5px 0;
+}
+
+.appointment-card button {
+    margin-top: 10px;
+    padding: 8px 12px;
+    background: #e74c3c;
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+}
+
+.appointment-card button:hover {
+    background: #c0392b;
+}
+
+/* Modal */
+#healthReportModal {
+    display: none;
+    position: fixed;
+    top:0; left:0;
+    width:100%; height:100%;
+    background: rgba(0,0,0,0.6);
+    justify-content: center;
+    align-items: center;
+}
+
+#healthReportModal .modal-content {
+    background: #fff;
+    padding: 20px;
+    border-radius: 15px;
+    width: 400px;
+    position: relative;
+}
+
+#healthReportModal .modal-content h3 {
+    margin-top: 0;
+}
+
+#closeModal {
+    position: absolute;
+    top: 10px;
+    right: 15px;
+    cursor: pointer;
+    font-weight: bold;
+}
+</style>
+</head>
+<body>
+
+<h1>My Appointments</h1>
+
+<div class="appointment-container" id="appointmentContainer">
+    <!-- Appointment cards will be injected here -->
+</div>
+
+<!-- Health Report Modal -->
+<div id="healthReportModal">
+    <div class="modal-content">
+        <span id="closeModal">X</span>
+        <h3>Health Report Form</h3>
+        <form id="healthReportForm">
+            <label>Medical History:</label><br>
+            <textarea name="medicalHistory" required></textarea><br>
+            <label>Weight (kg):</label><br>
+            <input type="number" name="weight" step="0.1" required><br>
+            <label>Height (cm):</label><br>
+            <input type="number" name="height" step="0.1" required><br><br>
+            <button type="submit">Save & Book</button>
+        </form>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+
+    const container = document.getElementById('appointmentContainer');
+    const modal = document.getElementById('healthReportModal');
+    const closeModal = document.getElementById('closeModal');
+    const healthForm = document.getElementById('healthReportForm');
+
+    let currentEventID = null;
+
+    // Close modal
+    closeModal.addEventListener('click', function() {
+        modal.style.display = 'none';
+        healthForm.reset();
+    });
+
+    // Load all donor appointments
+    function loadAppointments(){
+        fetch('donor_appointments.php')
+        .then(res => res.json())
+        .then(data => {
+            if(data.status === 'success'){
+                container.innerHTML = '';
+                data.appointments.forEach(app => {
+                    const card = document.createElement('div');
+                    card.classList.add('appointment-card');
+
+                    // Event image
+                    const img = document.createElement('img');
+                    img.src = app.image_url || 'placeholder.jpg';
+                    if(app.status === 'completed' || app.status === 'cancelled'){
+                        img.style.filter = 'grayscale(100%)';
+                    }
+                    card.appendChild(img);
+
+                    // Event name
+                    const title = document.createElement('h3');
+                    title.textContent = app.eventName;
+                    card.appendChild(title);
+
+                    // Event date and location
+                    const date = document.createElement('p');
+                    date.textContent = 'Date: ' + app.eventDateTime;
+                    card.appendChild(date);
+
+                    const location = document.createElement('p');
+                    location.textContent = 'Location: ' + app.location;
+                    card.appendChild(location);
+
+                    // Booking count
+                    const count = document.createElement('p');
+                    count.textContent = 'Booking: ' + app.currentBookings + '/' + app.maxDonors;
+                    card.appendChild(count);
+
+                    // Status
+                    const status = document.createElement('p');
+                    status.textContent = 'Status: ' + app.status;
+                    card.appendChild(status);
+
+                    // Cancel button for pending appointments
+                    if(app.status === 'pending'){
+                        const btn = document.createElement('button');
+                        btn.textContent = 'Cancel Appointment';
+                        btn.addEventListener('click', function(){
+                            if(confirm('Are you sure you want to cancel this appointment?')){
+                                cancelAppointment(app.appointmentID);
+                            }
+                        });
+                        card.appendChild(btn);
+                    }
+
+                    container.appendChild(card);
+                });
+            }
+        })
+        .catch(err => console.error(err));
+    }
+
+    // Cancel appointment
+    function cancelAppointment(appointmentID){
+        fetch('cancel_appointment.php',{
+            method: 'POST',
+            headers: {'Content-Type':'application/x-www-form-urlencoded'},
+            body: 'appointmentID=' + appointmentID
+        })
+        .then(res => res.json())
+        .then(data => {
+            if(data.status === 'success'){
+                alert('Appointment cancelled successfully');
+                loadAppointments();
+            } else {
+                alert(data.message);
+            }
+        });
+    }
+
+    // Book Event (with Health Report if required)
+    document.querySelectorAll('.book-btn').forEach(function(btn){
+        btn.addEventListener('click', function(){
+            const eventID = btn.closest('.event-card').dataset.eventid;
+            currentEventID = eventID;
+            fetch('book_event.php',{
+                method:'POST',
+                headers:{'Content-Type':'application/x-www-form-urlencoded'},
+                body:'action=bookEvent&eventID=' + eventID
+            })
+            .then(res => res.json())
+            .then(data => {
+                if(data.status === 'requireHealthReport'){
+                    // Show modal
+                    modal.style.display = 'flex';
+                } else if(data.status === 'success'){
+                    alert(data.message);
+                    loadAppointments();
+                } else if(data.status === 'error'){
+                    alert(data.message);
+                }
+            });
+        });
+    });
+
+    // Health Report form submit
+    healthForm.addEventListener('submit', function(e){
+        e.preventDefault();
+        if(!currentEventID) return;
+
+        const formData = new FormData(healthForm);
+        const healthReport = {
+            medicalHistory: formData.get('medicalHistory'),
+            weight: formData.get('weight'),
+            height: formData.get('height')
+        };
+
+        const params = new URLSearchParams();
+        params.append('action','bookEvent');
+        params.append('eventID', currentEventID);
+        params.append('healthReport', JSON.stringify(healthReport));
+
+        fetch('book_event.php',{
+            method:'POST',
+            headers:{'Content-Type':'application/x-www-form-urlencoded'},
+            body: params.toString()
+        })
+        .then(res=>res.json())
+        .then(data=>{
+            if(data.status==='success'){
+                alert(data.message);
+                modal.style.display = 'none';
+                healthForm.reset();
+                loadAppointments();
+            } else if(data.status==='error'){
+                alert(data.message);
+            }
+        });
+    });
+
+    loadAppointments();
+});
+</script>
+
+</body>
+</html>
