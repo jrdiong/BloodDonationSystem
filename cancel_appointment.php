@@ -66,6 +66,7 @@ if(!$appointment){
     ]);
     exit;
 }
+/*dcdcdcd */
 
 /* =========================
    Only pending appointments can be cancelled
@@ -89,3 +90,4 @@ echo json_encode([
     "message"=>"Appointment cancelled successfully"
 ]);
 ?>
+
