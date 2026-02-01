@@ -89,24 +89,9 @@ if(!$event){
 }
 
 /* =========================
-   Hospital Ownership Check 
+   Hospital Ownership Check - REMOVED
 ========================= */
-$hospitalID = null;
-
-if ($role === 'Hospital') {
-    $stmt = $pdo->prepare("
-        SELECT hospitalID
-        FROM hospital
-        WHERE userID = ?
-    ");
-    $stmt->execute([$loggedInUserID]);
-    $hospitalID = $stmt->fetchColumn();
-
-    if (!$hospitalID || $hospitalID != $event['hospitalID']) {
-        echo json_encode(["status"=>"error","message"=>"Permission denied"]);
-        exit;
-    }
-}
+// Hospital 用户现在可以查看所有活动，不再受医院限制
 
 /* =========================
    Fetch Donors
@@ -118,18 +103,24 @@ $stmt = $pdo->prepare("
         u.userID,
         u.name,
         u.email,
-        u.phoneNumber
+        u.phoneNumber AS phone
     FROM appointment a
     JOIN user u ON a.userID = u.userID
     WHERE a.eventID = ?
       AND a.status IN ('pending','approved')
     ORDER BY u.name ASC
 ");
-$stmt->execute([$eventID]);
-$donors = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+try {
+    $stmt->execute([$eventID]);
+    $donors = $stmt->fetchAll(PDO::FETCH_ASSOC);
+} catch (PDOException $e) {
+    echo json_encode(["status"=>"error","message"=>"Database error: ".$e->getMessage()]);
+    exit;
+}
 
 /* =========================
-   Can Edit Flag
+   Can Edit Flag (Hospital)
 ========================= */
 $canEdit = ($role === 'Hospital');
 
