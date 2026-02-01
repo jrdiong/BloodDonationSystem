@@ -11,23 +11,27 @@
 <body>
     <div class="container">
         <header>Donor Registration</header>
-        <form action="#">
+        <!-- action changed from # to register.php -->
+        <form action="register.php" method="POST">
             <div class="form first">
                 <div class="details personal">
                     <div class="fields">
                         <div class="input-field">
                             <label><i class='bx bx-user icon'></i>Full Name</label>
-                            <input type="text" placeholder="Enter your name" required>
+                            <!-- added name attribute -->
+                            <input name="name" type="text" placeholder="Enter your name" required>
                             <small class="live-msg"></small>
                         </div>
                         <div class="input-field">
                             <label><i class='bx bx-envelope icon'></i>Email</label>
-                            <input type="text" placeholder="Enter your email" required>
+                            <!-- added name attribute -->
+                            <input name="email" type="text" placeholder="Enter your email" required>
                             <small class="live-msg"></small>
                         </div>
                         <div class="input-field">
                             <label><i class='bx bx-lock icon'></i>Password</label>
-                            <input type="password" id="password" placeholder="Enter password" required>
+                            <!-- added name attribute -->
+                            <input name="password" type="password" id="password" placeholder="Enter password" required>
                             <small class="live-msg"></small>
                         </div>
                         <div class="input-field">
@@ -37,7 +41,8 @@
                         </div>
                         <div class="input-field">
                             <label><i class='bx bx-phone icon'></i>Mobile Number</label>
-                            <input type="number" placeholder="Enter mobile number" required>
+                            <!-- added name attribute -->
+                            <input name="phone" type="number" placeholder="Enter mobile number" required>
                             <small class="live-msg"></small>
                         </div>
                         <div class="input-field">
