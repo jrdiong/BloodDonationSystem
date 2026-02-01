@@ -102,6 +102,12 @@ body {
 .modal-header h3 { margin:0; color: #f44040; }
 .modal-header .close-modal { font-size:20px; cursor:pointer; color:#999; }
 .modal-header .close-modal:hover { color:#1976d2; }
+.modal-body p i {
+    margin-right: 6px;
+    color: #d21919;  /* match your theme */
+    width: 18px;      /* optional: fixed width for alignment */
+    text-align: center;
+}
 
 .feedback-section { margin-top:20px; border-top:1px solid #eee; padding-top:10px; max-height: 250px; overflow-y: auto; }
 .feedback { margin-bottom:12px; }
@@ -176,8 +182,8 @@ body {
         <img src="<?= $event[6] ?>" alt="Event Image">
         <div class="card-content">
             <h4><?= $event[0] ?></h4>
-            <p><strong><i class='fa-regular fa-compass' aria-hidden="true"></i>Location:</strong> <?= $event[1] ?></p>
-            <p><strong><i class='fa-regular fa-calendar' aria-hidden="true"></i>Date & Time:</strong> <?= $event[3] ?> <?= $event[4] ?>, <?= $event[5] ?> | <?= $event[2] ?></p>
+            <p><strong><i class='fa-regular fa-compass'></i>Location:</strong> <?= $event[1] ?></p>
+            <p><strong><i class='fa-regular fa-calendar'></i>Date & Time:</strong> <?= $event[3] ?> <?= $event[4] ?>, <?= $event[5] ?> | <?= $event[2] ?></p>
         </div>
         <div class="card-actions">
             <button class="btn primary view-btn">View Details</button>
@@ -197,9 +203,9 @@ body {
         </div>
         <div class="modal-body">
             <img id="modal-image" src="" alt="" style="width:100%; height:180px; object-fit:cover; border-radius:12px; margin-bottom:12px;">
-            <p><strong>Location:</strong> <span id="modal-location"></span></p>
-            <p><strong>Date & Time:</strong> <span id="modal-datetime"></span></p>
-            <p><strong>Description:</strong></p>
+            <p><strong><i class='fa-regular fa-compass'></i>Location:</strong> <span id="modal-location"></span></p>
+            <p><strong><i class='fa-regular fa-calendar'></i>Date & Time:</strong> <span id="modal-datetime"></span></p>
+            <p><strong><i class='fa-regular fa-message'></i>Description:</strong></p>
             <p id="modal-desc">This is a sample description of the event.</p>
 
             <div class="feedback-section">
