@@ -5,29 +5,32 @@
 <title>Events</title>
 <style>
 body { font-family: Arial, sans-serif; background: #f5f5f5; padding:20px; }
+
 h2 { text-align:center; margin-bottom:20px; }
-.event-card { display:flex; background:#fff; border-radius:20px; padding:20px; margin:15px auto; width:80%; cursor:pointer; position:relative; transition:0.2s; }
-.event-card:hover { box-shadow:0 4px 12px rgba(0,0,0,0.15); }
+
+/* Event Card */
+.event-card { display:flex; background:#fff; border-radius:20px; padding:20px; margin:15px auto; width:80%; cursor:pointer; position:relative; transition: 0.2s; }
+.event-card:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
 .event-image { width:150px; height:120px; border-radius:12px; background:#eee; overflow:hidden; flex-shrink:0; }
 .event-image img { width:100%; height:100%; object-fit:cover; }
-.event-info { margin-left:20px; flex:1; }
+.event-info { margin-left:20px; }
 .event-info h3 { margin:0; font-size:22px; }
 .event-info p { margin:6px 0; }
 .book-status { font-weight:bold; color:#333; margin-top:8px; }
-.event-info button { margin-top:8px; padding:5px 10px; cursor:pointer; }
+
+/* Admin Delete */
 .delete-btn { position:absolute; right:20px; top:20px; font-size:22px; color:red; cursor:pointer; user-select:none; }
+
+/* Modal */
 .modal { display:none; position:fixed; inset:0; background: rgba(0,0,0,0.5); z-index:1000; justify-content:center; align-items:center; }
 .modal-content { background:#fff; width:600px; max-width:90%; margin:60px auto; padding:25px; border-radius:15px; }
 .modal-content input, .modal-content textarea, .modal-content select { width:100%; margin-bottom:12px; padding:8px; }
 .modal-buttons { display:flex; justify-content:flex-end; gap:10px; }
 #createEventBtn { display:none; margin:20px auto; padding:10px 20px; font-size:16px; cursor:pointer; }
+
 /* Health Report Modal */
 #healthModal .modal-content { max-width:500px; }
 #healthModal textarea, #healthModal input, #healthModal select { margin-bottom:10px; }
-/* Appointment Modal */
-#appointmentModal .modal-content { max-width:600px; }
-#appointmentModal table { width:100%; border-collapse:collapse; margin-bottom:15px; }
-#appointmentModal table th, #appointmentModal table td { padding:8px; border-bottom:1px solid #eee; text-align:left; }
 </style>
 </head>
 <body>
@@ -77,30 +80,13 @@ h2 { text-align:center; margin-bottom:20px; }
   </div>
 </div>
 
-<!-- Appointment Modal -->
-<div class="modal" id="appointmentModal">
-  <div class="modal-content">
-    <h3>Appointment List</h3>
-    <table id="appointmentTable">
-      <thead>
-        <tr><th>Name</th><th>Email</th><th>Phone</th><th>Status</th></tr>
-      </thead>
-      <tbody></tbody>
-    </table>
-    <div id="appointmentButtons" style="text-align:right;"></div>
-    <button onclick="closeAppointmentModal()" style="margin-top:10px;">Close</button>
-  </div>
-</div>
-
 <script>
 let currentEventID = null;
 let currentRole = null;
 let canEdit = false;
 let hospitalsLoaded = false;
 
-const createEventBtn = document.getElementById('createEventBtn');
-createEventBtn.addEventListener('click',()=>openEvent(null)); // Add new
-
+/* ===== Load Events ===== */
 async function loadEvents(){
     try{
         const res = await fetch('event.php');
@@ -108,46 +94,42 @@ async function loadEvents(){
         if(data.status!=='success'){ alert(data.message||'Failed to load events'); return; }
         currentRole = data.role;
         renderEventCards(data.data);
-        createEventBtn.style.display = (currentRole==='Event Organizer') ? 'block' : 'none';
         if(currentRole==='Event Organizer' && !hospitalsLoaded) loadHospitals();
     } catch(e){ console.error(e); alert('Error loading events'); }
 }
 
+/* ===== Load Hospitals ===== */
 async function loadHospitals(){
     try{
         const res = await fetch('event.php?action=getHospitals');
         const data = await res.json();
         if(data.status==='success'){
-            const select = document.getElementById('hospitalSelect');
-            select.innerHTML = '<option value="">Select Hospital</option>';
+            const select=document.getElementById('hospitalSelect');
+            select.innerHTML='<option value="">Select Hospital</option>';
             data.data.forEach(h=>{
-                const opt=document.createElement('option');
-                opt.value=h.userID;
-                opt.textContent=h.name;
+                const opt=document.createElement('option'); opt.value=h.userID; opt.textContent=h.name;
                 select.appendChild(opt);
             });
             hospitalsLoaded = true;
-            select.style.display='block';
+            document.getElementById('createEventBtn').style.display='block';
         }
     } catch(e){ console.error(e); }
 }
 
+/* ===== Render Event Cards ===== */
 function renderEventCards(events){
-    const container = document.getElementById('eventList');
+    const container=document.getElementById('eventList');
     container.innerHTML='';
     events.forEach(event=>{
-        const card = document.createElement('div'); 
-        card.className='event-card';
-        const imgSrc = event.image_url||'placeholder.jpg';
+        const card=document.createElement('div'); card.className='event-card';
+        const imgSrc=event.image_url||'placeholder.jpg';
         const current = event.currentBookings||0;
         const max = event.maxDonors||0;
         const statusText = `${current}/${max} booked`;
 
-        let actionBtn='';
+        let canBook = true;
         if(currentRole==='Donor'){
-            actionBtn = `<button ${current>=max?'disabled':''} onclick="event.stopPropagation(); bookEventHandler(${event.eventID})">Book</button>`;
-        } else if(['Admin','Event Organizer','Hospital'].includes(currentRole)){
-            actionBtn = `<button onclick="event.stopPropagation(); openAppointmentModal(${event.eventID})">Appointment Status</button>`;
+            if(current >= max) canBook=false;
         }
 
         card.innerHTML=`
@@ -157,192 +139,200 @@ function renderEventCards(events){
                 <p>Time: ${event.dateTime}</p>
                 <p>Location: ${event.location||'TBD'}</p>
                 <p class="book-status">${statusText}</p>
-                ${actionBtn}
+                ${currentRole==='Donor'?`<button ${canBook?'':'disabled'} onclick="bookEventHandler(event,${event.eventID})">Book</button>`:''}
             </div>
         `;
 
         if(currentRole==='Admin'){
-            const del = document.createElement('div'); 
-            del.className='delete-btn'; 
-            del.innerText='×';
+            const del=document.createElement('div'); del.className='delete-btn'; del.innerText='×';
             del.onclick=(e)=>{ e.stopPropagation(); deleteEvent(event.eventID); }
             card.appendChild(del);
         }
 
-        // 所有角色都可以点击查看
         card.onclick=()=>openEvent(event.eventID);
-
         container.appendChild(card);
     });
 }
 
-// ================= Functions =====================
+/* ===== Book Event ===== */
+function bookEventHandler(e, eventID){ e.stopPropagation(); currentEventID=eventID; bookEvent(); }
 
+async function bookEvent(){
+    if(!currentEventID){ alert('No event selected'); return; }
+    try{
+        const res = await fetch('book_event.php',{
+            method:'POST',
+            headers:{'Content-Type':'application/x-www-form-urlencoded'},
+            body:`action=bookEvent&eventID=${currentEventID}`
+        });
+        const data = await res.json();
+        if(data.status==='success'){
+            alert('Event booked successfully!'); 
+            closeModal();
+            loadEvents();
+        } else if(data.status==='requireHealthReport'){
+            const report = data.existingReport || {};
+            document.getElementById('bloodType').value = report.bloodType||'';
+            document.getElementById('age').value = report.age||'';
+            document.getElementById('dateLastDonate').value = report.dateLastDonate||'';
+            document.getElementById('medicalHistory').value = report.medicalHistory||'';
+            document.getElementById('weight').value = report.weight||'';
+            document.getElementById('height').value = report.height||'';
+            document.getElementById('healthModal').style.display='flex';
+        } else{ alert(data.message||'Booking failed'); }
+    } catch(e){ console.error(e); alert('Booking failed'); }
+}
+
+/* ===== Submit Health Report & Book ===== */
+async function submitHealthReport(){
+    const report = {
+        bloodType: document.getElementById('bloodType').value,
+        age: document.getElementById('age').value,
+        dateLastDonate: document.getElementById('dateLastDonate').value,
+        medicalHistory: document.getElementById('medicalHistory').value.trim(),
+        weight: document.getElementById('weight').value,
+        height: document.getElementById('height').value
+    };
+    for(let k in report){ if(!report[k]) { alert('Please fill all fields'); return; } }
+
+    try{
+        const res = await fetch('book_event.php',{
+            method:'POST',
+            headers:{'Content-Type':'application/x-www-form-urlencoded'},
+            body:`action=bookEvent&eventID=${currentEventID}&healthReport=${encodeURIComponent(JSON.stringify(report))}`
+        });
+        const data = await res.json();
+        if(data.status==='success'){
+            alert('Health report saved & event booked!');
+            closeHealthModal(); closeModal(); loadEvents();
+        } else alert(data.message||'Booking failed');
+    } catch(e){ console.error(e); alert('Booking failed'); }
+}
+
+/* ===== Event Modal ===== */
 async function openEvent(eventID){
-    currentEventID = eventID;
-    const modal = document.getElementById('eventModal');
-    modal.style.display='flex';
-    const title = document.getElementById('modalTitle');
-    const btnContainer = document.getElementById('modalButtons');
-    const previewImg = document.getElementById('previewImage');
-
-    if(eventID){ // 查看/编辑现有事件
-        title.innerText = 'Event Details';
+    try{
         const res = await fetch(`event.php?action=getEventByID&eventID=${eventID}`);
         const data = await res.json();
-        if(data.status!=='success'){ alert(data.message); return; }
+        if(data.status!=='success'){ alert(data.message||'Failed'); return; }
+        const e=data.event;
+        currentEventID=e.eventID; canEdit=data.canEdit; currentRole=data.role;
 
-        // 保留原本逻辑：Event Organizer / Hospital 可编辑
-        canEdit = (currentRole==='Event Organizer' || currentRole==='Hospital') && data.canEdit;
+        document.getElementById('modalTitle').innerText=e.eventName;
+        document.getElementById('eventName').value=e.eventName;
+        document.getElementById('dateTime').value=e.dateTime.replace(' ','T').slice(0,16);
+        document.getElementById('maxDonors').value=e.maxDonors;
+        document.getElementById('eventLocation').value=e.location||'';
+        document.getElementById('description').value=e.description||'';
+        document.getElementById('previewImage').src=e.image_url||'placeholder.jpg';
 
-        document.getElementById('eventName').value = data.event.eventName;
-        document.getElementById('dateTime').value = data.event.dateTime;
-        document.getElementById('maxDonors').value = data.event.maxDonors;
-        document.getElementById('description').value = data.event.description;
-        document.getElementById('eventLocation').value = data.event.location||'';
-        if(data.event.image_url) previewImg.src = data.event.image_url;
+        const inputs=document.querySelectorAll('#eventModal input,#eventModal textarea');
+        inputs.forEach(i=>i.readOnly=!canEdit && currentRole!=='Donor');
 
-        // 只读处理
-        ['eventName','dateTime','maxDonors','description','eventLocation','imageUpload'].forEach(id=>{
-            document.getElementById(id).disabled = !canEdit;
-        });
+        const select=document.getElementById('hospitalSelect');
+        if(currentRole==='Event Organizer'){ select.style.display='block'; select.value=e.hospitalID||''; }
+        else select.style.display='none';
 
-        btnContainer.innerHTML='';
-        if(canEdit){
-            const saveBtn = document.createElement('button');
-            saveBtn.innerText='Save';
-            saveBtn.onclick=saveEvent;
-            btnContainer.appendChild(saveBtn);
+        document.getElementById('modalButtons').innerHTML='';
+        if(currentRole==='Donor') document.getElementById('modalButtons').innerHTML=`<button onclick="closeModal()">Cancel</button><button onclick="bookEvent()">Book</button>`;
+        else if(currentRole==='Admin') document.getElementById('modalButtons').innerHTML=`<button onclick="closeModal()">Close</button>`;
+        else if(currentRole==='Event Organizer'){
+            document.getElementById('modalButtons').innerHTML=`<button onclick="closeModal()">Cancel</button>`;
+            if(canEdit) document.getElementById('modalButtons').innerHTML+=`<button onclick="saveEvent()">Save</button>`;
         }
-        const closeBtn = document.createElement('button');
-        closeBtn.innerText='Close';
-        closeBtn.onclick=()=>{ modal.style.display='none'; }
-        btnContainer.appendChild(closeBtn);
 
-    } else { // Add new (Event Organizer)
-        title.innerText='Add New Event';
-        ['eventName','dateTime','maxDonors','description','eventLocation'].forEach(id=>document.getElementById(id).value='');
-        previewImg.src='placeholder.jpg';
-        btnContainer.innerHTML='';
+        document.getElementById('eventModal').style.display='flex';
+    } catch(e){ console.error(e); alert('Failed to open event'); }
+}
 
-        const sendBtn = document.createElement('button');
-        sendBtn.innerText='Send Request';
-        sendBtn.onclick=sendNewEvent;
-        btnContainer.appendChild(sendBtn);
+function closeModal(){ document.getElementById('eventModal').style.display='none'; }
+function closeHealthModal(){ document.getElementById('healthModal').style.display='none'; }
 
-        const closeBtn = document.createElement('button');
-        closeBtn.innerText='Close';
-        closeBtn.onclick=()=>{ modal.style.display='none'; }
-        btnContainer.appendChild(closeBtn);
-    }
+/* ===== Image Preview ===== */
+document.getElementById('imageUpload').addEventListener('change',function(){
+    const file=this.files[0];
+    if(file){ const reader=new FileReader(); reader.onload=e=>document.getElementById('previewImage').src=e.target.result; reader.readAsDataURL(file); }
+});
+
+/* ===== Delete Event ===== */
+async function deleteEvent(id){
+    if(!confirm('Delete this event?')) return;
+    try{
+        const res=await fetch('event.php',{ method:'POST', headers:{'Content-Type':'application/x-www-form-urlencoded'}, body:`action=deleteEvent&eventID=${id}`});
+        const data=await res.json();
+        if(data.status==='success'){ alert('Deleted'); loadEvents(); } 
+        else alert(data.message||'Delete failed');
+    } catch(e){ console.error(e); alert('Delete failed'); }
+}
+
+/* ===== Add New Event ===== */
+document.getElementById('createEventBtn').onclick=()=>{
+    currentEventID=null; canEdit=true;
+    document.getElementById('modalTitle').innerText='New Event';
+    document.getElementById('eventName').value='';
+    document.getElementById('dateTime').value='';
+    document.getElementById('maxDonors').value='';
+    document.getElementById('eventLocation').value='';
+    document.getElementById('description').value='';
+    document.getElementById('previewImage').src='placeholder.jpg';
+    document.getElementById('hospitalSelect').style.display='block';
+    document.getElementById('hospitalSelect').value='';
+    const inputs=document.querySelectorAll('#eventModal input,#eventModal textarea');
+    inputs.forEach(i=>i.readOnly=false);
+    document.getElementById('modalButtons').innerHTML=`<button onclick="closeModal()">Cancel</button><button onclick="sendRequest()">Send Request</button>`;
+    document.getElementById('eventModal').style.display='flex';
+}
+
+/* ===== Save / Send Request ===== */
+async function sendRequest(){
+    if(!validateForm()) return;
+    const formData = new FormData();
+    formData.append('action','sendRequest');
+    formData.append('eventName', document.getElementById('eventName').value);
+    formData.append('dateTime', document.getElementById('dateTime').value);
+    formData.append('maxDonors', document.getElementById('maxDonors').value);
+    formData.append('description', document.getElementById('description').value);
+    formData.append('location', document.getElementById('eventLocation').value);
+    formData.append('hospitalID', document.getElementById('hospitalSelect').value);
+    const file=document.getElementById('imageUpload').files[0];
+    if(file) formData.append('imageUpload',file);
+
+    try{
+        const res=await fetch('event.php',{ method:'POST', body:formData });
+        const data=await res.json();
+        if(data.status==='success'){ alert('Request sent'); closeModal(); loadEvents(); }
+        else alert(data.message||'Failed');
+    } catch(e){ console.error(e); alert('Failed'); }
 }
 
 async function saveEvent(){
+    if(!validateForm()) return;
     const formData = new FormData();
     formData.append('action','saveEvent');
-    formData.append('eventID',currentEventID);
-    formData.append('eventName',document.getElementById('eventName').value);
-    formData.append('dateTime',document.getElementById('dateTime').value);
-    formData.append('maxDonors',document.getElementById('maxDonors').value);
-    formData.append('description',document.getElementById('description').value);
-    formData.append('location',document.getElementById('eventLocation').value);
-    const fileInput = document.getElementById('imageUpload');
-    if(fileInput.files[0]) formData.append('imageUpload', fileInput.files[0]);
-
-    const res = await fetch('event.php',{method:'POST', body:formData});
-    const data = await res.json();
-    alert(data.message);
-    if(data.status==='success'){ modal.style.display='none'; loadEvents(); }
-}
-
-async function sendNewEvent(){
-    const formData = new FormData();
-    formData.append('action','sendRequest');
-    formData.append('eventName',document.getElementById('eventName').value);
-    formData.append('dateTime',document.getElementById('dateTime').value);
-    formData.append('maxDonors',document.getElementById('maxDonors').value);
-    formData.append('description',document.getElementById('description').value);
-    formData.append('location',document.getElementById('eventLocation').value);
-    const hospitalSelect = document.getElementById('hospitalSelect');
-    formData.append('hospitalID',hospitalSelect.value);
-    const fileInput = document.getElementById('imageUpload');
-    if(fileInput.files[0]) formData.append('imageUpload',fileInput.files[0]);
-
-    const res = await fetch('event.php',{method:'POST', body:formData});
-    const data = await res.json();
-    alert(data.message);
-    if(data.status==='success'){ document.getElementById('eventModal').style.display='none'; loadEvents(); }
-}
-
-// =================== Appointment Modal ===================
-async function openAppointmentModal(eventID){
-    currentEventID = eventID;
-    const modal = document.getElementById('appointmentModal');
-    modal.style.display='flex';
-    const tbody = document.querySelector('#appointmentTable tbody');
-    const appointmentButtons = document.getElementById('appointmentButtons');
-    tbody.innerHTML='';
-    appointmentButtons.innerHTML='';
+    formData.append('eventID', currentEventID);
+    formData.append('eventName', document.getElementById('eventName').value);
+    formData.append('dateTime', document.getElementById('dateTime').value);
+    formData.append('maxDonors', document.getElementById('maxDonors').value);
+    formData.append('description', document.getElementById('description').value);
+    formData.append('location', document.getElementById('eventLocation').value);
+    const file=document.getElementById('imageUpload').files[0];
+    if(file) formData.append('imageUpload',file);
 
     try{
-        const res = await fetch(`view_appointment.php?eventID=${eventID}`);
-        const data = await res.json();
-        if(data.status!=='success'){ alert(data.message||'Failed to load appointments'); return; }
-
-        const donors = data.donors;
-        const totalRow = document.createElement('tr');
-        totalRow.innerHTML = `<td colspan="4"><strong>Total Appointments: ${data.totalBookings}</strong></td>`;
-        tbody.appendChild(totalRow);
-
-        donors.forEach(a=>{
-            const tr = document.createElement('tr');
-            tr.innerHTML=`<td>${a.name}</td><td>${a.email}</td><td>${a.phone}</td><td>${a.status||''}</td>`;
-            tbody.appendChild(tr);
-        });
-
-        if(currentRole==='Hospital' && data.canEdit){
-            const donorBtn = document.createElement('button');
-            donorBtn.innerText='Donor Information';
-            donorBtn.onclick=()=>{ alert('Additional donor info can be shown here'); };
-            appointmentButtons.appendChild(donorBtn);
-        }
-
-    } catch(e){ console.error(e); alert('Failed to load appointments'); }
+        const res=await fetch('event.php',{ method:'POST', body:formData });
+        const data=await res.json();
+        if(data.status==='success'){ alert('Event saved'); closeModal(); loadEvents(); }
+        else alert(data.message||'Failed');
+    } catch(e){ console.error(e); alert('Failed'); }
 }
 
-function closeAppointmentModal(){ document.getElementById('appointmentModal').style.display='none'; }
-
-function bookEventHandler(eventID){
-    currentEventID = eventID;
-    document.getElementById('healthModal').style.display='flex';
+function validateForm(){
+    if(!document.getElementById('eventName').value.trim() || !document.getElementById('dateTime').value || !document.getElementById('maxDonors').value) { alert('Please fill required fields'); return false; }
+    return true;
 }
 
-function closeHealthModal(){ document.getElementById('healthModal').style.display='none'; }
-
-async function submitHealthReport(){
-    const formData = new FormData();
-    formData.append('action','bookEvent');
-    formData.append('eventID',currentEventID);
-    const res = await fetch('event.php',{method:'POST',body:formData});
-    const data = await res.json();
-    alert(data.message);
-    if(data.status==='success'){ closeHealthModal(); loadEvents(); }
-}
-
-async function deleteEvent(eventID){
-    if(!confirm('Are you sure to delete this event?')) return;
-    const formData = new FormData();
-    formData.append('action','deleteEvent');
-    formData.append('eventID',eventID);
-    const res = await fetch('event.php',{method:'POST',body:formData});
-    const data = await res.json();
-    alert(data.message);
-    if(data.status==='success') loadEvents();
-}
-
-// Load initially
+/* ===== Init ===== */
 loadEvents();
 </script>
-
 </body>
 </html>

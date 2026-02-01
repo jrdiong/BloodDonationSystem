@@ -88,10 +88,7 @@ if(!$event){
     exit;
 }
 
-/* =========================
-   Hospital Ownership Check - REMOVED
-========================= */
-// Hospital 用户现在可以查看所有活动，不再受医院限制
+
 
 /* =========================
    Fetch Donors
