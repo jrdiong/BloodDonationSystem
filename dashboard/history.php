@@ -257,6 +257,7 @@ detailsModal.querySelectorAll(".close-modal").forEach(btn=>{
     btn.addEventListener("click", ()=>detailsModal.classList.remove("show"));
 });
 </script>
+<script src="script.js"></script>
 
 </body>
 </html>
