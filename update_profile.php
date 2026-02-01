@@ -43,7 +43,8 @@ $updateHospitalFields = []; // Store fields for the `hospital` table update
 
 foreach ($allowedFields as $field) {
     if (isset($_POST[$field])) {
-        $value = trim($_POST[$field]);
+       
+        $value = trim((string)$_POST[$field]);
         if ($value === '') {
             echo json_encode(["success" => false, "error" => "Field '$field' cannot be empty"]);
             exit;
@@ -52,6 +53,14 @@ foreach ($allowedFields as $field) {
             echo json_encode(["success" => false, "error" => "Invalid email format"]);
             exit;
         }
+
+        if ($field === 'phoneNumber' && !ctype_digit($value)) {
+    echo json_encode([
+        "success" => false,
+        "error" => "Phone number must contain only numbers"
+    ]);
+    exit;
+}
 
         if ($field === 'location') {
             // Handle location field differently for hospital table
