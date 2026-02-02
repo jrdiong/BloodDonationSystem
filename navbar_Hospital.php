@@ -1,3 +1,28 @@
+<?php
+$currentPage = basename($_SERVER['PHP_SELF']);
+?>
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <!-- Boxicons CSS -->
+    <link href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet" />
+    <title>Navigation bar</title>
+    <link rel="stylesheet" href="style.css" />
+    <style>
+      .nav_link.active {
+        background: #f44040;
+        color: #fff;
+        border-radius: 10px;
+      }
+
+      .nav_link.active .navlink_icon i {
+        color: #fff;
+      }
+    </style>
+  </head>
+  <body>
 <!-- navbar -->
     <nav class="navbar">
       <div class="logo_item">
@@ -21,7 +46,7 @@
           <!-- duplicate these li tag if you want to add or remove navlink only -->
           <!-- Start -->
           <li class="item">
-            <a href="hospital.php" class="nav_link">
+            <a href="hospital.php" class="nav_link <?= ($currentPage == 'hospital.php') ? 'active' : '' ?>">
               <span class="navlink_icon">
                 <i class="bx bxs-dashboard"></i>
               </span>
@@ -30,7 +55,7 @@
           </li>
           <!-- End -->
           <li class="item">
-            <a href="bloodinventoryUI.php" class="nav_link">
+            <a href="bloodinventoryUI.php" class="nav_link <?= ($currentPage == 'bloodinventoryUI.php') ? 'active' : '' ?>">
               <span class="navlink_icon">
                 <i class="bx bx-donate-blood"></i>
               </span>
@@ -38,7 +63,7 @@
             </a>
           </li>
           <li class="item">
-            <a href="eventUI.php" class="nav_link">
+            <a href="eventUI.php" class="nav_link <?= ($currentPage == 'eventUI.php') ? 'active' : '' ?>">
               <span class="navlink_icon">
                 <i class="bx bx-calendar-event"></i>
               </span>
@@ -46,7 +71,7 @@
             </a>
           </li>
           <li class="item">
-            <a href="donor_information.php" class="nav_link">
+            <a href="donor_information.php" class="nav_link <?= ($currentPage == 'donor_information.php') ? 'active' : '' ?>">
               <span class="navlink_icon">
                 <i class="bx bx-user"></i>
               </span>
@@ -54,7 +79,7 @@
             </a>
           </li>
           <li class="item">
-            <a href="history.php" class="nav_link">
+            <a href="history.php" class="nav_link <?= ($currentPage == 'history.php') ? 'active' : '' ?>">
               <span class="navlink_icon">
                 <i class="bx bx-user"></i>
               </span>
@@ -62,7 +87,7 @@
             </a>
           </li>
           <li class="item">
-            <a href="profile_hospital.php" class="nav_link">
+            <a href="profile_hospital.php" class="nav_link <?= ($currentPage == 'profile_hospital.php') ? 'active' : '' ?>">
               <span class="navlink_icon">
                 <i class="bx bx-user-circle"></i>
               </span>
@@ -83,3 +108,7 @@
         </div>
       </div>
     </nav>
+        <!-- JavaScript -->
+    <script src="script.js"></script>
+  </body>
+</html>
