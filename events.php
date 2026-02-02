@@ -415,10 +415,14 @@ tbody tr:nth-child(even) {
     <h3>Complete Your Health Report</h3>
     <select id="bloodType" required>
       <option value="">Select Blood Type</option>
-      <option value="A">A</option>
-      <option value="B">B</option>
-      <option value="AB">AB</option>
-      <option value="0">0</option>
+      <option value="A+">A+</option>
+      <option value="A-">A-</option>
+      <option value="B+">B+</option>
+      <option value="B-">B-</option>
+      <option value="AB+">AB+</option>
+      <option value="AB-">AB-</option>
+      <option value="O+">O+</option>
+      <option value="O-">O-</option>
     </select>
     <input type="number" id="age" placeholder="Age" required>
     <input type="date" id="dateLastDonate" placeholder="Date of Last Donation" required>
