@@ -63,7 +63,7 @@ $currentPage = basename($_SERVER['PHP_SELF']);
             </a>
           </li>
           <li class="item">
-            <a href="eventUI.php" class="nav_link <?= ($currentPage == 'eventUI.php') ? 'active' : '' ?>">
+            <a href="events.php" class="nav_link <?= ($currentPage == 'events.php') ? 'active' : '' ?>">
               <span class="navlink_icon">
                 <i class="bx bx-user-check"></i>
               </span>

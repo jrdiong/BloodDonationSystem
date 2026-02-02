@@ -87,20 +87,8 @@ body { font-family:'Poppins',sans-serif; background:#fde7e7; margin:0; }
     <?php endif; ?>
 </div>
 
-<div class="card-list">
+<div class="card-list" id="eventList">
 
-<?php
-$events = [
-    ["Blood Donation Drive","Hospital ABC","2026-02-10","10:00"],
-    ["Health Awareness Camp","Community Center XYZ","2026-03-05","09:00"]
-];
-
-foreach($events as $event):
-    $d = new DateTime($event[2]);
-    $month = strtoupper($d->format('M'));
-    $day = $d->format('d');
-    $year = $d->format('Y');
-?>
 <div class="event-card">
     <div class="date-badge">
         <div class="month"><?= $month ?></div>
@@ -123,7 +111,6 @@ foreach($events as $event):
         <?php endif; ?>
     </div>
 </div>
-<?php endforeach; ?>
 
 </div>
 </div>

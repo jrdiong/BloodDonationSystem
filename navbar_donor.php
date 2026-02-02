@@ -55,7 +55,7 @@ $currentPage = basename($_SERVER['PHP_SELF']);
           </li>
           <!-- End -->
           <li class="item">
-            <a href="event_donor.php" class="nav_link <?= ($currentPage == 'event_donor.php') ? 'active' : '' ?>">
+            <a href="events.php" class="nav_link <?= ($currentPage == 'events.php') ? 'active' : '' ?>">
               <span class="navlink_icon">
                 <i class="bx bx-calendar-event"></i>
               </span>

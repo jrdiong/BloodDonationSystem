@@ -25,7 +25,6 @@
       box-shadow: 0 8px 25px rgba(0,0,0,0.08);
     }
 
-
     /* Page intro card like Blood Inventory */
     .page-intro-card {
         background: #f44040;          /* red gradient or solid color */
@@ -582,6 +581,7 @@ function renderTable(donorsList) {
 }
 
 const donorModal = document.getElementById('donorModal');
+donorModal.style.display = 'none';
 const closeBtn = donorModal.querySelector('.close');
 
 const donorImg = document.getElementById('donorImg');
@@ -768,15 +768,33 @@ document.getElementById('donorTableBody').addEventListener('click', async (e) =>
 // }
 
 // ---------- SEARCH ----------
-document.getElementById('searchInput').addEventListener('input', (e)=>{
-    const query = e.target.value.toLowerCase();
-    const filtered = donors.filter(d => 
-        d.name.toLowerCase().includes(query) || 
-        d.email.toLowerCase().includes(query) || 
-        d.phoneNumber.toLowerCase().includes(query)
-    );
+document.getElementById('searchInput').addEventListener('input', (e) => {
+    const query = e.target.value.trim().toLowerCase();
+    if (!query) {
+        renderTable(donors);
+        return;
+    }
+
+    const queryParts = query.split(/\s+/); // 支持多关键字
+
+    const filtered = donors.filter(d => {
+        // 处理字段：去空格、统一小写
+        const name = d.name.toLowerCase();
+        const email = d.email.toLowerCase();
+        const phone = d.phoneNumber.replace(/\D/g, ''); // 去掉非数字
+        const qPhone = queryParts.map(q => q.replace(/\D/g, ''));
+
+        // 每个关键字必须至少匹配一个字段
+        return queryParts.every(q => 
+            name.includes(q) || 
+            email.includes(q) || 
+            phone.includes(q)
+        );
+    });
+
     renderTable(filtered);
 });
+
 
 // // ---------- CLOSE MODAL ----------
 // document.querySelectorAll('.close').forEach(btn=>{
