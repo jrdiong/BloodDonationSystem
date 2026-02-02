@@ -155,59 +155,7 @@ body {
 
     <div class="card-list" >
 
-    <?php
-    $past_events = [
-        [
-            "Blood Donation Drive","Hospital ABC","10:00 AM",
-            "FEB","10","2026",
-            "https://picsum.photos/300/150?random=1",
-            [
-                ["Alice",5,"Great experience!","1 day ago"],
-                ["Bob",4,"Well organized.","2 days ago"],
-                ["Charlie",5,"Very informative.","3 days ago"]
-            ]
-        ],
-        [
-            "Health Awareness Camp","Community Center XYZ","9:00 AM",
-            "MAR","5","2026",
-            "https://picsum.photos/300/150?random=2",
-            [
-                ["Charlie",5,"Very informative.","3 days ago"]
-            ]
-        ]
-        ,
-        [
-            "Health Awareness Camp","Community Center XYZ","9:00 AM",
-            "MAR","5","2026",
-            "https://picsum.photos/300/150?random=2",
-            [
-                ["Charlie",5,"Very informative.","3 days ago"]
-            ]
-        ]
-    ];
-
-    foreach($past_events as $event):
-    ?>
-    <div class="event-card" 
-         data-name="<?= $event[0] ?>" 
-         data-location="<?= $event[1] ?>" 
-         data-time="<?= $event[2] ?>" 
-         data-date="<?= $event[3] ?> <?= $event[4] ?>, <?= $event[5] ?>" 
-         data-image="<?= $event[6] ?>"
-         data-feedback='<?= json_encode($event[7]) ?>'>
-        <img src="<?= $event[6] ?>" alt="Event Image">
-        <div class="card-content">
-            <h4><?= $event[0] ?></h4>
-            <p><strong><i class='fa-regular fa-compass'></i>Location:</strong> <?= $event[1] ?></p>
-            <p><strong><i class='fa-regular fa-calendar'></i>Date & Time:</strong> <?= $event[3] ?> <?= $event[4] ?>, <?= $event[5] ?> | <?= $event[2] ?></p>
-        </div>
-        <div class="card-actions">
-            <button class="btn primary view-btn">View Details</button>
-        </div>
-    </div>
-    <?php endforeach; ?>
-
-    </div>
+    
 </div>
 
 <!-- Details Modal -->
@@ -233,42 +181,88 @@ body {
 </div>
 
 <script>
-const detailsModal = document.getElementById("details-modal");
-const modalTitle = document.getElementById("modal-title");
-const modalLocation = document.getElementById("modal-location");
-const modalDatetime = document.getElementById("modal-datetime");
-const modalDesc = document.getElementById("modal-desc");
-const modalImage = document.getElementById("modal-image");
-const feedbackList = document.getElementById("feedback-list");
+async function loadHistory() {
+    try {
+        const res = await fetch('feedback_history.php');
+        const data = await res.json();
+        if(data.status !== 'success') { alert(data.message); return; }
 
-document.querySelectorAll(".view-btn").forEach(btn=>{
-    btn.addEventListener("click", e=>{
-        const card = e.target.closest(".event-card");
-        modalTitle.innerText = card.dataset.name;
-        modalLocation.innerText = card.dataset.location;
-        modalDatetime.innerText = card.dataset.date + " " + card.dataset.time;
-        modalDesc.innerText = "This is a placeholder description for the event.";
-        modalImage.src = card.dataset.image;
+        const cardList = document.querySelector('.card-list');
+        cardList.innerHTML = '';
 
-        // Load feedback
-        const feedbacks = JSON.parse(card.dataset.feedback);
-        feedbackList.innerHTML = "";
-        feedbacks.forEach(f=>{
-            const div = document.createElement("div");
-            div.className = "feedback";
-            div.innerHTML = `
-                <div class="name">${f[0]}</div>
-                <div class="rating">${"★".repeat(f[1])}${"☆".repeat(5-f[1])}</div>
-                <div class="comment">${f[2]}</div>
-                <div class="time">${f[3]}</div>
+        const modalTitle = document.getElementById("modal-title");
+        const modalLocation = document.getElementById("modal-location");
+        const modalDatetime = document.getElementById("modal-datetime");
+        const modalDesc = document.getElementById("modal-desc");
+        const modalImage = document.getElementById("modal-image");
+        const feedbackList = document.getElementById("feedback-list");
+        const detailsModal = document.getElementById("details-modal");
+
+        data.events.forEach(event => {
+            const card = document.createElement('div');
+            card.className = 'event-card';
+            card.dataset.name = event.eventName;
+            card.dataset.location = event.location;
+            card.dataset.date = event.date;
+            card.dataset.time = event.time;
+            card.dataset.image = event.image;
+            card.dataset.feedback = JSON.stringify(event.feedback);
+            card.dataset.desc = event.description || "No description available.";
+
+            card.innerHTML = `
+                <img src="${event.image}" alt="Event Image">
+                <div class="card-content">
+                    <h4>${event.eventName}</h4>
+                    <p><strong><i class='fa-regular fa-compass'></i>Location:</strong> ${event.location}</p>
+                    <p><strong><i class='fa-regular fa-calendar'></i>Date & Time:</strong> ${event.date} | ${event.time}</p>
+                </div>
+                <div class="card-actions">
+                    <button class="btn primary view-btn">View Details</button>
+                </div>
             `;
-            feedbackList.appendChild(div);
+            cardList.appendChild(card);
+
+            card.querySelector(".view-btn").addEventListener("click", e=>{
+                modalTitle.innerText = card.dataset.name;
+                modalLocation.innerText = card.dataset.location;
+                modalDatetime.innerText = card.dataset.date + " " + card.dataset.time;
+                modalDesc.innerText = card.dataset.desc;
+                modalImage.src = card.dataset.image;
+
+                const feedbacks = JSON.parse(card.dataset.feedback);
+                feedbackList.innerHTML = "";
+                feedbacks.forEach(f=>{
+                    const rating = f[1] || 0;
+                    const div = document.createElement("div");
+                    div.className = "feedback";
+                    div.innerHTML = `
+                        <div class="name">${f[0]}</div>
+                        <div class="rating">${"★".repeat(rating)}${"☆".repeat(5-rating)}</div>
+                        <div class="comment">${f[2]}</div>
+                        <div class="time">${f[3]}</div>
+                    `;
+                    feedbackList.appendChild(div);
+                });
+
+                detailsModal.classList.add("show");
+            });
         });
 
-        detailsModal.classList.add("show");
-    });
-});
+        // close modal
+        detailsModal.querySelectorAll(".close-modal").forEach(btn=>{
+            btn.addEventListener("click", ()=>detailsModal.classList.remove("show"));
+        });
 
+    } catch(err) {
+        console.error(err);
+        alert('Failed to load history.');
+    }
+}
+
+// load page
+loadHistory();
+
+// close modal
 detailsModal.querySelectorAll(".close-modal").forEach(btn=>{
     btn.addEventListener("click", ()=>detailsModal.classList.remove("show"));
 });
