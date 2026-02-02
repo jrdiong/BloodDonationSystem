@@ -12,7 +12,7 @@
 <div class="forgot-container">
     <header>Forgot Password</header>
 
-    <form class="forgot-form">
+    <form class="forgot-form" method="POST" action="forgot_password.php">
         <div class="input-field">
             <label>
                 <i class='bx bx-envelope icon'></i>
