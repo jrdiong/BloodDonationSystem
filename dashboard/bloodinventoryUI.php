@@ -59,9 +59,9 @@ body { font-family:'Poppins',sans-serif; background:#fde7e7; margin:0; }
 .btn.danger { border:1px solid #d32f2f; color:#d32f2f; background:#fff; }
 
 /* Modal */
-.modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.5); display:flex; justify-content:center; align-items:center; opacity:0; pointer-events:none; transition:opacity 0.3s; }
+.modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.5); top: 45px; display:flex; justify-content:center; align-items:center; opacity:0; pointer-events:none; transition:opacity 0.3s; }
 .modal-overlay.show { opacity:1; pointer-events:auto; }
-.modal-card { background:#fff; border-radius:20px; width:90%; max-width:500px; padding:25px 30px; box-shadow:0 15px 40px rgba(0,0,0,0.2); position:relative; max-height:90vh; overflow-y:auto; }
+.modal-card { background:#fff; border-radius:20px; width:90%; max-width:500px; max-height: 85vh; padding:25px 30px; box-shadow:0 15px 40px rgba(0,0,0,0.2); position:relative; overflow-y:auto; }
 .modal-card h3 { margin-top:0; text-align:center; }
 .close-modal { position:absolute; top:15px; right:20px; font-size:30px; cursor:pointer; color:#999; }
 .close-modal:hover { color:#1976d2; }
@@ -70,59 +70,96 @@ body { font-family:'Poppins',sans-serif; background:#fde7e7; margin:0; }
 .modal-footer { display:flex; justify-content:flex-end; gap:10px; margin-top:10px; }
 
 /* Inventory table */
+/* Table container with scrollable body */
 .inventory-table-container {
-  max-height: 250px;
+  max-height: 190px;
   overflow-y: auto;
+  margin-top: 10px;
   border-radius: 12px;
   box-shadow: inset 0 0 5px rgba(0,0,0,0.05);
 }
 
+/* Table styling */
 .inventory-table {
   width: 100%;
-  border-collapse: separate;
-  border-spacing: 0;
+  border-collapse: collapse;
+  table-layout: fixed;
 }
 
 .inventory-table thead {
-  background:#f5f5f5;
   position: sticky;
   top: 0;
-  z-index: 1;
+  background: #f5f5f5;
+  z-index: 2;
+  box-shadow: 0 2px 3px rgba(0,0,0,0.05);
 }
 
 .inventory-table th, .inventory-table td {
-  padding:10px 12px;
-  text-align:center;
-  font-size:14px;
+  padding: 10px;
+  text-align: center;
+  font-size: 14px;
+  overflow: hidden;
+  white-space: nowrap;
 }
 
-.inventory-table tbody tr {
-  background:#fff;
-  transition: background 0.2s;
-  border-bottom:1px solid #eee;
-}
+/* Zebra stripes */
+.inventory-table tbody tr:nth-child(even) { background: #fdfdfd; }
+.inventory-table tbody tr:nth-child(odd) { background: #fff; }
 
-.inventory-table tbody tr:hover {
-  background:#f9f9f9;
-}
+/* Hover effect for rows */
+.inventory-table tbody tr:hover { background: #f9f9f9; }
 
-.inventory-table tbody tr:last-child {
-  border-bottom:none;
-}
-
-/* Status badges */
+/* Modern pill-style status */
 .inventory-table td.status {
-  padding:5px 8px;
-  border-radius:12px;
-  font-size:12px;
-  font-weight:600;
-  color:#fff;
+    display: flex;                  /* make the cell a flex container */
+    justify-content: center;        /* center horizontally */
+    align-items: center; 
+    padding: 6px 14px;
+    border-radius: 999px;            /* fully rounded */
+    font-size: 0.75rem;
+    font-weight: 500;
+    text-transform: capitalize;
+    color: #fff;
+    text-align: center;
+    min-width: 80px;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+.inventory-table td {
+    vertical-align: middle;
 }
 
-.inventory-table td.status.available { background:#4caf50; } /* green */
-.inventory-table td.status.used { background:#2196f3; }      /* blue */
-.inventory-table td.status.delivered { background:#ff9800; } /* orange */
-.inventory-table td.status.expired { background:#f44336; }   /* red */
+/* Status colors */
+.inventory-table td.status.available { background: #3fc944; }
+.inventory-table td.status.used { background: #38a2fa; }
+.inventory-table td.status.delivered { background: #ffb039; }
+.inventory-table td.status.expired { background: #f9473a; }
+
+/* Optional hover effect */
+.inventory-table td.status:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 3px 6px rgba(0,0,0,0.2);
+}
+/* Donor pill style reused for inventory */
+.status-pill {
+    display: inline-block;
+    padding: 6px 14px;
+    border-radius: 999px;
+    font-size: 0.75rem;
+    font-weight: 500;
+    text-transform: capitalize;
+    white-space: nowrap;
+}
+
+/* Colors */
+.status-pill.available { background: #3fc944; color: #fff; }
+.status-pill.used { background: #38a2fa; color: #fff; }
+.status-pill.delivered { background: #ffb039; color: #fff; }
+.status-pill.expired { background: #f9473a; color: #fff; }
+
+.status-pill:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
 
 </style>
 </head>
@@ -168,35 +205,35 @@ foreach($bloodTypes as $bt):
 
 <!-- Edit Modal -->
 <div class="modal-overlay" id="edit-modal">
-    <div class="modal-card">
-        <h3>Edit Blood Inventory</h3>
-        <span class="close-modal">&times;</span>
+  <div class="modal-card">
+    <h3>Edit Blood Inventory</h3>
+    <span class="close-modal">&times;</span>
 
-        <label>Available</label>
-        <input type="number" id="modal-available" min="0">
-        <label>Used</label>
-        <input type="number" id="modal-used" min="0">
-        <label>Delivered</label>
-        <input type="number" id="modal-delivered" min="0">
+    <label>Available</label>
+    <input type="number" id="modal-available" min="0">
+    <label>Used</label>
+    <input type="number" id="modal-used" min="0">
+    <label>Delivered</label>
+    <input type="number" id="modal-delivered" min="0">
 
-        <div class="inventory-table-container">
-            <table class="inventory-table">
-                <thead>
-                    <tr>
-                        <th>Collection Time</th>
-                        <th>Expiry Date</th>
-                        <th>Status</th>
-                    </tr>
-                </thead>
-                <tbody id="inventory-tbody"></tbody>
-            </table>
-        </div>
-
-        <div class="modal-footer">
-            <button class="btn primary" id="save-modal-btn">Submit</button>
-            <button class="btn" id="cancel-modal-btn">Cancel</button>
-        </div>
+    <div class="inventory-table-container">
+      <table class="inventory-table">
+        <thead>
+          <tr>
+            <th>Collection Time</th>
+            <th>Expiry Date</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody id="inventory-tbody"></tbody>
+      </table>
     </div>
+
+    <div class="modal-footer">
+      <button class="btn primary" id="save-modal-btn">Submit</button>
+      <button class="btn" id="cancel-modal-btn">Cancel</button>
+    </div>
+  </div>
 </div>
 
 <script>
@@ -209,6 +246,9 @@ const inventoryData = {
     "A": [
         {collection:"2026-01-01 10:00", expiry:"2026-01-31", status:"Available"},
         {collection:"2026-01-05 12:00", expiry:"2026-02-04", status:"Used"},
+        {collection:"2026-01-08 09:30", expiry:"2026-02-07", status:"Delivered"},
+        {collection:"2026-01-08 09:30", expiry:"2026-02-07", status:"Delivered"},
+        {collection:"2026-01-08 09:30", expiry:"2026-02-07", status:"Delivered"},
         {collection:"2026-01-08 09:30", expiry:"2026-02-07", status:"Delivered"},
     ],
     "B": [
@@ -234,14 +274,18 @@ document.addEventListener("click", e=>{
         const tbody = document.getElementById("inventory-tbody");
         tbody.innerHTML = "";
         (inventoryData[type] || []).forEach(item=>{
-            const tr = document.createElement("tr");
-            tr.innerHTML = `
-                <td>${item.collection}</td>
-                <td>${item.expiry}</td>
-                <td class="status ${item.status.toLowerCase()}">${item.status}</td>
-            `;
-            tbody.appendChild(tr);
-        });
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+        <td>${item.collection}</td>
+        <td>${item.expiry}</td>
+        <td>
+        <span class="status-pill ${item.status.toLowerCase()}">${item.status}</span>
+        </td>
+    `;
+    tbody.appendChild(tr);
+});
+
+
         editModal.classList.add("show");
     }
 });

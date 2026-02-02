@@ -202,7 +202,7 @@ if($_SERVER['REQUEST_METHOD']==='GET' && ($_GET['action']??'')==='getEventByID')
 }
 
 /* =========================
-   POST: Save Event
+   POST: Save Event (优化 hospitalID + location)
 ========================= */
 if($_SERVER['REQUEST_METHOD']==='POST' && ($_POST['action']??'')==='saveEvent'){
     $eventID = $_POST['eventID'] ?? null;
@@ -227,13 +227,20 @@ if($_SERVER['REQUEST_METHOD']==='POST' && ($_POST['action']??'')==='saveEvent'){
         exit;
     }
 
-    $eventName = $_POST['eventName'] ?? $event['eventName'];
-    $dateTime  = $_POST['dateTime'] ?? $event['dateTime'];
-    $maxDonors = $_POST['maxDonors'] ?? $event['maxDonors'];
+    
+    $eventName   = $_POST['eventName'] ?? $event['eventName'];
+    $dateTime    = $_POST['dateTime'] ?? $event['dateTime'];
+    $maxDonors   = $_POST['maxDonors'] ?? $event['maxDonors'];
     $description = $_POST['description'] ?? $event['description'];
+    $location    = $_POST['location'] ?? $event['location'];
+
+    // hospitalID 支持 Event Organizer 修改
+    $hospitalID  = $event['hospitalID'];
+    if($role==='Event Organizer' && isset($_POST['hospitalID'])){
+        $hospitalID = $_POST['hospitalID'];
+    }
 
     $imagePath = $event['image_url'];
-
     try {
         $uploadedImage = handleImageUpload('imageUpload');
         if($uploadedImage) $imagePath = $uploadedImage;
@@ -242,8 +249,12 @@ if($_SERVER['REQUEST_METHOD']==='POST' && ($_POST['action']??'')==='saveEvent'){
         exit;
     }
 
-    $stmt = $pdo->prepare("UPDATE event SET eventName=?, dateTime=?, maxDonors=?, description=?, image_url=? WHERE eventID=?");
-    $stmt->execute([$eventName,$dateTime,$maxDonors,$description,$imagePath,$eventID]);
+    $stmt = $pdo->prepare("
+        UPDATE event 
+        SET eventName=?, dateTime=?, maxDonors=?, description=?, location=?, image_url=?, hospitalID=? 
+        WHERE eventID=?
+    ");
+    $stmt->execute([$eventName,$dateTime,$maxDonors,$description,$location,$imagePath,$hospitalID,$eventID]);
 
     echo json_encode(["status"=>"success","message"=>"Event updated successfully"]);
     exit;
@@ -348,5 +359,4 @@ if($_SERVER['REQUEST_METHOD']==='POST' && ($_POST['action']??'')==='deleteEvent'
     echo json_encode(["status"=>"success","message"=>"Event deleted successfully"]);
     exit;
 }
-
 ?>
