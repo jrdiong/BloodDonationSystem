@@ -63,7 +63,7 @@ $currentPage = basename($_SERVER['PHP_SELF']);
             </a>
           </li>
           <li class="item">
-            <a href="appointment.php" class="nav_link <?= ($currentPage == 'appointment.php') ? 'active' : '' ?>">
+            <a href="appointment.php" class="nav_link <?= ($currentPage == 'appointments.php') ? 'active' : '' ?>">
               <span class="navlink_icon">
                 <i class="bx bx-calendar-check"></i>
               </span>
