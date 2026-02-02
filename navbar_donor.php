@@ -1,15 +1,4 @@
-<!DOCTYPE html>
-<html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <!-- Boxicons CSS -->
-    <link href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet" />
-    <title>Navigation bar</title>
-    <link rel="stylesheet" href="style.css" />
-  </head>
-  <body>
-    <!-- navbar -->
+<!-- navbar -->
     <nav class="navbar">
       <div class="logo_item">
         <i class="bx bx-menu" id="sidebarOpen"></i>
@@ -21,7 +10,7 @@
       <div class="navbar_content">
         <i class="bi bi-grid"></i>
         <i class='bx bx-sun' id="darkLight"></i>
-        <a href="profile_admin.php"><img src="images/profile.jpg" alt="" class="profile" /></a>
+        <a href="profile_donor.php"><img src="images/profile.jpg" alt="" class="profile" /></a>
       </div>
     </nav>
     <!-- sidebar -->
@@ -32,7 +21,7 @@
           <!-- duplicate these li tag if you want to add or remove navlink only -->
           <!-- Start -->
           <li class="item">
-            <a href="admin.php" class="nav_link">
+            <a href="donor.php" class="nav_link">
               <span class="navlink_icon">
                 <i class="bx bxs-dashboard"></i>
               </span>
@@ -41,31 +30,23 @@
           </li>
           <!-- End -->
           <li class="item">
-            <a href="manage_userUI.php" class="nav_link">
+            <a href="event_donor.php" class="nav_link">
               <span class="navlink_icon">
-                <i class="bx bx-user"></i>
-              </span>
-              <span class="navlink">Manage Users</span>
-            </a>
-          </li>
-          <li class="item">
-            <a href="eventUI.php" class="nav_link">
-              <span class="navlink_icon">
-                <i class="bx bx-user-check"></i>
+                <i class="bx bx-calendar-event"></i>
               </span>
               <span class="navlink">Event</span>
             </a>
           </li>
           <li class="item">
-            <a href="requestUI.php" class="nav_link">
+            <a href="appointment.php" class="nav_link">
               <span class="navlink_icon">
-                <i class="bx bx-message-edit"></i>
+                <i class="bx bx-calendar-check"></i>
               </span>
-              <span class="navlink">Request</span>
+              <span class="navlink">Appointment</span>
             </a>
           </li>
           <li class="item">
-            <a href="profile_admin.php" class="nav_link">
+            <a href="profile_donor.php" class="nav_link">
               <span class="navlink_icon">
                 <i class="bx bx-user-circle"></i>
               </span>
@@ -86,7 +67,3 @@
         </div>
       </div>
     </nav>
-    <!-- JavaScript -->
-    <script src="script.js"></script>
-  </body>
-</html>
