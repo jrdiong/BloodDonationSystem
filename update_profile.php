@@ -42,37 +42,56 @@ $updateUserFields = []; // Store fields for the `user` table update
 $updateHospitalFields = []; // Store fields for the `hospital` table update
 
 foreach ($allowedFields as $field) {
-    if (isset($_POST[$field])) {
-       
-        $value = trim((string)$_POST[$field]);
-        if ($value === '') {
-            echo json_encode(["success" => false, "error" => "Field '$field' cannot be empty"]);
-            exit;
-        }
-        if ($field === 'email' && !filter_var($value, FILTER_VALIDATE_EMAIL)) {
-            echo json_encode(["success" => false, "error" => "Invalid email format"]);
-            exit;
-        }
 
-        if ($field === 'phoneNumber' && !ctype_digit($value)) {
-    echo json_encode([
-        "success" => false,
-        "error" => "Phone number must contain only numbers"
-    ]);
-    exit;
-}
-
-        if ($field === 'location') {
-            // Handle location field differently for hospital table
-            $updateHospitalFields[] = "$field = ?";
-        } else {
-            $updateUserFields[] = "$field = ?";
-        }
-
-        $values[] = $value;
-        $types .= 's'; // all fields are strings
+    if (!isset($_POST[$field])) {
+        continue;
     }
+
+    $value = trim((string) $_POST[$field]);
+
+    // Empty check
+    if ($value === '') {
+        echo json_encode([
+            "success" => false,
+            "error" => "Field '$field' cannot be empty"
+        ]);
+        exit;
+    }
+
+    // Email validation
+    if ($field === 'email' && !filter_var($value, FILTER_VALIDATE_EMAIL)) {
+        echo json_encode([
+            "success" => false,
+            "error" => "Invalid email format"
+        ]);
+        exit;
+    }
+
+    // Phone number validation
+    if ($field === 'phoneNumber') {
+        if (!ctype_digit($value) || strlen($value) < 8 || strlen($value) > 10) {
+            echo json_encode([
+                "success" => false,
+                "error" => "Phone number must contain only numbers and be 8 to 10 digits long"
+            ]);
+            exit;
+        }
+    }
+
+    // Build update fields
+    if ($field === 'location') {
+        // For hospital table
+        $updateHospitalFields[] = "$field = ?";
+    } else {
+        // For user table
+        $updateUserFields[] = "$field = ?";
+    }
+
+    // Bind values
+    $values[] = $value;
+    $types .= 's'; // all strings
 }
+
 
 if (empty($updateUserFields) && empty($updateHospitalFields)) {
     echo json_encode(["success" => false, "error" => "No fields to update"]);
