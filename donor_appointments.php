@@ -104,12 +104,11 @@ $appointments = $stmt->fetchAll(PDO::FETCH_ASSOC);
 $now = new DateTime();
 foreach ($appointments as &$app) {
     $eventTime = new DateTime($app['eventDateTime']);
-    if ($app['appointmentStatus'] === 'cancelled') {
-        $app['status'] = 'cancelled';
-    } elseif ($eventTime < $now) {
-        $app['status'] = 'completed';
-    } else {
-        $app['status'] = 'pending';
+
+    $app['displayStatus'] = $app['appointmentStatus'];
+
+    if ($app['appointmentStatus'] === 'approved' && $eventTime < $now) {
+        $app['displayStatus'] = 'completed';
     }
 }
 

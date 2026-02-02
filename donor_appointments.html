@@ -160,6 +160,31 @@ h1 {
     </div>
 </div>
 
+<!-- Feedback Modal -->
+<div class="modal" id="feedbackModal">
+  <div class="modal-content">
+    <span class="close-modal" id="closeFeedbackModal">X</span>
+    <h3>Event Feedback</h3>
+
+    <!-- Star Rating -->
+    <div id="starRating" style="font-size:26px; margin-bottom:10px;">
+      <span class="star" data-value="1">☆</span>
+      <span class="star" data-value="2">☆</span>
+      <span class="star" data-value="3">☆</span>
+      <span class="star" data-value="4">☆</span>
+      <span class="star" data-value="5">☆</span>
+    </div>
+
+    <textarea id="feedbackComment"
+      placeholder="Write your comment here..."
+      style="width:100%; height:100px;"></textarea>
+
+    <button id="submitFeedbackBtn" style="margin-top:10px;">
+      Submit Feedback
+    </button>
+  </div>
+</div>
+
 <script>
 document.addEventListener('DOMContentLoaded', function() {
 
@@ -172,6 +197,52 @@ document.addEventListener('DOMContentLoaded', function() {
     const healthForm = document.getElementById('healthReportForm');
 
     let currentEventID = null;
+    let currentAppointmentID = null;
+    let selectedRating = 0;
+
+    
+    const feedbackModal = document.getElementById('feedbackModal');
+    const feedbackStars = document.querySelectorAll('#starRating .star');
+    const feedbackComment = document.getElementById('feedbackComment');
+    const submitFeedbackBtn = document.getElementById('submitFeedbackBtn');
+    const closeFeedbackModal = document.getElementById('closeFeedbackModal');
+
+    feedbackStars.forEach(star => {
+    star.addEventListener('click', function() {
+        selectedRating = parseInt(this.dataset.value);
+        feedbackStars.forEach(s => {
+            s.textContent = parseInt(s.dataset.value) <= selectedRating ? '★' : '☆';
+        });
+    });
+    });
+
+    submitFeedbackBtn.addEventListener('click', async function() {
+    const comment = feedbackComment.value.trim();
+    if(selectedRating === 0 || comment === '') {
+        alert('Please give a rating and write a comment.');
+        return;
+    }
+
+    const form = new FormData();
+    form.append('appointmentID', currentAppointmentID);
+    form.append('eventID', currentEventID);
+    form.append('rating', selectedRating);
+    form.append('comment', comment);
+
+    try {
+        const res = await fetch('submit_feedback.php', { method:'POST', body: form });
+        const data = await res.json();
+        if(data.status === 'success'){
+            alert('Feedback submitted successfully!');
+            feedbackModal.style.display = 'none';
+        } else {
+            alert(data.message || 'Failed to submit feedback');
+        }
+    } catch(err) {
+        console.error(err);
+        alert('Error submitting feedback');
+    }
+    });
 
     // Close modals
     closeModal.addEventListener('click', () => modal.style.display = 'none');
@@ -189,8 +260,8 @@ document.addEventListener('DOMContentLoaded', function() {
             data.appointments.forEach(app => {
                 const card = document.createElement('div');
                 card.classList.add('appointment-card');
-                if(['completed','cancelled','rejected'].includes(app.status)){
-                    card.classList.add('greyed');
+                if(['completed','cancelled','rejected'].includes(app.displayStatus)){
+                card.classList.add('greyed');
                 }
 
                 const img = document.createElement('img');
@@ -214,11 +285,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 card.appendChild(count);
 
                 const status = document.createElement('p');
-                status.textContent = 'Status: ' + app.status;
+                status.textContent = 'Status: ' + app.displayStatus;  
                 card.appendChild(status);
 
-                // Cancel button for pending or approved
-                if(['pending','approved'].includes(app.status)){
+                /* Cancel button */
+                const cancellableStatuses = ['pending', 'approved']; 
+                if (cancellableStatuses.includes(app.appointmentStatus)) {
                     const btn = document.createElement('button');
                     btn.textContent = 'Cancel Appointment';
                     btn.addEventListener('click', function(e){
@@ -228,13 +300,26 @@ document.addEventListener('DOMContentLoaded', function() {
                     card.appendChild(btn);
                 }
 
+                /* Feedback button – ONLY completed */
+                if (app.displayStatus === 'completed') {
+                    const feedbackBtn = document.createElement('button');
+                    feedbackBtn.textContent = 'Give Feedback';
+                    feedbackBtn.style.background = '#3498db';
+
+                    feedbackBtn.addEventListener('click', function(e){
+                        e.stopPropagation(); // ⭐ 非常重要
+                        openFeedbackModal(app);
+                    });
+
+                    card.appendChild(feedbackBtn);
+                }
                 // Click card to show event details
                 card.addEventListener('click', function(){
                     openModal(app);
                 });
 
                 container.appendChild(card);
-            });
+                });
         } catch(err) {
             console.error(err);
             alert('Error loading appointments');
@@ -248,6 +333,18 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('modalLocation').innerText = app.location || 'TBD';
         document.getElementById('modalDescription').innerText = app.description || 'No description';
         modal.style.display = 'flex';
+    }
+
+    function openFeedbackModal(app){
+    currentAppointmentID = app.appointmentID;
+    currentEventID = app.eventID;
+    selectedRating = 0;
+    feedbackComment.value = '';
+
+    // initia start
+    feedbackStars.forEach(star => star.textContent = '☆');
+
+    feedbackModal.style.display = 'flex';
     }
 
     // Cancel appointment
@@ -270,6 +367,11 @@ document.addEventListener('DOMContentLoaded', function() {
             alert('Failed to cancel appointment');
         }
     }
+    /*closeFeedbackModal*/
+
+    closeFeedbackModal.addEventListener('click', () => {
+    feedbackModal.style.display = 'none';
+});
 
     loadAppointments();
 });
