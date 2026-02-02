@@ -42,6 +42,41 @@ if ($row = mysqli_fetch_assoc($res)) {
         $bmi = round($weightKg / ($heightM * $heightM), 1);
     }
 
+$totalAppointments = 0;
+
+$stmtCnt = mysqli_prepare($conn,"SELECT COUNT(*) AS total FROM appointment WHERE userID = ?");
+mysqli_stmt_bind_param($stmtCnt, "i", $userID);
+mysqli_stmt_execute($stmtCnt);
+$resCnt = mysqli_stmt_get_result($stmtCnt);
+
+if ($row = mysqli_fetch_assoc($resCnt)) {
+    $totalAppointments = (int)$row['total'];
+}
+
+$totalBloodInventory = 0;
+
+$stmt = mysqli_prepare($conn,"SELECT COUNT(*) AS total FROM `blood inventory` WHERE userID = ?");
+mysqli_stmt_bind_param($stmt, "i", $userID);
+mysqli_stmt_execute($stmt);
+$res = mysqli_stmt_get_result($stmt);
+
+if ($row = mysqli_fetch_assoc($res)) {
+    $totalBloodInventory = $row['total'] ?? 0;
+}
+
+$nextEligible = "-";
+
+$stmtNext = mysqli_prepare($conn, "SELECT e.dateTime FROM appointment a JOIN event e ON e.eventID = a.eventID WHERE a.userID = ? AND e.dateTime >= NOW()");
+mysqli_stmt_bind_param($stmtNext, "i", $userID);
+mysqli_stmt_execute($stmtNext);
+$resNext = mysqli_stmt_get_result($stmtNext);
+
+if ($row = mysqli_fetch_assoc($resNext)) {
+    $nextEligible = $row['dateTime'] ?? "-";
+}
+
+mysqli_stmt_close($stmtNext);
+mysqli_stmt_close($stmtCnt);
 mysqli_stmt_close($stmt);
 mysqli_close($conn);
 ?>
@@ -203,17 +238,17 @@ body { background: #fcf4f4; padding: 20px; color: #333; }
         <div class="card donations">
             <i class='bx bx-donate-blood card-icon'></i>
             <h5>Total Donations</h5>
-            <h3 id="total-donations">12</h3>
+            <h3 id="total-donations"><?php echo (int)$totalBloodInventory; ?></h3>
         </div>
         <div class="card events">
             <i class='bx bx-calendar-check card-icon'></i>
             <h5>Events Joined</h5>
-            <h3 id="events-joined">3</h3>
+            <h3 id="events-joined"><?php echo $totalAppointments; ?></h3>
         </div>
         <div class="card next">
             <i class='bx bx-time-five card-icon'></i>
             <h5>Next Eligible Date</h5>
-            <h3 id="next-eligible">2026-05-15</h3>
+            <h3 id="next-eligible"><?php echo htmlspecialchars($nextEligible); ?></h3>
         </div>
     </div>
 
@@ -287,9 +322,9 @@ function animateCounter(id, target) {
 }
 
 // Example frontend data
-animateCounter('total-donations', 12);
-animateCounter('events-joined', 3);
-document.getElementById('next-eligible').textContent = '2026-05-15';
+animateCounter('total-donations', <?php echo (int)$totalBloodInventory; ?>);
+animateCounter('events-joined', <?php echo $totalAppointments; ?>);
+document.getElementById('next-eligible').textContent = '<?php echo htmlspecialchars($nextEligible); ?>';
 
 // Calendar
 let today = new Date();
