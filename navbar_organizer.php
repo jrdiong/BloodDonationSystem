@@ -1,4 +1,15 @@
-<!-- navbar -->
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <!-- Boxicons CSS -->
+    <link href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet" />
+    <title>Navigation bar</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <!-- navbar -->
     <nav class="navbar">
       <div class="logo_item">
         <i class="bx bx-menu" id="sidebarOpen"></i>
@@ -10,7 +21,7 @@
       <div class="navbar_content">
         <i class="bi bi-grid"></i>
         <i class='bx bx-sun' id="darkLight"></i>
-        <a href="profile_hospital.php"><img src="images/profile.jpg" alt="" class="profile" /></a>
+        <a href="profile_organizer.php"><img src="images/profile.jpg" alt="" class="profile" /></a>
       </div>
     </nav>
     <!-- sidebar -->
@@ -21,7 +32,7 @@
           <!-- duplicate these li tag if you want to add or remove navlink only -->
           <!-- Start -->
           <li class="item">
-            <a href="hospital.php" class="nav_link">
+            <a href="organizer.php" class="nav_link">
               <span class="navlink_icon">
                 <i class="bx bxs-dashboard"></i>
               </span>
@@ -29,14 +40,6 @@
             </a>
           </li>
           <!-- End -->
-          <li class="item">
-            <a href="bloodinventoryUI.php" class="nav_link">
-              <span class="navlink_icon">
-                <i class="bx bx-donate-blood"></i>
-              </span>
-              <span class="navlink">Blood Inventory</span>
-            </a>
-          </li>
           <li class="item">
             <a href="eventUI.php" class="nav_link">
               <span class="navlink_icon">
@@ -46,25 +49,17 @@
             </a>
           </li>
           <li class="item">
-            <a href="donor_information.php" class="nav_link">
-              <span class="navlink_icon">
-                <i class="bx bx-user"></i>
-              </span>
-              <span class="navlink">Manage Donor</span>
-            </a>
-          </li>
-          <li class="item">
             <a href="history.php" class="nav_link">
               <span class="navlink_icon">
-                <i class="bx bx-user"></i>
+                <i class="bx bx-history"></i>
               </span>
               <span class="navlink">History</span>
             </a>
           </li>
           <li class="item">
-            <a href="profile_hospital.php" class="nav_link">
+            <a href="profile_organizer.php" class="nav_link">
               <span class="navlink_icon">
-                <i class="bx bx-user-circle"></i>
+                <i class="bx bx-history"></i>
               </span>
               <span class="navlink">Profile</span>
             </a>
@@ -83,3 +78,7 @@
         </div>
       </div>
     </nav>
+    <!-- JavaScript -->
+    <script src="script.js"></script>
+  </body>
+</html>

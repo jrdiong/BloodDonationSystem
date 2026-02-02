@@ -53,7 +53,9 @@ body { background: #fcf4f4; padding: 20px; color: #333; }
 .card h3 { font-size: 2.2rem; color: #111; }
 
 /* Card colors */
-.card { background: #ffffff; color: #b91c1c; }
+.card.donations { background: #ffffff; color: #b91c1c; }
+.card.events { background: #ffffff; color: #b91c1c; }
+.card.next { background: #ffffff; color: #b91c1c; }
 
 /* Events list */
 .events-list { background: #fff; border-radius: 12px; padding: 25px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
@@ -137,33 +139,33 @@ body { background: #fcf4f4; padding: 20px; color: #333; }
 </style>
 </head>
 <body>
-    <?php include "navbar_admin.php"; ?>
+    <?php include "navbar_donor.php"; ?>
 
 
 <div class="dashboard">
     <div class="left-section">
     <!-- Welcome box above the three cards -->
     <div class="welcome-box">
-        <h4>Hello, Admin</h4>
+        <h4>Hello, John 👋</h4>
         <p>Welcome back!</p>
     </div>
 
     <!-- Three main cards -->
     <div class="cards">
-        <div class="card donors">
-            <i class='bx bx-user card-icon'></i>
-            <h5>Total Donors</h5>
-            <h3 id="total-donors">300</h3>
+        <div class="card donations">
+            <i class='bx bx-donate-blood card-icon'></i>
+            <h5>Total Donations</h5>
+            <h3 id="total-donations">12</h3>
         </div>
         <div class="card events">
-            <i class='bx bx-calendar-event card-icon'></i>
-            <h5>Total Events</h5>
-            <h3 id="total-events">120</h3>
+            <i class='bx bx-calendar-check card-icon'></i>
+            <h5>Events Joined</h5>
+            <h3 id="events-joined">3</h3>
         </div>
-        <div class="card events">
-            <i class='bx bx-run card-icon'></i>
-            <h5>Total Active Events</h5>
-            <h3 id="active-events">3</h3>
+        <div class="card next">
+            <i class='bx bx-time-five card-icon'></i>
+            <h5>Next Eligible Date</h5>
+            <h3 id="next-eligible">2026-05-15</h3>
         </div>
     </div>
 
@@ -182,18 +184,18 @@ body { background: #fcf4f4; padding: 20px; color: #333; }
     <div class="rightbar">
         <div class="profile-card">
             <img src="images/profile.png" alt="Profile Picture">
-            <h5>Admin</h5>
-            <h6></h6>
+            <h5>Donor</h5>
+            <h6>30 years old</h6>
             <div class="mini-cards">
                 <div class="mini-card">
-                    <i class='bx bx-user-check'></i>
-                    <div class="mini-card-label">Active Users</div>
-                    <div class="mini-card-value">100</div>
+                    <i class='bx bx-droplet'></i>
+                    <div class="mini-card-label">Blood Type</div>
+                    <div class="mini-card-value">O+</div>
                 </div>
                 <div class="mini-card">
-                    <i class='bx bx-hourglass'></i>
-                    <div class="mini-card-label">Pending Approvals</div>
-                    <div class="mini-card-value">12</div>
+                    <i class='bx bx-body'></i>
+                    <div class="mini-card-label">BMI</div>
+                    <div class="mini-card-value">22.5</div>
                 </div>
                 <div class="mini-card" onclick="window.location.href='logout.php';" style="cursor:pointer;">
                     <i class='bx bx-log-out'></i>
@@ -237,9 +239,9 @@ function animateCounter(id, target) {
 }
 
 // Example frontend data
-//animateCounter('total-donations', 12);
-//animateCounter('events-joined', 3);
-//document.getElementById('next-eligible').textContent = '2026-05-15';
+animateCounter('total-donations', 12);
+animateCounter('events-joined', 3);
+document.getElementById('next-eligible').textContent = '2026-05-15';
 
 // Calendar
 let today = new Date();
