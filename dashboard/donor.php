@@ -1,3 +1,47 @@
+<?php
+session_start();
+
+if (!isset($_SESSION['userID'])) {
+    header("Location: loginUI.php");
+    exit;
+}
+
+$currentUserID = (int) $_SESSION['userID'];
+
+$host = "localhost";
+$db   = "cbdc_system";   
+$user = "root";
+$pass = "";
+
+$conn = new mysqli($host, $user, $pass, $db);
+if ($conn->connect_error) {
+    die("DB connection failed: " . $conn->connect_error);
+}
+
+$sql = "SELECT `name` FROM `user` WHERE `userID` = ? LIMIT 1";
+
+$stmt = $conn->prepare($sql);
+if (!$stmt) {
+    die("SQL prepare failed: " . $conn->error);
+}
+
+$stmt->bind_param("i", $currentUserID);
+
+if (!$stmt->execute()) {
+    die("SQL execute failed: " . $stmt->error);
+}
+
+$res = $stmt->get_result();
+
+$name = "Donor";
+if ($row = $res->fetch_assoc()) {
+    $name = $row['name'] ?? "Donor";
+}
+
+$stmt->close();
+$conn->close();
+?>
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -146,7 +190,7 @@ body { background: #fcf4f4; padding: 20px; color: #333; }
     <div class="left-section">
     <!-- Welcome box above the three cards -->
     <div class="welcome-box">
-        <h4>Hello, John 👋</h4>
+        <h4>Hello, <?php echo htmlspecialchars($name); ?> 👋</h4>
         <p>Welcome back!</p>
     </div>
 
