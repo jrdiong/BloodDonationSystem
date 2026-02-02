@@ -16,14 +16,15 @@
         color: #1f2937;
     }
     .page-container {
-    max-width: 900px;
-    margin: 120px 60px 0 320px;
-    margin-left: calc(260px + (100% - 260px - 900px) / 2);
-    padding: 30px;
-    background: #fff;
-    border-radius: 15px;
-    box-shadow: 0 8px 25px rgba(0,0,0,0.08);
+      width: clamp(720px, 75vw, 1100px);
+      margin: 120px auto 40px auto;
+      padding: 30px;
+
+      background: #fff;
+      border-radius: 18px;
+      box-shadow: 0 8px 25px rgba(0,0,0,0.08);
     }
+
 
     /* Page intro card like Blood Inventory */
     .page-intro-card {
@@ -137,13 +138,21 @@
     color: #b91c1c;
     }
     .modal {
-    display: none;
-    position: fixed;
-    inset: 0;
-    background: rgba(17, 24, 39, 0.55);
-    backdrop-filter: blur(4px);
-    z-index: 999;
-    }
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(17, 24, 39, 0.55);
+  backdrop-filter: blur(4px);
+  z-index: 999;
+
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+
+  padding-top: 100px;   /* ← 根据 navbar 高度调整 */
+  padding-bottom: 40px;
+}
+
     .modal-content {
     background: #fff;
     margin: auto;
@@ -251,6 +260,7 @@
     /* ===== PROFILE CARD (MODAL HEADER) ===== */
     .profile-card {
     display: flex;
+    justify-content: center;
     gap: 16px;
     align-items: center;
     padding-bottom: 18px;
@@ -319,10 +329,30 @@
 
     /* ===== APPROVE / REJECT BUTTONS ===== */
     .modal-buttons {
-    display: flex;
-    gap: 12px;
-    margin-top: 24px;
+      width: 100%;
+      display: flex;
+      gap: 14px;
+      margin-top: 26px;
     }
+    .modal-buttons button {
+  flex: 1;
+  padding: 10px 0;
+  border-radius: 999px;
+
+  font-size: 0.9rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+
+  border: none;
+  cursor: pointer;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+
+  transition: all 0.25s ease;
+}
 
     .save-btn {
     flex: 1;
@@ -394,6 +424,18 @@
     background: #fef2f2;
     color: #b91c1c;
     }
+    @media (min-width: 1024px) {
+  .page-container {
+    margin-left: calc(260px + 40px); /* sidebar + gap */
+    margin-right: 40px;
+    max-width: 1100px;
+  }
+}
+@media (min-width: 1024px) {
+  .modal-content {
+    max-width: 640px;
+  }
+}
 
 </style>
 <body>
