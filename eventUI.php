@@ -1,26 +1,25 @@
 <?php
 session_start();
 
-if (!isset($_SESSION['role'])) {
+if (!isset($_SESSION['userID'], $_SESSION['role'])) {
     header("Location: login.php");
     exit;
 }
 
-$dbRole = $_SESSION['role'];
+$loggedInUserID = $_SESSION['userID'];
+$sessionRole = $_SESSION['role']; // already normalized
 
-// Map DB roles to lowercase file-friendly roles
+// map normalized role → navbar / logic role
 $roleMap = [
-    "Admin" => "admin",
-    "Event Organizer" => "organizer",
-    "Hospital" => "hospital",
-    "Donor" => "donor"
+    'admin' => 'admin',
+    'event organizer' => 'organizer',
+    'hospital' => 'hospital',
+    'donor' => 'donor'
 ];
 
-// Default to guest if DB value is unexpected
-$role = $roleMap[$dbRole] ?? "guest";
+$role = $roleMap[$sessionRole] ?? 'guest';
+
 ?>
-
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -83,7 +82,7 @@ body { font-family:'Poppins',sans-serif; background:#fde7e7; margin:0; }
 
 <div class="top-bar">
     <h2>Manage Events</h2>
-    <?php if($role==='Event Organizer'): ?>
+    <?php if($role==='organizer'): ?>
         <button class="btn primary" id="create-event-btn"><i class="fa fa-plus"></i> Create Event</button>
     <?php endif; ?>
 </div>
@@ -205,7 +204,7 @@ document.getElementById("cancel-delete-btn").addEventListener("click", ()=>{ del
 
 // Edit event
 document.addEventListener("click", e=>{
-    if(e.target.classList.contains("edit-btn") && USER_ROLE==="Event Organizer"){
+    if(e.target.classList.contains("edit-btn") && USER_ROLE==="organizer"){
         editCard = e.target.closest(".event-card");
         const info = editCard.querySelector(".card-info");
 

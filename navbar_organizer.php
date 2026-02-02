@@ -1,3 +1,6 @@
+<?php
+$currentPage = basename($_SERVER['PHP_SELF']);
+?>
 <!DOCTYPE html>
 <html lang="en">
   <head>
@@ -7,6 +10,17 @@
     <link href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet" />
     <title>Navigation bar</title>
     <link rel="stylesheet" href="style.css" />
+      <style>
+      .nav_link.active {
+        background: #f44040;
+        color: #fff;
+        border-radius: 10px;
+      }
+
+      .nav_link.active .navlink_icon i {
+        color: #fff;
+      }
+    </style>
   </head>
   <body>
     <!-- navbar -->
@@ -29,10 +43,9 @@
       <div class="menu_content">
         <ul class="menu_items">
           <div class="menu_title"></div>
-          <!-- duplicate these li tag if you want to add or remove navlink only -->
           <!-- Start -->
           <li class="item">
-            <a href="organizer.php" class="nav_link">
+            <a href="organizer.php" class="nav_link <?= ($currentPage == 'organizer.php') ? 'active' : '' ?>">
               <span class="navlink_icon">
                 <i class="bx bxs-dashboard"></i>
               </span>
@@ -41,7 +54,7 @@
           </li>
           <!-- End -->
           <li class="item">
-            <a href="eventUI.php" class="nav_link">
+            <a href="eventUI.php" class="nav_link <?= ($currentPage == 'eventUI.php') ? 'active' : '' ?>">
               <span class="navlink_icon">
                 <i class="bx bx-calendar-event"></i>
               </span>
@@ -49,7 +62,7 @@
             </a>
           </li>
           <li class="item">
-            <a href="history.php" class="nav_link">
+            <a href="history.php" class="nav_link <?= ($currentPage == 'history.php') ? 'active' : '' ?>">
               <span class="navlink_icon">
                 <i class="bx bx-history"></i>
               </span>
@@ -57,7 +70,7 @@
             </a>
           </li>
           <li class="item">
-            <a href="profile_organizer.php" class="nav_link">
+            <a href="profile_organizer.php" class="nav_link <?= ($currentPage == 'profile_organizer.php') ? 'active' : '' ?>">
               <span class="navlink_icon">
                 <i class="bx bx-history"></i>
               </span>

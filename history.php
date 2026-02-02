@@ -1,23 +1,24 @@
 <?php
 session_start();
 
-if (!isset($_SESSION['role'])) {
+if (!isset($_SESSION['userID'], $_SESSION['role'])) {
     header("Location: login.php");
     exit;
 }
 
-$dbRole = $_SESSION['role'];
+$loggedInUserID = $_SESSION['userID'];
+$sessionRole = $_SESSION['role']; // already normalized
 
-// Map DB roles to lowercase file-friendly roles
+// map normalized role → navbar / logic role
 $roleMap = [
-    "Admin" => "admin",
-    "Event Organizer" => "organizer",
-    "Hospital" => "hospital",
-    "Donor" => "donor"
+    'admin' => 'admin',
+    'event organizer' => 'organizer',
+    'hospital' => 'hospital',
+    'donor' => 'donor'
 ];
 
-// Default to guest if DB value is unexpected
-$role = $roleMap[$dbRole] ?? "guest";
+$role = $roleMap[$sessionRole] ?? 'guest';
+
 ?>
 
 <!DOCTYPE html>

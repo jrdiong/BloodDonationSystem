@@ -1,3 +1,6 @@
+<?php
+$currentPage = basename($_SERVER['PHP_SELF']);
+?>
 <!DOCTYPE html>
 <html lang="en">
   <head>
@@ -7,6 +10,17 @@
     <link href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet" />
     <title>Navigation bar</title>
     <link rel="stylesheet" href="style.css" />
+    <style>
+      .nav_link.active {
+        background: #f44040;
+        color: #fff;
+        border-radius: 10px;
+      }
+
+      .nav_link.active .navlink_icon i {
+        color: #fff;
+      }
+    </style>
   </head>
   <body>
     <!-- navbar -->
@@ -32,7 +46,7 @@
           <!-- duplicate these li tag if you want to add or remove navlink only -->
           <!-- Start -->
           <li class="item">
-            <a href="admin.php" class="nav_link">
+            <a href="admin.php" class="nav_link <?= ($currentPage == 'admin.php') ? 'active' : '' ?>">
               <span class="navlink_icon">
                 <i class="bx bxs-dashboard"></i>
               </span>
@@ -41,7 +55,7 @@
           </li>
           <!-- End -->
           <li class="item">
-            <a href="manage_userUI.php" class="nav_link">
+            <a href="manage_userUI.php" class="nav_link <?= ($currentPage == 'manage_userUI.php') ? 'active' : '' ?>">
               <span class="navlink_icon">
                 <i class="bx bx-user"></i>
               </span>
@@ -49,7 +63,7 @@
             </a>
           </li>
           <li class="item">
-            <a href="eventUI.php" class="nav_link">
+            <a href="eventUI.php" class="nav_link <?= ($currentPage == 'eventUI.php') ? 'active' : '' ?>">
               <span class="navlink_icon">
                 <i class="bx bx-user-check"></i>
               </span>
@@ -57,7 +71,7 @@
             </a>
           </li>
           <li class="item">
-            <a href="requestUI.php" class="nav_link">
+            <a href="requestUI.php" class="nav_link <?= ($currentPage == 'requestUI.php') ? 'active' : '' ?>">
               <span class="navlink_icon">
                 <i class="bx bx-message-edit"></i>
               </span>
@@ -65,7 +79,7 @@
             </a>
           </li>
           <li class="item">
-            <a href="profile_admin.php" class="nav_link">
+            <a href="profile_admin.php" class="nav_link <?= ($currentPage == 'profile_admin.php') ? 'active' : '' ?>">
               <span class="navlink_icon">
                 <i class="bx bx-user-circle"></i>
               </span>

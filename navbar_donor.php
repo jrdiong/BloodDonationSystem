@@ -1,3 +1,28 @@
+<?php
+$currentPage = basename($_SERVER['PHP_SELF']);
+?>
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <!-- Boxicons CSS -->
+    <link href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet" />
+    <title>Navigation bar</title>
+    <link rel="stylesheet" href="style.css" />
+    <style>
+      .nav_link.active {
+        background: #f44040;
+        color: #fff;
+        border-radius: 10px;
+      }
+
+      .nav_link.active .navlink_icon i {
+        color: #fff;
+      }
+    </style>
+  </head>
+  <body>
 <!-- navbar -->
     <nav class="navbar">
       <div class="logo_item">
@@ -21,7 +46,7 @@
           <!-- duplicate these li tag if you want to add or remove navlink only -->
           <!-- Start -->
           <li class="item">
-            <a href="donor.php" class="nav_link">
+            <a href="donor.php" class="nav_link <?= ($currentPage == 'donor.php') ? 'active' : '' ?>">
               <span class="navlink_icon">
                 <i class="bx bxs-dashboard"></i>
               </span>
@@ -30,7 +55,7 @@
           </li>
           <!-- End -->
           <li class="item">
-            <a href="event_donor.php" class="nav_link">
+            <a href="event_donor.php" class="nav_link <?= ($currentPage == 'event_donor.php') ? 'active' : '' ?>">
               <span class="navlink_icon">
                 <i class="bx bx-calendar-event"></i>
               </span>
@@ -38,7 +63,7 @@
             </a>
           </li>
           <li class="item">
-            <a href="appointment.php" class="nav_link">
+            <a href="appointment.php" class="nav_link <?= ($currentPage == 'appointment.php') ? 'active' : '' ?>">
               <span class="navlink_icon">
                 <i class="bx bx-calendar-check"></i>
               </span>
@@ -46,7 +71,7 @@
             </a>
           </li>
           <li class="item">
-            <a href="profile_donor.php" class="nav_link">
+            <a href="profile_donor.php" class="nav_link <?= ($currentPage == 'profile_donor.php') ? 'active' : '' ?>">
               <span class="navlink_icon">
                 <i class="bx bx-user-circle"></i>
               </span>
@@ -67,3 +92,7 @@
         </div>
       </div>
     </nav>
+            <!-- JavaScript -->
+    <script src="script.js"></script>
+  </body>
+</html>
