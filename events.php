@@ -698,7 +698,7 @@ async function openEvent(eventID){
     }
 
     const imageInput = document.getElementById('imageUpload');
-    if(currentRole === 'Admin'){
+    if(currentRole === 'Admin'|| currentRole === 'Donor'){
         imageInput.style.display = 'none';
     } else {
         imageInput.style.display = 'block';
