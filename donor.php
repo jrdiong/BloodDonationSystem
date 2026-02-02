@@ -66,7 +66,7 @@ if ($row = mysqli_fetch_assoc($res)) {
 
 $nextEligible = "-";
 
-$stmtNext = mysqli_prepare($conn, "SELECT e.dateTime FROM appointment a JOIN event e ON e.eventID = a.eventID WHERE a.userID = ? AND e.dateTime >= NOW()");
+$stmtNext = mysqli_prepare($conn, "SELECT e.dateTime FROM appointment a JOIN event e ON e.eventID = a.eventID WHERE a.userID = ? AND e.dateTime >= NOW() AND a.status = 'Approved'");
 mysqli_stmt_bind_param($stmtNext, "i", $userID);
 mysqli_stmt_execute($stmtNext);
 $resNext = mysqli_stmt_get_result($stmtNext);
