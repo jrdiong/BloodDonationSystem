@@ -31,12 +31,14 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     $email = trim($_POST['email']);
     $plainPassword = $_POST['password'];
     $phone = trim($_POST['phone']);
+    $bloodType = trim($_POST['bloodType'] ?? '');
+    $dobInput = $_POST['age'] ?? null;
 
     // Default role
     $role = "Donor";
 
     // Check required fields
-    if (empty($name) || empty($email) || empty($plainPassword)) {
+    if (empty($name) || empty($email) || empty($plainPassword) || empty($bloodType) || empty($dobInput)) {
         die("Please fill all required fields.");
     }
 
@@ -44,6 +46,8 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     $hashedPassword = password_hash($plainPassword, PASSWORD_DEFAULT);
 
     try {
+        $pdo->beginTransaction();
+    
         $checkSql = "SELECT userID FROM user WHERE email = ?";
         $stmt = $pdo->prepare($checkSql);
         $stmt->execute([$email]);
@@ -66,6 +70,23 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
             $role,
             $phone,
         ]);
+
+        $newUserID = (int)$pdo->lastInsertId();
+
+
+    try {
+        $dob = new DateTime($dobInput);  
+        $today = new DateTime();          
+        $age = $today->diff($dob)->y;
+    }catch (Exception $e) {
+        die("Invalid birth date.");
+    }
+
+        $insertDonorSql = "INSERT INTO donor (userID, bloodType, age) VALUES (?, ?, ?)";
+        $insertDonorStmt = $pdo->prepare($insertDonorSql);
+        $insertDonorStmt->execute([$newUserID, $bloodType, $age]);
+
+        $pdo->commit();
 
         echo "<script>
                 alert('Registration successful!');
