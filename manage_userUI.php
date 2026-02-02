@@ -16,12 +16,20 @@ body {
   color: #1f2937;
 }
 .page-container {
-  max-width: 1100px;
+  /* max-width: 1100px;
   margin: 120px auto 60px 320px;
   padding: 30px;
   background: #fff;
   border-radius: 16px;
-  box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+  box-shadow: 0 10px 30px rgba(0,0,0,0.08); */
+
+  max-width: 900px;
+  margin: 120px 60px 0 320px;
+  margin-left: calc(260px + (100% - 260px - 900px) / 2);
+  padding: 30px;
+  background: #fff;
+  border-radius: 15px;
+  box-shadow: 0 8px 25px rgba(0,0,0,0.08);
 }
 
 /* ===== INTRO ===== */
