@@ -236,6 +236,10 @@ tbody tr:hover {
       </select>
     </div>
     <div class="form-group"><label>Password</label><input type="password" id="cPass"></div>
+    <div class="form-group" id="locationField" style="display:none;">
+  <label>Location</label>
+  <input id="location" placeholder="Hospital Location">
+  </div>
 
     <div class="modal-buttons">
       <button type="button" class="btn-primary" onclick="createUser()">Create</button>
@@ -312,47 +316,79 @@ loadUsers();
 /* =======================
    CREATE USER (POST)
 ======================= */
-function createUser() {
-  const name  = document.getElementById('cName').value.trim();
-  const email = document.getElementById('cEmail').value.trim();
-  const phone = document.getElementById('cPhone').value.trim();
-  const role  = document.getElementById('cRole').value;
-  const pass  = document.getElementById('cPass').value;
+  function createUser() {
+    const name  = document.getElementById('cName').value.trim();
+    const email = document.getElementById('cEmail').value.trim();
+    const phone = document.getElementById('cPhone').value.trim();
+    const role  = document.getElementById('cRole').value;
+    const pass  = document.getElementById('cPass').value;
+    const location = document.getElementById('location').value.trim();
 
-  if (!name || !email || !phone || !pass) {
-    alert('Please fill in all fields');
-    return;
+    if (!name || !email || !phone || !pass) {
+      alert('Please fill in all fields');
+      return;
+    }
+
+    if (role === 'Hospital' && !location) {
+      alert('Please enter hospital location');
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append('name', name);
+    formData.append('email', email);
+    formData.append('phoneNumber', phone);
+    formData.append('role', role);
+    formData.append('password', pass);
+
+    // ✅ 只有 Hospital 才送 location
+    if (role === 'Hospital') {
+      formData.append('location', location);
+    }
+
+    fetch('manage_user_information.php', {
+      method: 'POST',
+      body: formData
+    })
+    .then(res => res.json())
+    .then(data => {
+      if (data.status === 'success') {
+        closeModal('createModal');
+        loadUsers();
+
+        // reset
+        document.getElementById('cName').value  = '';
+        document.getElementById('cEmail').value = '';
+        document.getElementById('cPhone').value = '';
+        document.getElementById('cPass').value  = '';
+        document.getElementById('cRole').value  = 'Hospital';
+        document.getElementById('location').value = '';
+        document.getElementById('locationField').style.display = 'block';
+      } else {
+        alert(data.message);
+      }
+    })
+    .catch(err => console.error('Create error:', err));
   }
 
-  const formData = new FormData();
-  formData.append('name', name);
-  formData.append('email', email);
-  formData.append('phoneNumber', phone);
-  formData.append('role', role);
-  formData.append('password', pass);
 
-  fetch('manage_user_information.php', {
-    method: 'POST',
-    body: formData
-  })
-  .then(res => res.json())
-  .then(data => {
-    if (data.status === 'success') {
-      closeModal('createModal');
-      loadUsers(); // 🔥 重新拉 DB 数据
 
-      // 清空表单
-      document.getElementById('cName').value  = '';
-      document.getElementById('cEmail').value = '';
-      document.getElementById('cPhone').value = '';
-      document.getElementById('cPass').value  = '';
-      document.getElementById('cRole').value  = 'Hospital';
-    } else {
-      alert(data.message);
-    }
-  })
-  .catch(err => console.error('Create error:', err));
-}
+    document.getElementById('cRole').addEventListener('change', function () {
+        const role = this.value;
+        const locationField = document.getElementById('locationField');
+        const locationInput = document.getElementById('location');
+
+        if (role === 'Hospital') {
+            locationField.style.display = 'block';
+            locationInput.required = true;   // Hospital 必填
+        } else {
+            locationField.style.display = 'none';
+            locationInput.required = false;
+            locationInput.value = '';        // 切换角色时清空
+        }
+    });
+
+
 </script>
 </body>
 </html>
