@@ -227,7 +227,7 @@ if($_SERVER['REQUEST_METHOD']==='POST' && ($_POST['action']??'')==='saveEvent'){
         exit;
     }
 
-    // 获取字段
+    
     $eventName   = $_POST['eventName'] ?? $event['eventName'];
     $dateTime    = $_POST['dateTime'] ?? $event['dateTime'];
     $maxDonors   = $_POST['maxDonors'] ?? $event['maxDonors'];
