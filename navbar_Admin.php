@@ -21,8 +21,7 @@
       <div class="navbar_content">
         <i class="bi bi-grid"></i>
         <i class='bx bx-sun' id="darkLight"></i>
-        <i class='bx bx-bell' ></i>
-        <img src="images/profile.jpg" alt="" class="profile" />
+        <a href="profile_admin.php"><img src="images/profile.jpg" alt="" class="profile" /></a>
       </div>
     </nav>
     <!-- sidebar -->
@@ -63,6 +62,14 @@
                 <i class="bx bx-message-edit"></i>
               </span>
               <span class="navlink">Request</span>
+            </a>
+          </li>
+          <li class="item">
+            <a href="profile_admin.php" class="nav_link">
+              <span class="navlink_icon">
+                <i class="bx bx-user-circle"></i>
+              </span>
+              <span class="navlink">Profile</span>
             </a>
           </li>
         </ul>

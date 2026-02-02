@@ -137,33 +137,33 @@ body { background: #fcf4f4; padding: 20px; color: #333; }
 </style>
 </head>
 <body>
-    <?php include "navbar_admin.php"; ?>
+    <?php include "navbar_hospital.php"; ?>
 
 
 <div class="dashboard">
     <div class="left-section">
     <!-- Welcome box above the three cards -->
     <div class="welcome-box">
-        <h4>Hello, Admin</h4>
+        <h4>Hello, XX Hospital</h4>
         <p>Welcome back!</p>
     </div>
 
     <!-- Three main cards -->
     <div class="cards">
-        <div class="card donors">
+        <div class="card blood-inventory">
+            <i class='bx bx-droplet card-icon'></i>
+            <h5>Total Blood Inventory</h5>
+            <h3 id="total-blood-inventory">35</h3>
+        </div>
+        <div class="card donor">
             <i class='bx bx-user card-icon'></i>
             <h5>Total Donors</h5>
-            <h3 id="total-donors">300</h3>
+            <h3 id="total-donors">50</h3>
         </div>
         <div class="card events">
-            <i class='bx bx-calendar-event card-icon'></i>
+            <i class='bx bx-calendar-check card-icon'></i>
             <h5>Total Events</h5>
-            <h3 id="total-events">120</h3>
-        </div>
-        <div class="card events">
-            <i class='bx bx-run card-icon'></i>
-            <h5>Total Active Events</h5>
-            <h3 id="active-events">3</h3>
+            <h3 id="total-events">8</h3>
         </div>
     </div>
 
@@ -182,18 +182,18 @@ body { background: #fcf4f4; padding: 20px; color: #333; }
     <div class="rightbar">
         <div class="profile-card">
             <img src="images/profile.png" alt="Profile Picture">
-            <h5>Admin</h5>
-            <h6></h6>
+            <h5>XX Hospital</h5>
+            <h6>Established 5 years ago</h6>
             <div class="mini-cards">
                 <div class="mini-card">
-                    <i class='bx bx-user-check'></i>
-                    <div class="mini-card-label">Active Users</div>
-                    <div class="mini-card-value">100</div>
+                    <i class='bx bx-user'></i>
+                    <div class="mini-card-label">Active Donors</div>
+                    <div class="mini-card-value">30</div>
                 </div>
                 <div class="mini-card">
-                    <i class='bx bx-hourglass'></i>
-                    <div class="mini-card-label">Pending Approvals</div>
-                    <div class="mini-card-value">12</div>
+                    <i class='bx bx-calendar-event'></i>
+                    <div class="mini-card-label">Upcoming Events</div>
+                    <div class="mini-card-value">3</div>
                 </div>
                 <div class="mini-card" onclick="window.location.href='logout.php';" style="cursor:pointer;">
                     <i class='bx bx-log-out'></i>

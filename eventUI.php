@@ -116,11 +116,11 @@ foreach($events as $event):
     </div>
 
     <div class="card-actions">
-        <?php if($role==='Event Organizer'): ?>
-        <button class="btn secondary edit-btn">Edit</button>
-        <button class="btn danger delete-btn">Delete</button>
-        <?php elseif($role==='Admin'): ?>
-        <button class="btn danger delete-btn">Delete</button>
+        <?php if($role==='organizer' || $role==='hospital'): ?>
+            <button class="btn secondary edit-btn">Edit</button>
+            <button class="btn danger delete-btn">Delete</button>
+        <?php elseif($role==='admin'): ?>
+            <button class="btn danger delete-btn">Delete</button>
         <?php endif; ?>
     </div>
 </div>
