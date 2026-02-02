@@ -35,6 +35,7 @@ if ($row = mysqli_fetch_assoc($res)) {
 }
 
 $totalEvents = 0;
+
 $stmt = mysqli_prepare($conn, "SELECT COUNT(*) AS total FROM event");
 mysqli_stmt_execute($stmt);
 $res = mysqli_stmt_get_result($stmt);
@@ -45,12 +46,14 @@ if ($row = mysqli_fetch_assoc($res)) {
 
 $totalDonors = 0;
 
-$stmt = mysqli_prepare( $conn,"SELECT COUNT(*) AS total FROM user WHERE role = 'Donor'");
-mysqli_stmt_execute($stmt);
-$res = mysqli_stmt_get_result($stmt);
+$stmtDonors = mysqli_prepare($conn, "SELECT COUNT(*) AS total FROM user WHERE role = ?");
+$role = "Donor";
+mysqli_stmt_bind_param($stmtDonors, "s", $role);
+mysqli_stmt_execute($stmtDonors);
+$resDonors = mysqli_stmt_get_result($stmtDonors);
 
-if ($row = mysqli_fetch_assoc($res)) {
-    $totalDonors = $row['total'] ?? 0;
+if ($row = mysqli_fetch_assoc($resDonors)) {
+    $totalDonors = (int)($row['total'] ?? 0);
 }
 
 mysqli_stmt_close($stmt);
