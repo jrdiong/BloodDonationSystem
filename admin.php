@@ -1,9 +1,60 @@
+<?php
+session_start();
+
+$conn = mysqli_connect("localhost", "root", "", "cbdc_system");
+if (!$conn) { die("DB error: " . mysqli_connect_error()); }
+
+if (!isset($_SESSION['userID'])) {
+    header("Location: loginUI.php");
+    exit();
+}
+
+$userID = (int)$_SESSION['userID'];
+$name = "Admin";
+
+$stmt = mysqli_prepare($conn, "SELECT name FROM user WHERE userID = ?");
+mysqli_stmt_bind_param($stmt, "i", $userID);
+mysqli_stmt_execute($stmt);
+$res = mysqli_stmt_get_result($stmt);
+
+if ($row = mysqli_fetch_assoc($res)) {
+    $name = $row['name'] ?? $name;
+}
+
+$activeUsers = 0;
+$q = mysqli_query($conn, "SELECT COUNT(*) AS total FROM user");
+if ($q) {
+    $r = mysqli_fetch_assoc($q);
+    $activeUsers = (int)($r['total'] ?? 0);
+}
+
+$pendingApprovals = 0;
+$q = mysqli_query($conn, "SELECT COUNT(*) AS total FROM appointment WHERE status='Pending'");
+if ($q) {
+    $r = mysqli_fetch_assoc($q);
+    $pendingApprovals = (int)($r['total'] ?? 0);
+}
+
+$totalEvents = 0;
+
+$stmt = mysqli_prepare($conn, "SELECT COUNT(*) AS total FROM event");
+mysqli_stmt_execute($stmt);
+$res = mysqli_stmt_get_result($stmt);
+
+if ($row = mysqli_fetch_assoc($res)) {
+    $totalEvents = $row['total'] ?? 0;
+}
+
+mysqli_stmt_close($stmt);
+mysqli_close($conn);
+?>
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Donor Dashboard</title>
+<title>Admin Dashboard</title>
 <link rel="stylesheet" href="style.css" />
 <link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet'>
 <style>
@@ -144,7 +195,7 @@ body { background: #fcf4f4; padding: 20px; color: #333; }
     <div class="left-section">
     <!-- Welcome box above the three cards -->
     <div class="welcome-box">
-        <h4>Hello, Admin</h4>
+        <h4>Hello, <?php echo htmlspecialchars($name); ?>！</h4>
         <p>Welcome back!</p>
     </div>
 
@@ -153,12 +204,12 @@ body { background: #fcf4f4; padding: 20px; color: #333; }
         <div class="card donors">
             <i class='bx bx-user card-icon'></i>
             <h5>Total Donors</h5>
-            <h3 id="total-donors">300</h3>
+            <h3 id="total-donors"><?php echo $activeUsers; ?></h3>
         </div>
         <div class="card events">
             <i class='bx bx-calendar-event card-icon'></i>
             <h5>Total Events</h5>
-            <h3 id="total-events">120</h3>
+            <h3 id="total-events"><?php echo $totalEvents; ?></h3>
         </div>
         <div class="card events">
             <i class='bx bx-run card-icon'></i>
@@ -188,12 +239,12 @@ body { background: #fcf4f4; padding: 20px; color: #333; }
                 <div class="mini-card">
                     <i class='bx bx-user-check'></i>
                     <div class="mini-card-label">Active Users</div>
-                    <div class="mini-card-value">100</div>
+                    <div class="mini-card-value"><?php echo $activeUsers; ?></div>
                 </div>
                 <div class="mini-card">
                     <i class='bx bx-hourglass'></i>
                     <div class="mini-card-label">Pending Approvals</div>
-                    <div class="mini-card-value">12</div>
+                    <div class="mini-card-value"><?php echo $pendingApprovals; ?></div>
                 </div>
                 <div class="mini-card" onclick="window.location.href='logout.php';" style="cursor:pointer;">
                     <i class='bx bx-log-out'></i>

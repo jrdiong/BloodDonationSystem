@@ -1,3 +1,30 @@
+<?php
+session_start();
+
+$conn = mysqli_connect("localhost", "root", "", "cbdc_system");
+if (!$conn) { die("DB error: " . mysqli_connect_error()); }
+
+if (!isset($_SESSION['userID'])) {
+    header("Location: loginUI.php");
+    exit();
+}
+
+$userID = (int)$_SESSION['userID'];
+$name = "Donor";
+
+$stmt = mysqli_prepare($conn, "SELECT name FROM user WHERE userID = ?");
+mysqli_stmt_bind_param($stmt, "i", $userID);
+mysqli_stmt_execute($stmt);
+$res = mysqli_stmt_get_result($stmt);
+
+if ($row = mysqli_fetch_assoc($res)) {
+    $name = $row['name'] ?? $name;
+}
+
+mysqli_stmt_close($stmt);
+mysqli_close($conn);
+?>
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -182,7 +209,7 @@ body { background: #fcf4f4; padding: 20px; color: #333; }
     <div class="rightbar">
         <div class="profile-card">
             <img src="images/profile.png" alt="Profile Picture">
-            <h5>Event organizer</h5>
+            <h5><?php echo htmlspecialchars($name); ?></h5>
             <h6>2 years experience</h6>
             <div class="mini-cards">
                 <div class="mini-card">
