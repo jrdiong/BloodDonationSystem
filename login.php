@@ -46,7 +46,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
             $_SESSION['role'] = $row['role'];
 
             if ($row['role'] === 'Admin') {
-                header("Location: dashboard/admin.php");
+                header("Location: admin.php");
             }elseif ($row['role'] === 'Event Organizer') {
                 header("Location: dashboard/organizer.php");
             }elseif ($row['role'] === 'Hospital') {
