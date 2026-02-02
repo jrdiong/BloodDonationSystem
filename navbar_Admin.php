@@ -68,6 +68,14 @@ $currentPage = basename($_SERVER['PHP_SELF']);
             </a>
           </li>
           <li class="item">
+            <a href="history.php" class="nav_link <?= ($currentPage == 'history.php') ? 'active' : '' ?>">
+              <span class="navlink_icon">
+                <i class="bx bx-user"></i>
+              </span>
+              <span class="navlink">History</span>
+            </a>
+          </li>
+          <li class="item">
             <a href="requestUI.php" class="nav_link <?= ($currentPage == 'requestUI.php') ? 'active' : '' ?>">
               <span class="navlink_icon">
                 <i class="bx bx-message-edit"></i>
