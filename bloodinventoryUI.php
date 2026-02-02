@@ -1,8 +1,23 @@
 <?php
 session_start();
-// For testing
-$_SESSION['role'] = 'hospital';
-$role = $_SESSION['role'];
+
+if (!isset($_SESSION['userID'], $_SESSION['role'])) {
+    header("Location: login.php");
+    exit;
+}
+
+$loggedInUserID = $_SESSION['userID'];
+$sessionRole = $_SESSION['role']; // already normalized
+
+// map normalized role → navbar / logic role
+$roleMap = [
+    'Admin' => 'admin',
+    'Event Organizer' => 'organizer',
+    'Hospital' => 'hospital',
+    'Donor' => 'donor'
+];
+
+$role = $roleMap[$sessionRole] ?? 'guest';
 ?>
 
 <!DOCTYPE html>
@@ -40,7 +55,11 @@ body { font-family:'Poppins',sans-serif; background:#fde7e7; margin:0; }
 .page-intro h2 { margin:0 0 10px 0; font-size:24px; }
 .page-intro p { margin:0; font-size:16px; }
 
-.card-list { display:grid; grid-template-columns: repeat(2, 1fr); gap:16px; }
+.card-list {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr); /* 2 columns */
+  gap: 16px;
+}
 
 .blood-card { display:flex; align-items:center; background:#fff; border-radius:14px; padding:16px; box-shadow:0 2px 6px rgba(0,0,0,.1); }
 
@@ -168,53 +187,26 @@ body { font-family:'Poppins',sans-serif; background:#fde7e7; margin:0; }
 <?php include "navbar_$role.php"; ?>
 
 <div class="main-container">
-
-  <!-- Page Intro Card -->
   <div class="page-intro">
-    <h2>Manage Blood Inventory</h2> 
-    <p>Here you can review and edit the blood inventory. Keep track of all blood types and their usage.</p>
+    <h2>Manage Blood Inventory</h2>
+    <p>Review and edit blood inventory details. Click on a card to edit quantities and see detailed logs.</p>
   </div>
 
-<div class="card-list">
-<?php
-$bloodTypes = [
-    ["A", 20, 2, 5, 10],
-    ["B", 15, 1, 3, 8],
-    ["AB", 10, 0, 2, 5],
-    ["O", 25, 3, 7, 12]
-];
-foreach($bloodTypes as $bt):
-?>
-<div class="blood-card" data-type="<?= $bt[0] ?>">
-    <div class="type-badge"><?= $bt[0] ?></div>
-
-    <div class="card-info">
-        <div>Available <span class="num available"><?= $bt[1] ?></span></div>
-        <div>Expired <span class="num expired"><?= $bt[2] ?></span></div>
-        <div>Used <span class="num used"><?= $bt[3] ?></span></div>
-        <div>Delivered <span class="num delivered"><?= $bt[4] ?></span></div>
-    </div>
-
-    <div class="card-actions">
-        <button class="btn secondary edit-btn">Edit</button>
-    </div>
-</div>
-<?php endforeach; ?>
-</div>
+  <div class="card-list" id="cardList"></div>
 </div>
 
 <!-- Edit Modal -->
-<div class="modal-overlay" id="edit-modal">
+<div class="modal-overlay" id="editModal">
   <div class="modal-card">
-    <h3>Edit Blood Inventory</h3>
-    <span class="close-modal">&times;</span>
+    <h3 id="modalTitle">Edit Blood Inventory</h3>
+    <span class="close-modal" id="closeModal">&times;</span>
 
-    <label>Available</label>
-    <input type="number" id="modal-available" min="0">
-    <label>Used</label>
-    <input type="number" id="modal-used" min="0">
-    <label>Delivered</label>
-    <input type="number" id="modal-delivered" min="0">
+    <label>Available (+/-):</label>
+    <input type="number" id="modalAvailable" value="0"><br>
+    <label>Used (+ only):</label>
+    <input type="number" id="modalUsed" value="0" min="0"><br>
+    <label>Delivered (+/-):</label>
+    <input type="number" id="modalDelivered" value="0"><br>
 
     <div class="inventory-table-container">
       <table class="inventory-table">
@@ -225,86 +217,118 @@ foreach($bloodTypes as $bt):
             <th>Status</th>
           </tr>
         </thead>
-        <tbody id="inventory-tbody"></tbody>
+        <tbody id="modalTableBody"></tbody>
       </table>
     </div>
 
     <div class="modal-footer">
-      <button class="btn primary" id="save-modal-btn">Submit</button>
-      <button class="btn" id="cancel-modal-btn">Cancel</button>
+      <button class="btn primary" id="saveModal">Submit</button>
+      <button class="btn" id="cancelModal">Cancel</button>
     </div>
   </div>
 </div>
 
 <script>
 const USER_ROLE = "<?= $role ?>";
-const editModal = document.getElementById("edit-modal");
-let currentCard = null;
+let currentType = "";
+let inventorySummary = {};
 
-// Sample inventory data
-const inventoryData = {
-    "A": [
-        {collection:"2026-01-01 10:00", expiry:"2026-01-31", status:"Available"},
-        {collection:"2026-01-05 12:00", expiry:"2026-02-04", status:"Used"},
-        {collection:"2026-01-08 09:30", expiry:"2026-02-07", status:"Delivered"},
-        {collection:"2026-01-08 09:30", expiry:"2026-02-07", status:"Delivered"},
-        {collection:"2026-01-08 09:30", expiry:"2026-02-07", status:"Delivered"},
-        {collection:"2026-01-08 09:30", expiry:"2026-02-07", status:"Delivered"},
-    ],
-    "B": [
-        {collection:"2026-01-02 11:00", expiry:"2026-02-01", status:"Available"},
-    ],
-    "AB": [],
-    "O": [
-        {collection:"2026-01-03 14:00", expiry:"2026-02-02", status:"Used"},
-    ]
-};
+// Fetch inventory summary
+function loadInventory(){
+    fetch("bloodinventory.php")
+    .then(res=>res.json())
+    .then(data=>{
+        inventorySummary = data;
+        const container = document.getElementById("cardList");
+        container.innerHTML = "";
+        for(const type in data){
+            const card = document.createElement("div");
+            card.className = "blood-card";
+            card.dataset.type = type;
+            card.innerHTML = `
+                <div class="type-badge">${type}</div>
+                <div class="card-info">
+                    <div>Available <span class="num available">${data[type].available}</span></div>
+                    <div>Expired <span class="num expired">${data[type].expired}</span></div>
+                    <div>Used <span class="num used">${data[type].used}</span></div>
+                    <div>Delivered <span class="num delivered">${data[type].delivered}</span></div>
+                </div>
+            `;
+            card.onclick = ()=>openModal(type);
+            container.appendChild(card);
+        }
+    });
+}
 
-// Open edit modal
-document.addEventListener("click", e=>{
-    if(e.target.classList.contains("edit-btn") && USER_ROLE==="hospital"){
-        currentCard = e.target.closest(".blood-card");
-        const type = currentCard.dataset.type;
+// Open modal for editing
+function openModal(type){
+    currentType = type;
+    document.getElementById("modalTitle").innerText = `Edit ${type} Inventory`;
+    document.getElementById("modalAvailable").value = 0;
+    document.getElementById("modalUsed").value = 0;
+    document.getElementById("modalDelivered").value = 0;
 
-        editModal.querySelector("#modal-available").value = currentCard.querySelector(".available").innerText;
-        editModal.querySelector("#modal-used").value = currentCard.querySelector(".used").innerText;
-        editModal.querySelector("#modal-delivered").value = currentCard.querySelector(".delivered").innerText;
+    // Show modal
+    document.getElementById("editModal").classList.add("show");
 
-        // Fill table
-        const tbody = document.getElementById("inventory-tbody");
+    // Load detailed inventory
+    fetch(`edit_inventory.php?getDetails=1&bloodType=${encodeURIComponent(type)}`)
+    .then(res=>res.json())
+    .then(data=>{
+        const tbody = document.getElementById("modalTableBody");
         tbody.innerHTML = "";
-        (inventoryData[type] || []).forEach(item=>{
-    const tr = document.createElement("tr");
-    tr.innerHTML = `
-        <td>${item.collection}</td>
-        <td>${item.expiry}</td>
-        <td>
-        <span class="status-pill ${item.status.toLowerCase()}">${item.status}</span>
-        </td>
-    `;
-    tbody.appendChild(tr);
-});
-
-
-        editModal.classList.add("show");
-    }
-});
+        data.forEach(item=>{
+            const tr = document.createElement("tr");
+            tr.innerHTML = `<td>${item.collectionTime}</td>
+                            <td>${item.expiryDate}</td>
+                            <td><span class="status-pill ${item.status.toLowerCase()}">${item.status}</span></td>`;
+            tbody.appendChild(tr);
+        });
+    });
+}
 
 // Close modal
-editModal.querySelector(".close-modal").addEventListener("click", ()=>{ editModal.classList.remove("show"); });
-document.getElementById("cancel-modal-btn").addEventListener("click", ()=>{ editModal.classList.remove("show"); });
+document.getElementById("closeModal").onclick = () => document.getElementById("editModal").classList.remove("show");
+document.getElementById("cancelModal").onclick = () => document.getElementById("editModal").classList.remove("show");
 
-// Save changes
-document.getElementById("save-modal-btn").addEventListener("click", ()=>{
-    if(!currentCard) return;
+// Save modal changes
+document.getElementById("saveModal").onclick = ()=>{
+    const addAvailable = parseInt(document.getElementById("modalAvailable").value)||0;
+    const addUsed = parseInt(document.getElementById("modalUsed").value)||0;
+    const addDelivered = parseInt(document.getElementById("modalDelivered").value)||0;
 
-    currentCard.querySelector(".available").innerText = editModal.querySelector("#modal-available").value;
-    currentCard.querySelector(".used").innerText = editModal.querySelector("#modal-used").value;
-    currentCard.querySelector(".delivered").innerText = editModal.querySelector("#modal-delivered").value;
+    const currentAvailable = inventorySummary[currentType].available;
 
-    editModal.classList.remove("show");
-});
+    // Prevent Used + Delivered > Available
+    if(addUsed + addDelivered > currentAvailable){
+        alert("Error: Cannot increase Used/Delivered more than Available!");
+        return;
+    }
+
+    const formData = new FormData();
+    formData.append("bloodType", currentType);
+    formData.append("addAvailable", addAvailable>0?addAvailable:0);
+    formData.append("removeAvailable", addAvailable<0?-addAvailable:0);
+    formData.append("addUsed", addUsed);
+    formData.append("addDelivered", addDelivered>0?addDelivered:0);
+
+    fetch("edit_inventory.php", {method:"POST", body:formData})
+    .then(res=>res.json())
+    .then(resp=>{
+        if(resp.success){
+            alert("Inventory updated!");
+            document.getElementById("editModal").classList.remove("show");
+            loadInventory();
+        }else{
+            alert("Error: "+resp.error);
+        }
+    });
+}
+
+// Initial load
+loadInventory();
 </script>
+
 
 </body>
 </html>

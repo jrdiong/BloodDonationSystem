@@ -28,9 +28,6 @@ $summary = [
     "O-" => ["available" => 0, "expired" => 0, "used" => 0, "delivered" => 0],
 ];
 
-
-
-
 // Query inventory summary
 $sql = "
 SELECT 
