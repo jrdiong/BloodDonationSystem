@@ -18,11 +18,18 @@ if ($conn->connect_error) {
 
 // Initialize summary for all blood types and statuses
 $summary = [
-    "A" => ["available" => 0, "expired" => 0, "used" => 0, "delivered" => 0],
-    "B" => ["available" => 0, "expired" => 0, "used" => 0, "delivered" => 0],
-    "AB" => ["available" => 0, "expired" => 0, "used" => 0, "delivered" => 0],
-    "O" => ["available" => 0, "expired" => 0, "used" => 0, "delivered" => 0],
+    "A+" => ["available" => 0, "expired" => 0, "used" => 0, "delivered" => 0],
+    "A-" => ["available" => 0, "expired" => 0, "used" => 0, "delivered" => 0],
+    "B+" => ["available" => 0, "expired" => 0, "used" => 0, "delivered" => 0],
+    "B-" => ["available" => 0, "expired" => 0, "used" => 0, "delivered" => 0],
+    "AB+" => ["available" => 0, "expired" => 0, "used" => 0, "delivered" => 0],
+    "AB-" => ["available" => 0, "expired" => 0, "used" => 0, "delivered" => 0],
+    "O+" => ["available" => 0, "expired" => 0, "used" => 0, "delivered" => 0],
+    "O-" => ["available" => 0, "expired" => 0, "used" => 0, "delivered" => 0],
 ];
+
+
+
 
 // Query inventory summary
 $sql = "
