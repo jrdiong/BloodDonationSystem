@@ -47,32 +47,6 @@ if ($role !== 'Donor') {
 }
 
 /* =========================
-   Handle Booking
-   GET: Check if donor has filled health report
-========================= */
-if ($_SERVER['REQUEST_METHOD'] === 'GET' && ($_GET['action'] ?? '') === 'checkHealthReport') {
-    $stmt = $pdo->prepare("SELECT medicalHistory, weight, height, age FROM donor WHERE userID=?");
-    $stmt->execute([$loggedInUserID]);
-    $donor = $stmt->fetch(PDO::FETCH_ASSOC);
-
-    $hasHealthReport = false;
-    if ($donor) {
-        $medicalHistoryFilled = isset($donor['medicalHistory']) && trim($donor['medicalHistory']) !== '';
-        $weightFilled = isset($donor['weight']) && is_numeric($donor['weight']) && $donor['weight'] > 0;
-        $heightFilled = isset($donor['height']) && is_numeric($donor['height']) && $donor['height'] > 0;
-        $ageFilled = isset($donor['age']) && is_numeric($donor['age']) && $donor['age'] > 0;
-
-        $hasHealthReport = $medicalHistoryFilled && $weightFilled && $heightFilled && $ageFilled;
-    }
-
-    echo json_encode([
-        "status" => "success",
-        "hasHealthReport" => $hasHealthReport
-    ]);
-    exit;
-}
-
-/* =========================
    POST: Book Event
 ========================= */
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'bookEvent') {
@@ -83,79 +57,111 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'bookE
         exit;
     }
 
-    //  Ensure donor record exists (auto-create if missing)
-    // Ensure donor record exists
+    /* =========================
+       Ensure donor record exists
+    ========================= */
     $stmt = $pdo->prepare("SELECT * FROM donor WHERE userID=?");
     $stmt->execute([$loggedInUserID]);
     $donor = $stmt->fetch(PDO::FETCH_ASSOC);
 
     if (!$donor) {
-        $stmt = $pdo->prepare("INSERT INTO donor(userID) VALUES (?)");
+        $stmt = $pdo->prepare("INSERT INTO donor (userID) VALUES (?)");
         $stmt->execute([$loggedInUserID]);
 
-        // Fetch the new donor record
         $stmt = $pdo->prepare("SELECT * FROM donor WHERE userID=?");
         $stmt->execute([$loggedInUserID]);
         $donor = $stmt->fetch(PDO::FETCH_ASSOC);
     }
 
-    //  Check if already booked (pending/approved)
-    // Check if already booked (pending/approved)
-    $stmt = $pdo->prepare("SELECT COUNT(*) FROM appointment WHERE userID=? AND eventID=? AND status IN ('pending','approved')");
+    /* =========================
+       Check already booked
+    ========================= */
+    $stmt = $pdo->prepare("
+        SELECT COUNT(*) 
+        FROM appointment 
+        WHERE userID=? AND eventID=? AND status IN ('pending','approved')
+    ");
     $stmt->execute([$loggedInUserID, $eventID]);
     if ($stmt->fetchColumn() > 0) {
-
+        echo json_encode([
+            "status" => "error",
+            "message" => "You have already booked this event."
+        ]);
         exit;
     }
 
-    //  Check if previously cancelled
-    // Check previously cancelled
-    $stmt = $pdo->prepare("SELECT COUNT(*) FROM appointment WHERE userID=? AND eventID=? AND status='cancelled'");
+    /* =========================
+       Check cancelled before
+    ========================= */
+    $stmt = $pdo->prepare("
+        SELECT COUNT(*) 
+        FROM appointment 
+        WHERE userID=? AND eventID=? AND status='cancelled'
+    ");
     $stmt->execute([$loggedInUserID, $eventID]);
     if ($stmt->fetchColumn() > 0) {
-        echo json_encode(["status" => "error", "message" => "You cannot rebook a cancelled event."]);
+        echo json_encode([
+            "status" => "error",
+            "message" => "You cannot rebook a cancelled event."
+        ]);
         exit;
     }
 
-    //  Check event capacity
-    // Check event capacity
+    /* =========================
+       Check event capacity
+    ========================= */
     $stmt = $pdo->prepare("
         SELECT maxDonors,
-               (SELECT COUNT(*) FROM appointment WHERE eventID=? AND status IN ('pending','approved')) AS currentBookings
-        FROM event WHERE eventID=?
+               (SELECT COUNT(*) 
+                FROM appointment 
+                WHERE eventID=? AND status IN ('pending','approved')) AS currentBookings
+        FROM event
+        WHERE eventID=?
     ");
     $stmt->execute([$eventID, $eventID]);
     $event = $stmt->fetch(PDO::FETCH_ASSOC);
 
     if (!$event) {
-        echo json_encode(["status" => "error", "message" => "Event not found."]);
+        echo json_encode(["status" => "error", "message" => "Event not found"]);
         exit;
     }
 
     if ($event['currentBookings'] >= $event['maxDonors']) {
-        echo json_encode(["status" => "error", "message" => "Event is fully booked."]);
+        echo json_encode(["status" => "error", "message" => "Event is fully booked"]);
         exit;
     }
 
-    // 5️⃣ Check health report
-    // Check health report
+    /* =========================
+       Check Health Report (DB is truth)
+    ========================= */
+    $medicalHistoryFilled = trim($donor['medicalHistory'] ?? '') !== '';
+    $weightFilled = is_numeric($donor['weight']) && $donor['weight'] > 0;
+    $heightFilled = is_numeric($donor['height']) && $donor['height'] > 0;
+    $ageFilled = is_numeric($donor['age']) && $donor['age'] > 0;
+
+    $hasHealthReport = (
+        $medicalHistoryFilled &&
+        $weightFilled &&
+        $heightFilled &&
+        $ageFilled
+    );
+
     $healthReportData = $_POST['healthReport'] ?? null;
-    $needHealthReport = empty($donor['medicalHistory']) || !$donor['weight'] || !$donor['height'];
 
-    $medicalHistoryFilled = isset($donor['medicalHistory']) && trim($donor['medicalHistory']) !== '';
-    $weightFilled = isset($donor['weight']) && is_numeric($donor['weight']) && $donor['weight'] > 0;
-    $heightFilled = isset($donor['height']) && is_numeric($donor['height']) && $donor['height'] > 0;
-    $ageFilled = isset($donor['age']) && is_numeric($donor['age']) && $donor['age'] > 0;
-
-    $needHealthReport = !($medicalHistoryFilled && $weightFilled && $heightFilled && $ageFilled);
-
-    if ($needHealthReport && !$healthReportData) {
-        echo json_encode(["status"=>"requireHealthReport","message"=>"Please complete your health report before booking."]);
+    /* =========================
+       If missing HR and none provided → force fill
+    ========================= */
+    if (!$hasHealthReport && !$healthReportData) {
+        echo json_encode([
+            "status" => "requireHealthReport",
+            "message" => "Please complete your health report before booking."
+        ]);
         exit;
     }
 
-    //  Save health report if provided
-    // Save health report if provided
+    /* =========================
+       Save Health Report if provided
+    ========================= */
     if ($healthReportData) {
         $decoded = json_decode($healthReportData, true);
         if (!$decoded) {
@@ -167,26 +173,50 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'bookE
             UPDATE donor SET
                 medicalHistory = ?,
                 weight = ?,
-                height = ?
                 height = ?,
                 age = ?
             WHERE userID = ?
         ");
         $stmt->execute([
-            $decoded['medicalHistory'] ?? '',
+            trim($decoded['medicalHistory'] ?? ''),
             $decoded['weight'] ?? 0,
             $decoded['height'] ?? 0,
             $decoded['age'] ?? 0,
             $loggedInUserID
         ]);
+
+        /* Re-check after update */
+        $stmt = $pdo->prepare("
+            SELECT medicalHistory, weight, height, age 
+            FROM donor WHERE userID=?
+        ");
+        $stmt->execute([$loggedInUserID]);
+        $donor = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        $hasHealthReport =
+            trim($donor['medicalHistory']) !== '' &&
+            $donor['weight'] > 0 &&
+            $donor['height'] > 0 &&
+            $donor['age'] > 0;
+
+        if (!$hasHealthReport) {
+            echo json_encode([
+                "status" => "error",
+                "message" => "Health report incomplete. Please check your input."
+            ]);
+            exit;
+        }
     }
 
-    //  Create appointment
-    // Create appointment
-    $stmt = $pdo->prepare("INSERT INTO appointment(userID, eventID, dateTime, status) VALUES (?, ?, NOW(), 'approved')");
+    /* =========================
+       Create appointment
+    ========================= */
+    $stmt = $pdo->prepare("
+        INSERT INTO appointment (userID, eventID, dateTime, status)
+        VALUES (?, ?, NOW(), 'approved')
+    ");
     $stmt->execute([$loggedInUserID, $eventID]);
 
-    //  Return success with updated booking count
     $current = $event['currentBookings'] + 1;
     $max = $event['maxDonors'];
 
