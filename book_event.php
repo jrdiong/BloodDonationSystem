@@ -174,7 +174,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'bookE
                 medicalHistory = ?,
                 weight = ?,
                 height = ?,
-                age = ?
+                age = ?,
+                bloodType = ?
             WHERE userID = ?
         ");
         $stmt->execute([
@@ -182,6 +183,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'bookE
             $decoded['weight'] ?? 0,
             $decoded['height'] ?? 0,
             $decoded['age'] ?? 0,
+            $decoded['bloodType'] ?? null,
             $loggedInUserID
         ]);
 
