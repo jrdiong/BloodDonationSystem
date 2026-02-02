@@ -311,7 +311,6 @@ function loadProfile() {
     profileData.hospitalInfo.location;
 }
 
-
 loadProfile();
 
 // ---------- EDIT FIELD LOGIC ----------

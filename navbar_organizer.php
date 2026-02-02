@@ -35,7 +35,7 @@ $currentPage = basename($_SERVER['PHP_SELF']);
       <div class="navbar_content">
         <i class="bi bi-grid"></i>
         <i class='bx bx-sun' id="darkLight"></i>
-        <a href="profile_organizer.php"><img src="images/profile.jpg" alt="" class="profile" /></a>
+        <a href="profileUI.php"><img src="images/profile.jpg" alt="" class="profile" /></a>
       </div>
     </nav>
     <!-- sidebar -->
@@ -70,9 +70,9 @@ $currentPage = basename($_SERVER['PHP_SELF']);
             </a>
           </li>
           <li class="item">
-            <a href="profile_organizer.php" class="nav_link <?= ($currentPage == 'profile_organizer.php') ? 'active' : '' ?>">
+            <a href="profileUI.php" class="nav_link <?= ($currentPage == 'profileUI.php') ? 'active' : '' ?>">
               <span class="navlink_icon">
-                <i class="bx bx-history"></i>
+                <i class="bx bx-user-circle"></i>
               </span>
               <span class="navlink">Profile</span>
             </a>
