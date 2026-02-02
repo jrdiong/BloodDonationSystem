@@ -282,7 +282,10 @@ async function submitEvent(actionType){
     formData.append('location', document.getElementById('eventLocation').value);
     const file=document.getElementById('imageUpload').files[0];
     if(file) formData.append('imageUpload',file);
-    if(actionType==='sendRequest') formData.append('hospitalID', document.getElementById('hospitalSelect').value);
+    // Always send hospitalID if current role is Event Organizer
+    if(currentRole === 'Event Organizer'){
+    formData.append('hospitalID', document.getElementById('hospitalSelect').value);
+}
 
     try{
         const res=await fetch('event.php',{ method:'POST', body:formData });
