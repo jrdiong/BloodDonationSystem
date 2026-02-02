@@ -304,11 +304,49 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (app.displayStatus === 'completed') {
                     const feedbackBtn = document.createElement('button');
                     feedbackBtn.textContent = 'Give Feedback';
-                    feedbackBtn.style.background = '#3498db';
+                    feedbackBtn.style.background = '#e74c3c'; // red
 
-                    feedbackBtn.addEventListener('click', function(e){
-                        e.stopPropagation(); // ⭐ 非常重要
-                        openFeedbackModal(app);
+                    // check if alrd gv feedback
+                    fetch(`get_feedback.php?appointmentID=${app.appointmentID}`)
+                    .then(res => res.json())
+                    .then(data => {
+                        if (data.status === 'exists') {
+                            // alrd hv feedback -> gray
+                            feedbackBtn.style.background = 'gray';
+                            feedbackBtn.textContent = 'View Feedback';
+
+                            feedbackBtn.addEventListener('click', (e) => {
+                                e.stopPropagation();
+                                selectedRating = data.feedback.rating;
+                                feedbackComment.value = data.feedback.comment;
+
+                                // update modal stars
+                                feedbackStars.forEach(star => {
+                                    star.textContent = parseInt(star.dataset.value) <= selectedRating ? '★' : '☆';
+                                });
+
+                                // block update button
+                                submitFeedbackBtn.disabled = true;
+                                submitFeedbackBtn.style.opacity = 0.5;
+
+                                feedbackModal.style.display = 'flex';
+                            });
+                        } else {
+                            // red
+                            feedbackBtn.style.background = '#e74c3c';
+                            feedbackBtn.textContent = 'Give Feedback';
+
+                            feedbackBtn.addEventListener('click', (e) => {
+                                e.stopPropagation();
+                                openFeedbackModal(app);
+                                
+                                submitFeedbackBtn.disabled = false;
+                                submitFeedbackBtn.style.opacity = 1;
+                            });
+                        }
+                    })
+                    .catch(err => {
+                        console.error(err);
                     });
 
                     card.appendChild(feedbackBtn);
