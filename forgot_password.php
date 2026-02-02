@@ -54,7 +54,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['reset_password'])) {
         if (mysqli_stmt_execute($update_stmt)) {
             echo "<script>
                     alert('Password successfully updated!');
-                    window.location.href = 'login.html';
+                    window.location.href = 'loginUI.php';
                   </script>";
         } else {
             echo "<script>
