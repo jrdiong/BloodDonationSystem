@@ -21,6 +21,28 @@ if ($row = mysqli_fetch_assoc($res)) {
     $name = $row['name'] ?? $name;
 }
 
+$totalDonors = 0;
+
+$stmtDonors = mysqli_prepare($conn, "SELECT COUNT(*) AS total FROM user WHERE role = ?");
+$role = "Donor";
+mysqli_stmt_bind_param($stmtDonors, "s", $role);
+mysqli_stmt_execute($stmtDonors);
+$resDonors = mysqli_stmt_get_result($stmtDonors);
+
+if ($row = mysqli_fetch_assoc($resDonors)) {
+    $totalDonors = (int)($row['total'] ?? 0);
+}
+
+$totalEvents = 0;
+
+$stmt = mysqli_prepare($conn, "SELECT COUNT(*) AS total FROM event");
+mysqli_stmt_execute($stmt);
+$res = mysqli_stmt_get_result($stmt);
+
+if ($row = mysqli_fetch_assoc($res)) {
+    $totalEvents = $row['total'] ?? 0;
+}
+
 mysqli_stmt_close($stmt);
 mysqli_close($conn);
 ?>
@@ -180,12 +202,12 @@ body { background: #fcf4f4; padding: 20px; color: #333; }
         <div class="card events">
             <i class='bx bx-calendar-check card-icon'></i>
             <h5>Total Events Organized</h5>
-            <h3 id="total-events">15</h3>
+            <h3 id="total-events"><?php echo (int)$totalEvents; ?></h3>
         </div>
         <div class="card donor">
             <i class='bx bx-user card-icon'></i>
             <h5>Total Donors</h5>
-            <h3 id="total-donors">200</h3>
+            <h3 id="total-donors"><?php echo (int)$totalDonors; ?></h3>
         </div>
         <div class="card events">
             <i class='bx bx-time-five card-icon'></i>
@@ -262,11 +284,6 @@ function animateCounter(id, target) {
         el.textContent = count;
     }, 10);
 }
-
-// Example frontend data
-//animateCounter('total-donations', 12);
-//animateCounter('events-joined', 3);
-//document.getElementById('next-eligible').textContent = '2026-05-15';
 
 // Calendar
 let today = new Date();

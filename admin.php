@@ -21,14 +21,20 @@ if ($row = mysqli_fetch_assoc($res)) {
     $name = $row['name'] ?? $name;
 }
 
-$activeUsers = 0;
-$q = mysqli_query($conn, "SELECT COUNT(*) AS total FROM user");
-if ($q) {
-    $r = mysqli_fetch_assoc($q);
-    $activeUsers = (int)($r['total'] ?? 0);
+$totalDonors = 0;
+
+$stmtDonors = mysqli_prepare($conn, "SELECT COUNT(*) AS total FROM user WHERE role = ?");
+$role = "Donor";
+mysqli_stmt_bind_param($stmtDonors, "s", $role);
+mysqli_stmt_execute($stmtDonors);
+$resDonors = mysqli_stmt_get_result($stmtDonors);
+
+if ($row = mysqli_fetch_assoc($resDonors)) {
+    $totalDonors = (int)($row['total'] ?? 0);
 }
 
 $pendingApprovals = 0;
+
 $q = mysqli_query($conn, "SELECT COUNT(*) AS total FROM appointment WHERE status='Pending'");
 if ($q) {
     $r = mysqli_fetch_assoc($q);
@@ -204,7 +210,7 @@ body { background: #fcf4f4; padding: 20px; color: #333; }
         <div class="card donors">
             <i class='bx bx-user card-icon'></i>
             <h5>Total Donors</h5>
-            <h3 id="total-donors"><?php echo $activeUsers; ?></h3>
+            <h3 id="total-donors"><?php echo $totalDonors; ?></h3>
         </div>
         <div class="card events">
             <i class='bx bx-calendar-event card-icon'></i>
@@ -239,7 +245,7 @@ body { background: #fcf4f4; padding: 20px; color: #333; }
                 <div class="mini-card">
                     <i class='bx bx-user-check'></i>
                     <div class="mini-card-label">Active Users</div>
-                    <div class="mini-card-value"><?php echo $activeUsers; ?></div>
+                    <div class="mini-card-value"><?php echo $totalDonors; ?></div>
                 </div>
                 <div class="mini-card">
                     <i class='bx bx-hourglass'></i>
