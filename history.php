@@ -11,14 +11,13 @@ $sessionRole = $_SESSION['role']; // already normalized
 
 // map normalized role → navbar / logic role
 $roleMap = [
-    'admin' => 'admin',
-    'event organizer' => 'organizer',
-    'hospital' => 'hospital',
-    'donor' => 'donor'
+    'Admin' => 'admin',
+    'Event Organizer' => 'organizer',
+    'Hospital' => 'hospital',
+    'Donor' => 'donor'
 ];
 
 $role = $roleMap[$sessionRole] ?? 'guest';
-
 ?>
 
 <!DOCTYPE html>

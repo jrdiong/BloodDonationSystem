@@ -55,7 +55,7 @@ $height = isset($_POST['height']) ? trim($_POST['height']) : '';
 
 // -------------------
 // Validation
-$validBloodTypes = ['A', 'B', 'AB', 'O'];
+$validBloodTypes = ['A+', 'A-', 'B+', 'B-','AB+', 'AB-', 'O+', 'O-'];
 if (!in_array($bloodType, $validBloodTypes)) {
     echo json_encode(["success" => false, "error" => "Invalid blood type"]);
     exit;
