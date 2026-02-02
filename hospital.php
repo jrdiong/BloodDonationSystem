@@ -1,9 +1,68 @@
+<?php
+session_start();
+
+$conn = mysqli_connect("localhost", "root", "", "cbdc_system");
+if (!$conn) { die("DB error: " . mysqli_connect_error()); }
+
+if (!isset($_SESSION['userID'])) {
+    header("Location: loginUI.php");
+    exit();
+}
+
+$userID = (int)$_SESSION['userID'];
+
+$name = "Hospital";
+$role = "";
+
+$stmt = mysqli_prepare($conn, "SELECT name, role FROM user WHERE userID = ?");
+mysqli_stmt_bind_param($stmt, "i", $userID);
+mysqli_stmt_execute($stmt);
+$res = mysqli_stmt_get_result($stmt);
+
+if ($row = mysqli_fetch_assoc($res)) {
+    $name = $row['name'] ?? $name;
+    $role = $row['role'] ?? $role;
+}
+
+$totalBloodInventory = 0;
+
+$stmt = mysqli_prepare($conn,"SELECT COUNT(*) AS total FROM `blood inventory`");
+mysqli_stmt_execute($stmt);
+$res = mysqli_stmt_get_result($stmt);
+
+if ($row = mysqli_fetch_assoc($res)) {
+    $totalBloodInventory = $row['total'] ?? 0;
+}
+
+$totalEvents = 0;
+$stmt = mysqli_prepare($conn, "SELECT COUNT(*) AS total FROM event");
+mysqli_stmt_execute($stmt);
+$res = mysqli_stmt_get_result($stmt);
+
+if ($row = mysqli_fetch_assoc($res)) {
+    $totalEvents = $row['total'] ?? 0;
+}
+
+$totalDonors = 0;
+
+$stmt = mysqli_prepare( $conn,"SELECT COUNT(*) AS total FROM user WHERE role = 'Donor'");
+mysqli_stmt_execute($stmt);
+$res = mysqli_stmt_get_result($stmt);
+
+if ($row = mysqli_fetch_assoc($res)) {
+    $totalDonors = $row['total'] ?? 0;
+}
+
+mysqli_stmt_close($stmt);
+mysqli_close($conn);
+?>
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Donor Dashboard</title>
+<title>Hospital Dashboard</title>
 <link rel="stylesheet" href="style.css" />
 <link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet'>
 <style>
@@ -153,17 +212,17 @@ body { background: #fcf4f4; padding: 20px; color: #333; }
         <div class="card blood-inventory">
             <i class='bx bx-droplet card-icon'></i>
             <h5>Total Blood Inventory</h5>
-            <h3 id="total-blood-inventory">35</h3>
+            <h3 id="total-blood-inventory"><?php echo (int)$totalBloodInventory; ?></h3>
         </div>
         <div class="card donor">
             <i class='bx bx-user card-icon'></i>
             <h5>Total Donors</h5>
-            <h3 id="total-donors">50</h3>
+            <h3 id="total-donors"><?php echo (int)$totalDonors; ?></h3>
         </div>
         <div class="card events">
             <i class='bx bx-calendar-check card-icon'></i>
             <h5>Total Events</h5>
-            <h3 id="total-events">8</h3>
+            <h3 id="total-events"><?php echo (int)$totalEvents; ?></h3>
         </div>
     </div>
 
@@ -182,18 +241,18 @@ body { background: #fcf4f4; padding: 20px; color: #333; }
     <div class="rightbar">
         <div class="profile-card">
             <img src="images/profile.png" alt="Profile Picture">
-            <h5>XX Hospital</h5>
+            <h5><?php echo htmlspecialchars($name); ?></h5>
             <h6>Established 5 years ago</h6>
             <div class="mini-cards">
                 <div class="mini-card">
                     <i class='bx bx-user'></i>
                     <div class="mini-card-label">Active Donors</div>
-                    <div class="mini-card-value">30</div>
+                    <div class="mini-card-value"><?php echo (int)$totalDonors; ?></div>
                 </div>
                 <div class="mini-card">
                     <i class='bx bx-calendar-event'></i>
                     <div class="mini-card-label">Upcoming Events</div>
-                    <div class="mini-card-value">3</div>
+                    <div class="mini-card-value"><?php echo (int)$totalEvents; ?></div>
                 </div>
                 <div class="mini-card" onclick="window.location.href='logout.php';" style="cursor:pointer;">
                     <i class='bx bx-log-out'></i>
