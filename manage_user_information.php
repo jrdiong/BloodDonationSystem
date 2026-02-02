@@ -45,6 +45,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit;
     }
 
+    if (!ctype_digit($phoneNumber) || strlen($phoneNumber) < 8 || strlen($phoneNumber) > 15) {
+    echo json_encode([
+        'status' => 'error',
+        'message' => 'Invalid phone number format'
+    ]);
+    exit;
+    }
+
+
     // Hash the password
     $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
 
