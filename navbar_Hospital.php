@@ -10,8 +10,7 @@
       <div class="navbar_content">
         <i class="bi bi-grid"></i>
         <i class='bx bx-sun' id="darkLight"></i>
-        <i class='bx bx-bell' ></i>
-        <img src="images/profile.jpg" alt="" class="profile" />
+        <a href="profile_hospital.php"><img src="images/profile.jpg" alt="" class="profile" /></a>
       </div>
     </nav>
     <!-- sidebar -->
@@ -22,7 +21,7 @@
           <!-- duplicate these li tag if you want to add or remove navlink only -->
           <!-- Start -->
           <li class="item">
-            <a href="#" class="nav_link">
+            <a href="hospital.php" class="nav_link">
               <span class="navlink_icon">
                 <i class="bx bxs-dashboard"></i>
               </span>
@@ -31,7 +30,7 @@
           </li>
           <!-- End -->
           <li class="item">
-            <a href="#" class="nav_link">
+            <a href="bloodinventoryUI.php" class="nav_link">
               <span class="navlink_icon">
                 <i class="bx bx-donate-blood"></i>
               </span>
@@ -39,7 +38,7 @@
             </a>
           </li>
           <li class="item">
-            <a href="#" class="nav_link">
+            <a href="eventUI.php" class="nav_link">
               <span class="navlink_icon">
                 <i class="bx bx-calendar-event"></i>
               </span>
@@ -47,11 +46,27 @@
             </a>
           </li>
           <li class="item">
-            <a href="#" class="nav_link">
+            <a href="donor_information.php" class="nav_link">
               <span class="navlink_icon">
                 <i class="bx bx-user"></i>
               </span>
               <span class="navlink">Manage Donor</span>
+            </a>
+          </li>
+          <li class="item">
+            <a href="history.php" class="nav_link">
+              <span class="navlink_icon">
+                <i class="bx bx-user"></i>
+              </span>
+              <span class="navlink">History</span>
+            </a>
+          </li>
+          <li class="item">
+            <a href="profile_hospital.php" class="nav_link">
+              <span class="navlink_icon">
+                <i class="bx bx-user-circle"></i>
+              </span>
+              <span class="navlink">Profile</span>
             </a>
           </li>
         </ul>

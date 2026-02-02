@@ -50,7 +50,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
             }elseif ($row['role'] === 'Event Organizer') {
                 header("Location: dashboard/organizer.php");
             }elseif ($row['role'] === 'Hospital') {
-                header("Location: dashboard/hospital.php");
+                header("Location: hospital.php");
             }elseif ($row['role'] === 'Donor') { 
                 header("Location: donor.php");
             }else{
