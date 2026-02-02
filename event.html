@@ -256,6 +256,18 @@ async function viewAppointmentStatus(eventID){
             tbody.appendChild(tr);
         });
 
+         const modalButtons = document.querySelector('#appointmentModal .modal-buttons');
+        modalButtons.innerHTML = `<button onclick="closeAppointmentModal()">Close</button>`;
+
+        if(currentRole === 'Hospital'){
+            const infoBtn = document.createElement('button');
+            infoBtn.textContent = 'Donor Information';
+            infoBtn.onclick = () => {
+            window.location.href = `donor_information.php?eventID=${eventID}`;
+        };
+            modalButtons.appendChild(infoBtn);
+        }
+
         document.getElementById('appointmentModal').style.display = 'flex';
     } catch(e){ console.error(e); alert('Failed to load appointments'); }
 }
