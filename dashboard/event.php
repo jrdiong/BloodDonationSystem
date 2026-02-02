@@ -1,80 +1,8 @@
 <?php
 session_start();
-
-$role = $_SESSION['role'] ?? '';
-
-if ($role !== 'organizer') {
-    header("Location: loginUI.php");
-    exit;
-}
-
-$host = "localhost";
-$db   = "cbdc_system";
-$user = "root";
-$pass = "";
-
-$conn = new mysqli($host, $user, $pass, $db);
-if ($conn->connect_error) {
-    die("DB connection failed: " . $conn->connect_error);
-}
-
-if ($_SERVER['REQUEST_METHOD'] === 'POST'
-    && isset($_POST['action'])
-    && $_POST['action'] === 'create'
-) {
-    $eventName = trim($_POST['eventName'] ?? '');
-    $location  = trim($_POST['location'] ?? '');
-    $eventDate = $_POST['eventDate'] ?? '';
-    $eventTime = $_POST['eventTime'] ?? '';
-
-    if ($eventName === '' || $location === '' || $eventDate === '' || $eventTime === '') {
-        die("Please fill all fields.");
-    }
-
-    $dateTime = $eventDate . ' ' . $eventTime . ':00';
-
-    $image_url   = '';            
-    $maxDonors   = 0;               
-    $description = '';              
-    $organizerID = isset($_SESSION['userID']) ? (int)$_SESSION['userID'] : null;
-    $hospitalID  = '';            
-    $status      = 'Active';        
-
-    if ($organizerID === null) {
-        die("Missing session userID. Please login again.");
-    }
-
-    $sql = "INSERT INTO `event`
-        (`eventName`, `image_url`, `location`, `dateTime`, `maxDonors`, `description`, `organizerID`, `hospitalID`, `status`)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
-
-    $stmt = $conn->prepare($sql);
-    if (!$stmt) {
-        die("Prepare failed: " . $conn->error);
-    }
-
-    $stmt->bind_param(
-        "ssssidiss",
-        $eventName,
-        $image_url,
-        $location,
-        $dateTime,
-        $maxDonors,
-        $description,
-        $organizerID,
-        $hospitalID,
-        $status
-    );
-
-    if (!$stmt->execute()) {
-        die("Insert failed: " . $stmt->error);
-    }
-
-    $stmt->close();
-
-    header("Location: event.php?created=1");
-    exit;
-}
+// For testing
+$_SESSION['role'] = 'organizer';
+$role = $_SESSION['role'];
 ?>
 
 <!DOCTYPE html>
@@ -147,22 +75,10 @@ body { font-family:'Poppins',sans-serif; background:#fde7e7; margin:0; }
 <div class="card-list">
 
 <?php
-$events = [];
-
-$sql = "SELECT eventName, location, dateTime FROM `event` ORDER BY dateTime ASC";
-$res = $conn->query($sql);
-
-if ($res) {
-    while ($r = $res->fetch_assoc()) {
-        $dt = new DateTime($r['dateTime']);
-        $events[] = [
-            $r['eventName'],
-            $r['location'],
-            $dt->format('Y-m-d'),
-            $dt->format('H:i')
-        ];
-    }
-}
+$events = [
+    ["Blood Donation Drive","Hospital ABC","2026-02-10","10:00"],
+    ["Health Awareness Camp","Community Center XYZ","2026-03-05","09:00"]
+];
 
 foreach($events as $event):
     $d = new DateTime($event[2]);
@@ -202,19 +118,16 @@ foreach($events as $event):
     <div class="modal-card">
         <h3>Create / Edit Event</h3>
         <span class="close-modal">&times;</span>
-        <form method="POST" action="event.php">
-            <input type="hidden" name="action" value="create">
 
-            <input type="text" name="eventName" id="event-name" placeholder="Event name" required>
-            <input type="text" name="location" id="event-location" placeholder="Location" required>
-            <input type="date" name="eventDate" id="event-date" required>
-            <input type="time" name="eventTime" id="event-time" required>
+        <input type="text" id="event-name" placeholder="Event name">
+        <input type="text" id="event-location" placeholder="Location">
+        <input type="date" id="event-date">
+        <input type="time" id="event-time">
 
-            <div class="modal-footer">
-                <button class="btn primary" type="submit">Save</button>
-                <button class="btn" type="button" id="cancel-event-btn">Cancel</button>
-            </div>
-        </form>
+        <div class="modal-footer">
+            <button class="btn primary" id="save-event-btn">Save</button>
+            <button class="btn" id="cancel-event-btn">Cancel</button>
+        </div>
     </div>
 </div>
 
