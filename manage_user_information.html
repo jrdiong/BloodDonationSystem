@@ -73,6 +73,7 @@
             <th>Name</th>
             <th>Email</th>
             <th>Phone Number</th>
+            <th>Location</th>
         </tr>
     </thead>
     <tbody></tbody>
@@ -93,14 +94,19 @@
 </table>
 
 <script>
-    // Dynamically show/hide Location field based on role selection
+    // Show/hide the Location field based on the selected role
     document.getElementById('role').addEventListener('change', function () {
         var role = this.value;
         var locationField = document.getElementById('locationField');
+        var locationInput = document.getElementById('location');
+
         if (role === 'Hospital') {
             locationField.style.display = 'block';
+            locationInput.required = true;   // Location is required for Hospital
         } else {
             locationField.style.display = 'none';
+            locationInput.required = false;
+            locationInput.value = '';       // Clear Location if not Hospital
         }
     });
 
@@ -108,29 +114,39 @@
     document.getElementById('createUserForm').addEventListener('submit', function (e) {
         e.preventDefault();
 
-        var formData = new FormData(this);  // Using FormData
+        var formData = new FormData(this); // Use FormData to include all form fields
 
-        // Debug: Log form data to check if 'role' is being sent
+        // Optional: Debug - log all form data to console
         for (var pair of formData.entries()) {
-            console.log(pair[0] + ': ' + pair[1]);  // This will show all the form data
+            console.log(pair[0] + ': ' + pair[1]);
         }
 
         fetch('manage_user_information.php', {
             method: 'POST',
-            body: formData,  // Directly sending FormData
+            body: formData
         })
         .then(response => response.json())
         .then(data => {
             var messageElement = document.getElementById('responseMessage');
+
             if (data.status === 'success') {
                 messageElement.classList.add('success');
                 messageElement.classList.remove('error');
                 messageElement.textContent = data.message;
+
+                // Reset the form and hide the Location field
+                this.reset();
+                document.getElementById('locationField').style.display = 'none';
+
+                // Automatically reload the user tables
+                loadUsers();
+
             } else {
                 messageElement.classList.add('error');
                 messageElement.classList.remove('success');
                 messageElement.textContent = data.message;
             }
+
             messageElement.style.display = 'block';
         })
         .catch(error => {
@@ -142,42 +158,49 @@
         });
     });
 
-    // Fetch user data from PHP API (fetch hospital and event organizer users)
-    fetch('manage_user_information.php')
-        .then(response => response.json())
-        .then(data => {
-            if (data.status === 'success') {
-                // Populate Hospital users
-                const hospitalTableBody = document.querySelector('#hospital-table tbody');
-                data.hospitals.forEach(user => {
-                    const row = document.createElement('tr');
-                    row.innerHTML = `
-                        <td>${user.userID}</td>
-                        <td>${user.name}</td>
-                        <td>${user.email}</td>
-                        <td>${user.phoneNumber}</td>
-                    `;
-                    hospitalTableBody.appendChild(row);
-                });
+    // Function to load users and render the tables
+    function loadUsers() {
+        fetch('manage_user_information.php')
+            .then(res => res.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    // Clear the existing table rows
+                    document.querySelector('#hospital-table tbody').innerHTML = '';
+                    document.querySelector('#event-organizer-table tbody').innerHTML = '';
 
-                // Populate Event Organizer users
-                const eventOrganizerTableBody = document.querySelector('#event-organizer-table tbody');
-                data.event_organizers.forEach(user => {
-                    const row = document.createElement('tr');
-                    row.innerHTML = `
-                        <td>${user.userID}</td>
-                        <td>${user.name}</td>
-                        <td>${user.email}</td>
-                        <td>${user.phoneNumber}</td>
-                    `;
-                    eventOrganizerTableBody.appendChild(row);
-                });
-            } else {
-                console.error('Error:', data.message);
-            }
-        })
-        .catch(error => console.error('Error fetching data:', error));
+                    // Render Hospital users
+                    data.hospitals.forEach(user => {
+                        const row = document.createElement('tr');
+                        row.innerHTML = `
+                            <td>${user.userID}</td>
+                            <td>${user.name}</td>
+                            <td>${user.email}</td>
+                            <td>${user.phoneNumber}</td>
+                            <td>${user.location ?? ''}</td>
+                        `;
+                        document.querySelector('#hospital-table tbody').appendChild(row);
+                    });
+
+                    // Render Event Organizer users
+                    data.event_organizers.forEach(user => {
+                        const row = document.createElement('tr');
+                        row.innerHTML = `
+                            <td>${user.userID}</td>
+                            <td>${user.name}</td>
+                            <td>${user.email}</td>
+                            <td>${user.phoneNumber}</td>
+                        `;
+                        document.querySelector('#event-organizer-table tbody').appendChild(row);
+                    });
+                }
+            })
+            .catch(error => console.error('Error fetching users:', error));
+    }
+
+    // Load users when the page first loads
+    loadUsers();
 </script>
+
 
 </body>
 </html>
