@@ -420,69 +420,332 @@
         <th>Name</th>
         <th>Email</th>
         <th>Phone</th>
-        <th>Status</th>
+        <th>Appointment Status</th>
       </tr>
     </thead>
     <tbody id="donorTableBody">
       <!-- Donor rows will be populated here -->
     </tbody>
   </table>
+<!-- Donor Info Modal -->
+<div id="donorModal" class="modal">
+  <div class="modal-content">
+    <span class="close">&times;</span>
 
-</div>
-
-<!-- Health Report Modal -->
-<div class="modal" id="healthModal">
-  <div class="modal-content modern-modal">
-    <!-- Upper profile card -->
     <div class="profile-card">
-      <img id="avatar" src="default-avatar.png" alt="Avatar">
+      <img id="donorImg" src="default_avatar.png" alt="Donor Photo" />
       <div class="profile-info">
-        <h2 id="nameValue">John Doe</h2>
-        <p id="emailValue">john@example.com</p>
-        <p id="phoneValue">0123456789</p>
-        <p>
-        Status: 
-        <span id="statusValue" class="status-pill pending">Pending</span>
-        </p>
+        <h2 id="donorName">Donor Name</h2>
+        <p id="donorEmail">email@example.com</p>
+        <p id="donorPhone">+6012-3456789</p>
       </div>
     </div>
 
-    <!-- Lower editable health report -->
     <div class="edit-section">
-      <h3>Health Report</h3>
-
+      <h3>Donor Details</h3>
       <div class="profile-field">
-        <span class="field-label">Blood Pressure</span>
-        <span class="field-value" id="bpValue">120/80</span>
-        <span class="edit-icon" data-field="bp"><i class='bx bx-pencil'></i></span>
+        <span class="field-label">Blood Type</span>
+        <span class="field-value" id="donorBloodType"></span>
       </div>
-
       <div class="profile-field">
-        <span class="field-label">Hemoglobin</span>
-        <span class="field-value" id="hbValue">14.2 g/dL</span>
-        <span class="edit-icon" data-field="hb"><i class='bx bx-pencil'></i></span>
+        <span class="field-label">Age</span>
+        <span class="field-value" id="donorAge"></span>
       </div>
-
       <div class="profile-field">
         <span class="field-label">Weight</span>
-        <span class="field-value" id="weightValue">70 kg</span>
-        <span class="edit-icon" data-field="weight"><i class='bx bx-pencil'></i></span>
+        <span class="field-value" id="donorWeight"></span>
+      </div>
+      <div class="profile-field">
+        <span class="field-label">Height</span>
+        <span class="field-value" id="donorHeight"></span>
+      </div>
+      <div class="profile-field">
+        <span class="field-label">Medical History</span>
+        <span class="field-value" id="donorMedHistory"></span>
+      </div>
+      <div class="profile-field">
+        <span class="field-label">Last Donation</span>
+        <span class="field-value" id="donorLastDonate"></span>
+      </div>
+      <div class="profile-field">
+        <span class="field-label">Appointment Status</span>
+        <span class="status-pill" id="donorStatus"></span>
       </div>
 
-      <div class="profile-field">
-        <span class="field-label">Other Notes</span>
-        <span class="field-value" id="notesValue">Healthy</span>
-        <span class="edit-icon" data-field="notes"><i class='bx bx-pencil'></i></span>
+      <!-- APPROVE / REJECT BUTTONS -->
+      <div class="modal-buttons">
+          <button id="approveBtn" class="approve-btn">Approve</button>
+          <button id="rejectBtn" class="reject-btn">Reject</button>
       </div>
     </div>
-    <!-- Approve / Reject buttons -->
-      <div class="modal-buttons">
-        <button class="save-btn" id="approveBtn">Approve</button>
-        <button class="save-btn" id="rejectBtn" style="background-color:#e74c3c">Reject</button>
-      </div>
   </div>
 </div>
+
+
+  <script>
+  let donors = [];
+  const donorTableBody = document.getElementById('donorTableBody');
+
+  let currentDonor = null;
+
+  // ---------- FETCH DONORS ----------
+
+  const urlParams = new URLSearchParams(window.location.search);
+  const eventID = urlParams.get('eventID');  
+  async function loadDonors() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const eventID = urlParams.get('eventID');  
+    if (!eventID) {
+        alert("Event ID missing");
+        return;
+    }
+
+    try {
+        const res = await fetch(`donor_api.php?action=getDonors&eventID=${eventID}`);
+        const data = await res.json();
+        if(data.status === "success") {
+            donors = data.donors;
+            renderTable(donors);
+        } else {
+            alert(data.message || "Failed to load donors");
+        }
+    } catch(err) {
+        console.error(err);
+        alert("Error fetching donors");
+    }
+}
+
+// ---------- RENDER TABLE ----------
+function renderTable(donorsList) {
+    donorTableBody.innerHTML = '';
+    donorsList.forEach(donor => {
+        const status = (donor.appointmentStatus || 'pending').toLowerCase();
+        const displayStatus = status.charAt(0).toUpperCase() + status.slice(1);
+
+        const tr = document.createElement('tr');
+        tr.dataset.id = donor.userID;
+        tr.innerHTML = `
+            <td>${donor.name}</td>
+            <td>${donor.email}</td>
+            <td>${donor.phoneNumber}</td>
+            <td>
+                <span class="status-pill ${status}">
+                    ${displayStatus}
+                </span>
+            </td>
+        `;
+        tr.style.cursor = "default";
+        donorTableBody.appendChild(tr);
+    });
+}
+
+const donorModal = document.getElementById('donorModal');
+const closeBtn = donorModal.querySelector('.close');
+
+const donorImg = document.getElementById('donorImg');
+const donorName = document.getElementById('donorName');
+const donorEmail = document.getElementById('donorEmail');
+const donorPhone = document.getElementById('donorPhone');
+const donorBloodType = document.getElementById('donorBloodType');
+const donorAge = document.getElementById('donorAge');
+const donorWeight = document.getElementById('donorWeight');
+const donorHeight = document.getElementById('donorHeight');
+const donorMedHistory = document.getElementById('donorMedHistory');
+const donorLastDonate = document.getElementById('donorLastDonate');
+const donorStatus = document.getElementById('donorStatus');
+
+document.getElementById('donorTableBody').addEventListener('click', async (e) => {
+  const tr = e.target.closest('tr');
+  if (!tr) return;
+
+  const donor = donors.find(d => d.userID == tr.dataset.id);
+  if (!donor) return;
+  currentDonor = donor;
+
+  try {
+    const res = await fetch(`donor_api.php?action=getDonorHealth&donorID=${donor.userID}&eventID=${eventID}`);
+    const data = await res.json();
+    if (data.status !== 'success') {
+      alert(data.message || "Failed to fetch donor info");
+      return;
+    }
+    const d = data.donor;
+
+    donorImg.src = d.image_url || 'default_avatar.png';
+    donorName.textContent = d.name;
+    donorEmail.textContent = d.email;
+    donorPhone.textContent = d.phoneNumber;
+    donorBloodType.textContent = d.bloodType || '-';
+    donorAge.textContent = d.age || '-';
+    donorWeight.textContent = d.weight || '-';
+    donorHeight.textContent = d.height || '-';
+    donorMedHistory.textContent = d.medicalHistory || '-';
+    donorLastDonate.textContent = d.dateLastDonate || '-';
+
+    const statusText = (d.healthStatus || 'pending').toLowerCase();
+    donorStatus.textContent = statusText.charAt(0).toUpperCase() + statusText.slice(1);
+    donorStatus.className = 'status-pill ' + statusText;
+
+    donorModal.style.display = 'block';
+  } catch(err) {
+    console.error(err);
+    alert("Error fetching donor info");
+  }
+});
+
+    // close modal
+    closeBtn.onclick = () => donorModal.style.display = 'none';
+    window.onclick = (e) => { if (e.target === donorModal) donorModal.style.display = 'none'; };
+
+    // ---------- APPROVE / REJECT ----------
+    const approveBtn = document.getElementById('approveBtn');
+    const rejectBtn = document.getElementById('rejectBtn');
+
+    approveBtn.onclick = () => updateStatus('Approved');
+    rejectBtn.onclick = () => updateStatus('Rejected');
+
+    async function updateStatus(status) {
+    if (!currentDonor) return;
+
+    try {
+        const params = new URLSearchParams();
+        params.append('action', 'updateStatus');
+        params.append('donorID', currentDonor.userID);
+        params.append('status', status);
+        params.append('eventID', eventID);
+
+        const res = await fetch('donor_api.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: params.toString()   // 
+        });
+
+        const data = await res.json();
+
+        if (data.status === 'success') {
+            // update modal
+            currentDonor.appointmentStatus = status.toLowerCase();
+            donorStatus.textContent = status;
+            donorStatus.className = 'status-pill ' + status.toLowerCase();
+
+            // update table
+            const tr = donorTableBody.querySelector(`tr[data-id='${currentDonor.userID}']`);
+            if(tr){
+                const statusSpan = tr.querySelector('.status-pill');
+                statusSpan.textContent = status;
+                statusSpan.className = 'status-pill ' + status.toLowerCase();
+            }
+
+            // close modal
+            donorModal.style.display = 'none';
+        } else {
+            alert(data.message || "Failed to update status");
+        }
+    } catch (err) {
+        console.error(err);
+        alert("Error updating status");
+    }
+}
+
+
+// ---------- INLINE EDIT ----------
+// function initEditIcons() {
+//     document.querySelectorAll('.edit-icon').forEach(icon => {
+//         icon.onclick = async () => {
+//             const field = icon.dataset.field;
+//             const spanEl = document.getElementById(field + "Value");
+//             const oldValue = spanEl.textContent.replace(/[^0-9.\/a-zA-Z ]/g,"");
+
+//             const input = document.createElement('input');
+//             input.value = oldValue;
+//             input.style.width = '100%';
+//             spanEl.replaceWith(input);
+//             icon.style.display = 'none';
+//             input.focus();
+
+//             const saveBtn = document.createElement('button');
+//             saveBtn.textContent = 'Save';
+//             saveBtn.className = 'save-btn';
+//             input.after(saveBtn);
+
+//             saveBtn.onclick = async () => {
+//                 const value = input.value.trim();
+//                 const fieldMap = {bp:'bloodPressure', hb:'hemoglobin', weight:'weight', notes:'notes'};
+//                 try {
+//                     const formData = new FormData();
+//                     formData.append('action', 'updateHealth');
+//                     formData.append('donorID', currentDonor.userID);
+//                     formData.append('field', fieldMap[field]);
+//                     formData.append('value', value);
+//                     const res = await fetch('donor_api.php', {method:'POST', body:formData});
+//                     const data = await res.json();
+//                     if(data.status === "success"){
+//                         spanEl.textContent = (field==='hb' ? value + " g/dL" : field==='weight' ? value + " kg" : value);
+//                         currentDonor[fieldMap[field]] = value;
+//                         input.replaceWith(spanEl);
+//                         saveBtn.remove();
+//                         icon.style.display = 'inline';
+//                     } else {
+//                         alert(data.message || "Failed to update");
+//                     }
+//                 } catch(err) {
+//                     console.error(err);
+//                     alert("Error updating field");
+//                 }
+//             };
+//         };
+//     });
+// }
+
+// // ---------- APPROVE / REJECT ----------
+// document.getElementById('approveBtn').onclick = async () => updateStatus('Approved');
+// document.getElementById('rejectBtn').onclick = async () => updateStatus('Rejected');
+
+// async function updateStatus(status){
+//     if(!currentDonor) return;
+//     try {
+//         const formData = new FormData();
+//         formData.append('action','updateStatus');
+//         formData.append('donorID', currentDonor.userID);
+//         formData.append('status', status);
+//         const res = await fetch('donor_api.php', {method:'POST', body:formData});
+//         const data = await res.json();
+//         if(data.status==='success'){
+//             currentDonor.appointmentStatus = status.toLowerCase();
+//             statusEl.textContent = status;
+//             statusEl.className = 'status-pill ' + status.toLowerCase();
+//             renderTable(donors);
+//             healthModal.style.display = 'none';
+//         } else {
+//             alert(data.message || "Failed to update status");
+//         }
+//     } catch(err){
+//         console.error(err);
+//         alert("Error updating status");
+//     }
+// }
+
+// ---------- SEARCH ----------
+document.getElementById('searchInput').addEventListener('input', (e)=>{
+    const query = e.target.value.toLowerCase();
+    const filtered = donors.filter(d => 
+        d.name.toLowerCase().includes(query) || 
+        d.email.toLowerCase().includes(query) || 
+        d.phoneNumber.toLowerCase().includes(query)
+    );
+    renderTable(filtered);
+});
+
+// // ---------- CLOSE MODAL ----------
+// document.querySelectorAll('.close').forEach(btn=>{
+//     btn.onclick = () => healthModal.style.display = 'none';
+// });
+// window.onclick = e => { if(e.target === healthModal) healthModal.style.display = 'none'; }
+
+// ---------- INIT ----------
+loadDonors();
+</script>
+
 <script src="script.js"></script>
-<script src="health.js"></script>
 </body>
 </html>
