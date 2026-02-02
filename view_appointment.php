@@ -61,7 +61,8 @@ if(!$role){
 /* =========================
    Get Event ID
 ========================= */
-$eventID = isset($_GET['eventID']) ? intval($_GET['eventID']) : 0;
+$eventID = isset($_POST['eventID']) ? intval($_POST['eventID']) 
+           : (isset($_GET['eventID']) ? intval($_GET['eventID']) : 0);
 if($eventID <= 0){
     echo json_encode(["status"=>"error","message"=>"Event ID required"]);
     exit;

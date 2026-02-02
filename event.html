@@ -79,6 +79,26 @@ h2 { text-align:center; margin-bottom:20px; }
   </div>
 </div>
 
+<!-- Appointment Status Modal -->
+<div class="modal" id="appointmentModal">
+  <div class="modal-content">
+    <h3>Appointment Status</h3>
+    <table id="appointmentTable" border="1" width="100%" style="border-collapse: collapse; margin-bottom:15px;">
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Email</th>
+          <th>Phone</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+    <div class="modal-buttons">
+      <button onclick="closeAppointmentModal()">Close</button>
+    </div>
+  </div>
+</div>
+
 <script>
 let currentEventID = null;
 let currentRole = null;
@@ -136,9 +156,24 @@ function renderEventCards(events){
                 <p>Time: ${event.dateTime}</p>
                 <p>Location: ${event.location||'TBD'}</p>
                 <p class="book-status">${statusText}</p>
-                ${currentRole==='Donor'?`<button ${canBook?'':'disabled'} onclick="bookEventHandler(event,${event.eventID})">Book</button>`:''}
             </div>
         `;
+
+        // ===== new button for ER / HP /AM =====
+        const infoDiv = card.querySelector('.event-info');
+        if(currentRole==='Donor'){
+            const btn = document.createElement('button');
+            btn.textContent = 'Book';
+            if(!canBook) btn.disabled = true;
+            btn.onclick = (e)=> bookEventHandler(e,event.eventID);
+            infoDiv.appendChild(btn);
+        }else{
+            // Event Organizer / Hospital / Admin 显示 Appointment Status
+            const statusBtn = document.createElement('button');
+            statusBtn.textContent = 'Appointment Status';
+            statusBtn.onclick = (e)=> { e.stopPropagation(); viewAppointmentStatus(event.eventID); };
+            infoDiv.appendChild(statusBtn);
+        }
 
         if(currentRole==='Admin'){
             const del=document.createElement('div'); del.className='delete-btn'; del.innerText='×';
@@ -202,6 +237,33 @@ function submitHealthReport(){
 function closeModal(){ document.getElementById('eventModal').style.display='none'; }
 function closeHealthModal(){ document.getElementById('healthModal').style.display='none'; }
 
+/* ===== Appointment Modal ===== */
+async function viewAppointmentStatus(eventID){
+    try {
+        const res = await fetch(`view_appointment.php?eventID=${eventID}`);
+        const data = await res.json();
+        if(data.status !== 'success'){ alert(data.message||'Failed to load appointments'); return; }
+
+        const tbody = document.querySelector('#appointmentTable tbody');
+        tbody.innerHTML = '';
+        data.donors.forEach(donor => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td>${donor.name}</td>
+                <td>${donor.email}</td>
+                <td>${donor.phone}</td>
+            `;
+            tbody.appendChild(tr);
+        });
+
+        document.getElementById('appointmentModal').style.display = 'flex';
+    } catch(e){ console.error(e); alert('Failed to load appointments'); }
+}
+
+function closeAppointmentModal(){
+    document.getElementById('appointmentModal').style.display='none';
+}
+
 /* ===== Event Modal ===== */
 async function openEvent(eventID){
     const res = await fetch(`event.php?action=getEventByID&eventID=${eventID}`);
@@ -229,9 +291,16 @@ async function openEvent(eventID){
     buttons.innerHTML='';
     if(currentRole==='Donor') buttons.innerHTML=`<button onclick="closeModal()">Cancel</button><button onclick="bookEvent()">Book</button>`;
     else if(currentRole==='Admin') buttons.innerHTML=`<button onclick="closeModal()">Close</button>`;
-    else if(currentRole==='Event Organizer'){
+    else if(currentRole==='Event Organizer' || currentRole==='Hospital' ){
         buttons.innerHTML=`<button onclick="closeModal()">Cancel</button>`;
         if(canEdit) buttons.innerHTML+=`<button onclick="saveEvent()">Save</button>`;
+    }
+
+    const imageInput = document.getElementById('imageUpload');
+    if(currentRole === 'Admin'){
+        imageInput.style.display = 'none';
+    } else {
+        imageInput.style.display = 'block';
     }
     document.getElementById('eventModal').style.display='flex';
 }
