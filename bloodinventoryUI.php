@@ -292,35 +292,41 @@ document.getElementById("closeModal").onclick = () => document.getElementById("e
 document.getElementById("cancelModal").onclick = () => document.getElementById("editModal").classList.remove("show");
 
 // Save modal changes
-document.getElementById("saveModal").onclick = ()=>{
-    const addAvailable = parseInt(document.getElementById("modalAvailable").value)||0;
-    const addUsed = parseInt(document.getElementById("modalUsed").value)||0;
-    const addDelivered = parseInt(document.getElementById("modalDelivered").value)||0;
+document.getElementById("saveModal").onclick = ()=> {
+    if (!currentType) {
+        alert("Error: No blood type selected!");
+        return;
+    }
+
+    const addAvailable = parseInt(document.getElementById("modalAvailable").value) || 0;
+    const addUsed = parseInt(document.getElementById("modalUsed").value) || 0;
+    const addDelivered = parseInt(document.getElementById("modalDelivered").value) || 0;
 
     const currentAvailable = inventorySummary[currentType].available;
 
-    // Prevent Used + Delivered > Available
-    if(addUsed + addDelivered > currentAvailable){
+    if (addUsed + addDelivered > currentAvailable) {
         alert("Error: Cannot increase Used/Delivered more than Available!");
         return;
     }
 
     const formData = new FormData();
-    formData.append("bloodType", currentType);
-    formData.append("addAvailable", addAvailable>0?addAvailable:0);
-    formData.append("removeAvailable", addAvailable<0?-addAvailable:0);
+    formData.append("bloodType", currentType); // must not be empty
+    formData.append("addAvailable", addAvailable > 0 ? addAvailable : 0);
+    formData.append("removeAvailable", addAvailable < 0 ? -addAvailable : 0);
     formData.append("addUsed", addUsed);
-    formData.append("addDelivered", addDelivered>0?addDelivered:0);
+    formData.append("addDelivered", addDelivered > 0 ? addDelivered : 0);
+
+    console.log("Sending POST with:", Object.fromEntries(formData.entries()));
 
     fetch("edit_inventory.php", {method:"POST", body:formData})
-    .then(res=>res.json())
-    .then(resp=>{
-        if(resp.success){
+    .then(res => res.json())
+    .then(resp => {
+        if (resp.success) {
             alert("Inventory updated!");
             document.getElementById("editModal").classList.remove("show");
             loadInventory();
-        }else{
-            alert("Error: "+resp.error);
+        } else {
+            alert("Error: " + resp.error);
         }
     });
 }

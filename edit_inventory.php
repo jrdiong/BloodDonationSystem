@@ -33,12 +33,11 @@ if(isset($_GET['getDetails']) && $_GET['getDetails']==1 && isset($_GET['bloodTyp
 
 // ---------------------------
 // 2. POST: update inventory
-$bloodType = $_POST['bloodType'] ?? '';
+$bloodType = strtoupper(trim($_POST['bloodType'] ?? ''));
 $addAvailable = intval($_POST['addAvailable'] ?? 0);
 $removeAvailable = intval($_POST['removeAvailable'] ?? 0);
 $addUsed = intval($_POST['addUsed'] ?? 0);
 $addDelivered = intval($_POST['addDelivered'] ?? 0);
-$removeDelivered = intval($_POST['removeDelivered'] ?? 0);
 
 if(!$bloodType){
     echo json_encode(["error"=>"Blood type is required"]);
@@ -51,15 +50,20 @@ try {
     // ---------------------------
     // Remove Available (mark as deleted), oldest expiry first
     if($removeAvailable > 0){
-        $stmt = $conn->prepare("UPDATE `blood inventory` 
-                                SET status='deleted' 
-                                WHERE bloodType=? AND status='available' 
-                                ORDER BY expiryDate ASC 
-                                LIMIT ?");
-        $stmt->bind_param("si", $bloodType, $removeAvailable);
-        $stmt->execute();
-        $stmt->close();
-    }
+        $stmt = $conn->prepare("DELETE FROM `blood inventory`
+                                    WHERE bloodType=? AND status='available'
+                                    ORDER BY expiryDate ASC
+                                    LIMIT ?
+                                ");
+                                $stmt->bind_param("si", $bloodType, $removeAvailable);
+                                $stmt->execute();
+
+                                if ($stmt->affected_rows < $removeAvailable) {
+                                    throw new Exception("Not enough available blood to remove for $bloodType");
+                                }
+
+                                $stmt->close();
+            }
 
     // ---------------------------
     // Add Available: create new blood packages
@@ -69,12 +73,27 @@ try {
         for($i=0;$i<$addAvailable;$i++){
             $stmt->bind_param("s", $bloodType);
             $stmt->execute();
-        }
-        $stmt->close();
+
+    }
+     $stmt->close();
     }
 
     // ---------------------------
     // Add Used: mark oldest Available as used
+    $check = $conn->prepare("
+    SELECT COUNT(*) 
+    FROM `blood inventory` 
+    WHERE bloodType=? AND status='available'
+    ");
+    $check->bind_param("s", $bloodType);
+    $check->execute();
+    $check->bind_result($availableCount);
+    $check->fetch();
+    $check->close();
+        
+    if ($addUsed > 0 && $availableCount == 0) {
+        throw new Exception("No available blood for $bloodType");
+    }
     if($addUsed > 0){
         $stmt = $conn->prepare("UPDATE `blood inventory` 
                                 SET status='used' 
@@ -83,6 +102,11 @@ try {
                                 LIMIT ?");
         $stmt->bind_param("si", $bloodType, $addUsed);
         $stmt->execute();
+
+        if ($stmt->affected_rows < $addUsed) {
+            throw new Exception("Inventory not enough for $bloodType");
+        }
+
         $stmt->close();
     }
 
@@ -96,21 +120,34 @@ try {
                                 LIMIT ?");
         $stmt->bind_param("si", $bloodType, $addDelivered);
         $stmt->execute();
+
+        if ($stmt->affected_rows < $addDelivered) {
+            throw new Exception("Inventory not enough for $bloodType");
+        }  
         $stmt->close();
     }
 
     // ---------------------------
     // Remove Delivered: mark delivered back to available (reverse)
-    if($removeDelivered > 0){
-        $stmt = $conn->prepare("UPDATE `blood inventory` 
-                                SET status='available' 
-                                WHERE bloodType=? AND status='delivered' 
-                                ORDER BY expiryDate DESC 
-                                LIMIT ?");
-        $stmt->bind_param("si", $bloodType, $removeDelivered);
-        $stmt->execute();
-        $stmt->close();
-    }
+        $removeDelivered = intval($_POST['removeDelivered'] ?? 0);
+
+        if ($removeDelivered > 0) {
+            $stmt = $conn->prepare("
+                UPDATE `blood inventory`
+                SET status='available'
+                WHERE bloodType=? AND status='delivered'
+                ORDER BY expiryDate DESC
+                LIMIT ?
+            ");
+            $stmt->bind_param("si", $bloodType, $removeDelivered);
+            $stmt->execute();
+
+            if ($stmt->affected_rows < $removeDelivered) {
+                throw new Exception("Inventory not enough for $bloodType");
+            }
+
+            $stmt->close();
+        }
 
     $conn->commit();
     echo json_encode(["success"=>true]);
